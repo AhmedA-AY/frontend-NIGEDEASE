@@ -1,0 +1,93 @@
+'use client';
+
+import * as React from 'react';
+import Avatar from '@mui/material/Avatar';
+import Badge from '@mui/material/Badge';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import { Bell as BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
+import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
+import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
+
+import { usePopover } from '@/hooks/use-popover';
+
+import { MobileNav } from './mobile-nav';
+import { UserPopover } from '@/components/dashboard/layout/user-popover';
+
+export function MainNav(): React.JSX.Element {
+  const [openNav, setOpenNav] = React.useState<boolean>(false);
+
+  const userPopover = usePopover<HTMLDivElement>();
+
+  return (
+    <>
+      <Box
+        component="header"
+        sx={{
+          backdropFilter: 'blur(6px)',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderBottomColor: 'var(--mui-palette-divider)',
+          borderBottomStyle: 'solid',
+          borderBottomWidth: 1,
+          color: 'var(--mui-palette-text-primary)',
+          height: 'var(--MainNav-height)',
+          left: {
+            lg: 'var(--SideNav-width)',
+          },
+          position: 'fixed',
+          right: 0,
+          top: 0,
+          zIndex: 'var(--MainNav-zIndex)',
+        }}
+      >
+        <Stack direction="row" spacing={2} sx={{ height: '100%', px: 3 }}>
+          <Box sx={{ alignItems: 'center', display: { lg: 'none', xs: 'flex' } }}>
+            <IconButton onClick={(): void => setOpenNav(true)}>
+              <ListIcon />
+            </IconButton>
+          </Box>
+          <Stack
+            alignItems="center"
+            direction="row"
+            spacing={2}
+            sx={{ alignItems: 'center', flex: '1 1 auto', justifyContent: 'flex-end' }}
+          >
+            <Tooltip title="Search">
+              <IconButton>
+                <MagnifyingGlassIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Contacts">
+              <IconButton>
+                <UsersIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Notifications">
+              <IconButton>
+                <Badge color="error" variant="dot">
+                  <BellIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+            <Box ref={userPopover.anchorRef}>
+              <Avatar
+                onClick={userPopover.handleOpen}
+                src="/assets/avatar.png"
+                sx={{ cursor: 'pointer', height: 40, width: 40 }}
+              />
+            </Box>
+          </Stack>
+        </Stack>
+      </Box>
+      <MobileNav onClose={(): void => setOpenNav(false)} open={openNav} />
+      <UserPopover
+        anchorEl={userPopover.anchorRef.current}
+        onClose={userPopover.handleClose}
+        open={userPopover.open}
+      />
+    </>
+  );
+} 
