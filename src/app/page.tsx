@@ -75,15 +75,6 @@ export default function LandingPage(): React.JSX.Element {
           </Box>
           <Box>
             <Button 
-              variant="outlined" 
-              color="primary" 
-              sx={{ mr: 2, borderRadius: 1, px: 3 }}
-              component={Link}
-              href={paths.auth.signUp}
-            >
-              Register
-            </Button>
-            <Button 
               variant="contained" 
               color="primary" 
               sx={{ borderRadius: 1, px: 3 }}
