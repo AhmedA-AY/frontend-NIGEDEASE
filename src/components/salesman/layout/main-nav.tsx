@@ -64,10 +64,11 @@ export function MainNav({ onMobileNavOpen }: MainNavProps): React.JSX.Element {
           <Avatar
             onClick={userPopover.handleOpen}
             ref={userPopover.anchorRef}
-            src="/assets/avatar.png"
-            sx={{ 
+            src="/assets/profile.jpeg"
+            sx={{
               cursor: 'pointer',
-              bgcolor: 'primary.main' // Use a background color if the image fails to load
+              height: 40,
+              width: 40
             }}
           >
             {userInitials}

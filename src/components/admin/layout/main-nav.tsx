@@ -71,12 +71,12 @@ export function MainNav(): React.JSX.Element {
             <Box ref={userPopover.anchorRef}>
               <Avatar
                 onClick={userPopover.handleOpen}
-                src="/assets/avatar.png"
-                sx={{ 
-                  cursor: 'pointer', 
-                  height: 40, 
-                  width: 40,
-                  bgcolor: 'primary.main' // Use a background color if the image fails to load
+                ref={userPopover.anchorRef}
+                src="/assets/profile.jpeg"
+                sx={{
+                  cursor: 'pointer',
+                  height: 40,
+                  width: 40
                 }}
               >
                 {userInitials}
