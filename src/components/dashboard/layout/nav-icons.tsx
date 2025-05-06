@@ -11,6 +11,7 @@ import { XSquare } from '@phosphor-icons/react/dist/ssr/XSquare';
 import { ShoppingBag as ShoppingBagIcon } from '@phosphor-icons/react/dist/ssr/ShoppingBag';
 import { Bank as BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
 import { CreditCard as CreditCardIcon } from '@phosphor-icons/react/dist/ssr/CreditCard';
+import { Storefront as StorefrontIcon } from '@phosphor-icons/react/dist/ssr/Storefront';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -25,4 +26,5 @@ export const navIcons = {
   'shopping-bag': ShoppingBagIcon,
   bank: BankIcon,
   'credit-card': CreditCardIcon,
+  'storefront': StorefrontIcon,
 } as Record<string, Icon>;

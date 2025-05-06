@@ -19,8 +19,10 @@ import Stack from '@mui/material/Stack';
 import Pagination from '@mui/material/Pagination';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { paths } from '@/paths';
 import ExpenseEditModal from '@/components/admin/expenses/ExpenseEditModal';
+import { ExpenseCategory } from '@/services/api/financials';
 
 export default function ExpensesPage(): React.JSX.Element {
   const [selectedExpenses, setSelectedExpenses] = React.useState<number[]>([]);
@@ -41,6 +43,14 @@ export default function ExpensesPage(): React.JSX.Element {
 
   // Calculate total amount
   const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+  // Add mock categories
+  const categories = [
+    { id: '1', company: 'company1', name: 'Travel', description: 'Travel expenses', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '2', company: 'company1', name: 'Utilities', description: 'Utility bills', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '3', company: 'company1', name: 'Office Supplies', description: 'Office supplies and equipment', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '4', company: 'company1', name: 'Marketing', description: 'Marketing and advertising', created_at: '2023-01-01', updated_at: '2023-01-01' },
+  ];
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -294,7 +304,7 @@ export default function ExpensesPage(): React.JSX.Element {
           onClose={() => setIsExpenseModalOpen(false)}
           onSave={handleSaveExpense}
           expense={currentExpense}
-          isNew={!currentExpense.id}
+          categories={categories}
         />
       )}
     </Box>

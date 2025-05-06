@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -22,6 +22,7 @@ import Stack from '@mui/material/Stack';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import { SquaresFour as SquaresIcon } from '@phosphor-icons/react/dist/ssr/SquaresFour';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
@@ -30,44 +31,78 @@ import { Export as ExportIcon } from '@phosphor-icons/react/dist/ssr/Export';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { paths } from '@/paths';
+import { Product, ProductCategory, ProductCreateData, inventoryApi } from '@/services/api/inventory';
+import { useSnackbar } from 'notistack';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import ProductEditModal from '@/components/admin/product-manager/ProductEditModal';
+import { useCurrentUser } from '@/hooks/use-auth';
+import { companiesApi } from '@/services/api/companies';
 
 export default function ProductsPage(): React.JSX.Element {
-  const [selectedProducts, setSelectedProducts] = React.useState<number[]>([]);
-  const [searchTerm, setSearchTerm] = React.useState<string>('');
-  const [categoryFilter, setCategoryFilter] = React.useState<string>('');
-  const [stockFilter, setStockFilter] = React.useState<string>('');
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState<Partial<ProductCreateData> & { id?: string }>({
+    name: '',
+    description: '',
+    image: '',
+    product_category_id: '',
+    product_unit_id: '',
+    purchase_price: '',
+    sale_price: '',
+    color_id: '',
+    collection_id: '',
+  });
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [productUnits, setProductUnits] = useState<any[]>([]);
+  const { userInfo } = useCurrentUser();
+  const { enqueueSnackbar } = useSnackbar();
   
-  // Sample data - replace with actual data fetching
-  const products = [
-    { id: 1, name: 'Product 1', category: 'Electronics', brand: 'Brand A', price: 299.99, stock: 25 },
-    { id: 2, name: 'Product 2', category: 'Clothing', brand: 'Brand B', price: 59.99, stock: 42 },
-    { id: 3, name: 'Product 3', category: 'Home & Garden', brand: 'Brand C', price: 129.99, stock: 18 },
-    { id: 4, name: 'Product 4', category: 'Electronics', brand: 'Brand A', price: 499.99, stock: 10 },
-    { id: 5, name: 'Product 5', category: 'Clothing', brand: 'Brand D', price: 79.99, stock: 30 },
-    { id: 6, name: 'Product 6', category: 'Furniture', brand: 'Brand E', price: 899.99, stock: 5 },
-    { id: 7, name: 'Product 7', category: 'Electronics', brand: 'Brand F', price: 149.99, stock: 0 },
-    { id: 8, name: 'Product 8', category: 'Beauty', brand: 'Brand G', price: 29.99, stock: 75 },
-    { id: 9, name: 'Product 9', category: 'Clothing', brand: 'Brand B', price: 49.99, stock: 20 },
-    { id: 10, name: 'Product 10', category: 'Home & Garden', brand: 'Brand C', price: 89.99, stock: 15 },
-  ];
+  // Fetch products and categories
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [productsData, categoriesData, companiesData, unitsData] = await Promise.all([
+        inventoryApi.getProducts(),
+        inventoryApi.getProductCategories(),
+        companiesApi.getCompanies(),
+        inventoryApi.getProductUnits()
+      ]);
+      setProducts(productsData);
+      setCategories(categoriesData);
+      setCompanies(companiesData);
+      setProductUnits(unitsData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      enqueueSnackbar('Failed to load products', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enqueueSnackbar]);
 
-  // Get unique categories for filtering
-  const categories = Array.from(new Set(products.map(product => product.category)));
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Filter products based on search term and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = 
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.brand.toLowerCase().includes(searchTerm.toLowerCase());
+      product.description.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = !categoryFilter || product.category === categoryFilter;
+    const matchesCategory = !categoryFilter || product.product_category.id === categoryFilter;
     
-    const matchesStock = !stockFilter || 
-      (stockFilter === 'in-stock' && product.stock > 0) ||
-      (stockFilter === 'out-of-stock' && product.stock === 0) ||
-      (stockFilter === 'low-stock' && product.stock > 0 && product.stock <= 10);
-    
-    return matchesSearch && matchesCategory && matchesStock;
+    return matchesSearch && matchesCategory;
   });
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,7 +113,7 @@ export default function ProductsPage(): React.JSX.Element {
     }
   };
 
-  const handleSelectOne = (id: number) => {
+  const handleSelectOne = (id: string) => {
     if (selectedProducts.includes(id)) {
       setSelectedProducts(selectedProducts.filter(productId => productId !== id));
     } else {
@@ -94,39 +129,131 @@ export default function ProductsPage(): React.JSX.Element {
     setCategoryFilter(event.target.value);
   };
 
-  const handleStockChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setStockFilter(event.target.value);
-  };
-
   const handleResetFilters = () => {
     setSearchTerm('');
     setCategoryFilter('');
-    setStockFilter('');
   };
 
   const handleAddProduct = () => {
-    // In a real application, this would navigate to add product form
-    alert('Navigate to add product form');
+    console.log('handleAddProduct called');
+    console.log('Categories available:', categories);
+    console.log('Companies available:', companies);
+    console.log('Product units available:', productUnits);
+    
+    // Use the first company if userInfo is not available
+    const companyId = userInfo?.company_id || (companies.length > 0 ? companies[0].id : '');
+    
+    if (!companyId) {
+      console.log('No company ID available');
+      enqueueSnackbar('Unable to add product: Company data not available.', { variant: 'error' });
+      return;
+    }
+    
+    // Use the first product unit by default if available
+    const defaultUnitId = productUnits.length > 0 ? productUnits[0].id : '';
+    
+    setCurrentProduct({
+      company_id: companyId,
+      name: '',
+      description: '',
+      image: '',
+      product_category_id: '',
+      product_unit_id: defaultUnitId,
+      purchase_price: '',
+      sale_price: '',
+      color_id: '',
+      collection_id: '',
+    });
+    
+    console.log('currentProduct set with company ID:', companyId);
+    
+    setIsProductModalOpen(true);
   };
 
-  const handleEditProduct = (id: number) => {
-    // In a real application, this would navigate to edit product form
-    alert(`Edit product with ID: ${id}`);
+  const handleEditProduct = (id: string) => {
+    const product = products.find(p => p.id === id);
+    if (product) {
+      setCurrentProduct({
+        id: product.id,
+        company_id: product.company.id,
+        name: product.name,
+        description: product.description,
+        image: product.image,
+        product_category_id: product.product_category.id,
+        product_unit_id: product.product_unit.id,
+        purchase_price: product.purchase_price || '',
+        sale_price: product.sale_price || '',
+        color_id: product.color_id || '',
+        collection_id: product.collection_id || '',
+      });
+      setIsProductModalOpen(true);
+    } else {
+      enqueueSnackbar('Product not found', { variant: 'error' });
+    }
   };
 
-  const handleViewProduct = (id: number) => {
+  const handleSaveProduct = async (productData: ProductCreateData & { id?: string }) => {
+    console.log('handleSaveProduct called with data:', productData);
+    try {
+      if (productData.id) {
+        // Update existing product
+        console.log('Updating product with ID:', productData.id);
+        await inventoryApi.updateProduct(productData.id, productData);
+        enqueueSnackbar('Product updated successfully', { variant: 'success' });
+      } else {
+        // Add new product
+        console.log('Creating new product with data:', productData);
+        await inventoryApi.createProduct(productData);
+        enqueueSnackbar('Product added successfully', { variant: 'success' });
+      }
+      fetchData();
+      setIsProductModalOpen(false);
+    } catch (error: any) {
+      console.error('Error saving product:', error);
+      console.log('Error response:', error.response);
+      if (error.response && error.response.data) {
+        // Display backend validation errors
+        console.log('Backend validation errors:', error.response.data);
+        enqueueSnackbar(JSON.stringify(error.response.data), { variant: 'error' });
+      } else {
+        enqueueSnackbar('Failed to save product', { variant: 'error' });
+      }
+    }
+  };
+
+  const handleViewProduct = (id: string) => {
     // In a real application, this would navigate to product details
-    alert(`View product with ID: ${id}`);
+    enqueueSnackbar(`View product with ID: ${id}`, { variant: 'info' });
   };
 
-  const handleDeleteProduct = (id: number) => {
-    // In a real application, this would call an API to delete the product
-    alert(`Delete product with ID: ${id}`);
+  const openDeleteConfirmation = (id: string) => {
+    setProductToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (productToDelete) {
+      try {
+        await inventoryApi.deleteProduct(productToDelete);
+        enqueueSnackbar('Product deleted successfully', { variant: 'success' });
+        fetchData();
+        setDeleteConfirmOpen(false);
+        setProductToDelete(null);
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        enqueueSnackbar('Failed to delete product', { variant: 'error' });
+      }
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setProductToDelete(null);
   };
 
   const handleExportProducts = () => {
     // In a real application, this would export products to CSV/Excel
-    alert('Export products to CSV/Excel');
+    enqueueSnackbar('Export products to CSV/Excel', { variant: 'info' });
   };
 
   // Generate breadcrumb path links
@@ -135,6 +262,12 @@ export default function ProductsPage(): React.JSX.Element {
     { label: 'Product Manager', url: paths.admin.productManager },
     { label: 'Products', url: paths.admin.products },
   ];
+  
+  // Find category name by ID
+  const getCategoryName = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Unknown Category';
+  };
 
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
@@ -209,25 +342,8 @@ export default function ProductsPage(): React.JSX.Element {
               >
                 <MenuItem value="">All Categories</MenuItem>
                 {categories.map(category => (
-                  <MenuItem key={category} value={category}>{category}</MenuItem>
+                  <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
                 ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="stock-label">Stock Status</InputLabel>
-              <Select
-                labelId="stock-label"
-                id="stock-select"
-                value={stockFilter}
-                label="Stock Status"
-                onChange={handleStockChange as any}
-              >
-                <MenuItem value="">All Stock Status</MenuItem>
-                <MenuItem value="in-stock">In Stock</MenuItem>
-                <MenuItem value="out-of-stock">Out of Stock</MenuItem>
-                <MenuItem value="low-stock">Low Stock (≤ 10)</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -256,142 +372,137 @@ export default function ProductsPage(): React.JSX.Element {
                     onChange={handleSelectAll}
                   />
                 </TableCell>
-                <TableCell>Product Name</TableCell>
+                <TableCell>Image</TableCell>
+                <TableCell>Name</TableCell>
                 <TableCell>Category</TableCell>
-                <TableCell>Brand</TableCell>
-                <TableCell>Price</TableCell>
-                <TableCell>Stock</TableCell>
+                <TableCell>Description</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id} hover>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedProducts.includes(product.id)}
-                      onChange={() => handleSelectOne(product.id)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                      {product.name}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={product.category} 
-                      size="small"
-                      sx={{ 
-                        bgcolor: 'rgba(14, 165, 233, 0.1)',
-                        color: '#0284c7',
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>{product.brand}</TableCell>
-                  <TableCell>${product.price.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={product.stock === 0 ? 'Out of Stock' : `${product.stock} in stock`}
-                      size="small"
-                      sx={{ 
-                        bgcolor: product.stock === 0 
-                          ? 'rgba(239, 68, 68, 0.1)' 
-                          : product.stock <= 10 
-                            ? 'rgba(245, 158, 11, 0.1)' 
-                            : 'rgba(22, 163, 74, 0.1)',
-                        color: product.stock === 0 
-                          ? '#ef4444' 
-                          : product.stock <= 10 
-                            ? '#f59e0b' 
-                            : '#16a34a',
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={1} justifyContent="center">
-                      <IconButton
-                        size="small"
-                        sx={{
-                          bgcolor: '#0ea5e9',
-                          color: 'white',
-                          '&:hover': { bgcolor: '#0284c7' }
-                        }}
-                        onClick={() => handleViewProduct(product.id)}
-                      >
-                        <EyeIcon size={18} />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        sx={{
-                          bgcolor: '#10b981',
-                          color: 'white',
-                          '&:hover': { bgcolor: '#059669' }
-                        }}
-                        onClick={() => handleEditProduct(product.id)}
-                      >
-                        <PencilSimpleIcon size={18} />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        sx={{
-                          bgcolor: '#ef4444',
-                          color: 'white',
-                          '&:hover': { bgcolor: '#dc2626' }
-                        }}
-                        onClick={() => handleDeleteProduct(product.id)}
-                      >
-                        <TrashIcon size={18} />
-                      </IconButton>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredProducts.length === 0 && (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                    <Typography variant="body1" color="text.secondary">
-                      No products found matching your search and filters
-                    </Typography>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                    <CircularProgress size={24} />
+                    <Typography sx={{ ml: 2 }}>Loading products...</Typography>
                   </TableCell>
                 </TableRow>
+              ) : filteredProducts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                    <Typography>No products found</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredProducts.map((product) => {
+                  const isSelected = selectedProducts.includes(product.id);
+                  
+                  return (
+                    <TableRow 
+                      hover 
+                      key={product.id}
+                      selected={isSelected}
+                    >
+                      <TableCell padding="checkbox">
+                        <Checkbox 
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(product.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box
+                          component="img"
+                          src={product.image || '/placeholder-image.jpg'}
+                          alt={product.name}
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 1,
+                            objectFit: 'cover'
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {product.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={getCategoryName(product.product_category.id)}
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#e0f2fe',
+                            color: '#0ea5e9'
+                          }} 
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
+                          {product.description}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewProduct(product.id)}
+                            sx={{ color: 'info.main' }}
+                          >
+                            <EyeIcon size={20} />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditProduct(product.id)}
+                            sx={{ color: 'primary.main' }}
+                          >
+                            <PencilSimpleIcon size={20} />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => openDeleteConfirmation(product.id)}
+                            sx={{ color: 'error.main' }}
+                          >
+                            <TrashIcon size={20} />
+                          </IconButton>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </TableContainer>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
-          <Box>
-            {selectedProducts.length > 0 && (
-              <Typography variant="subtitle2" color="text.secondary">
-                {selectedProducts.length} {selectedProducts.length === 1 ? 'product' : 'products'} selected
-              </Typography>
-            )}
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&lt;</Button>
-              <Button 
-                size="small" 
-                sx={{ 
-                  minWidth: 24, 
-                  height: 24, 
-                  p: 0, 
-                  mx: 0.5, 
-                  border: '1px solid #0ea5e9', 
-                  borderRadius: 1,
-                  color: '#0ea5e9' 
-                }}
-              >
-                1
-              </Button>
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&gt;</Button>
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              10 / page <Box component="span" sx={{ ml: 0.5, cursor: 'pointer' }}>▼</Box>
-            </Typography>
-          </Box>
-        </Box>
       </Card>
+      
+      {/* Product Edit Modal */}
+      <ProductEditModal
+        open={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        onSave={handleSaveProduct}
+        product={currentProduct}
+        categories={categories}
+      />
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleDeleteCancel}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this product? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 } 

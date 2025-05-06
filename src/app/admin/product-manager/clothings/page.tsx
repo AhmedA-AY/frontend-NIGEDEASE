@@ -45,7 +45,7 @@ export default function ClothingsPage(): React.JSX.Element {
   const breadcrumbItems = [
     { label: 'Dashboard', url: paths.admin.dashboard },
     { label: 'Product Manager', url: paths.admin.productManager },
-    { label: 'Clothings', url: paths.admin.clothings },
+    { label: 'Clothings', url: paths.admin.clothing },
   ];
 
   return (

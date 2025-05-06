@@ -15,7 +15,7 @@ import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { paths } from '@/paths';
 import { authClient } from '@/lib/auth/client';
 import { logger } from '@/lib/default-logger';
-import { useUser } from '@/hooks/use-user';
+import { useAuth } from '@/providers/auth-provider';
 
 export interface UserPopoverProps {
   anchorEl: Element | null;
@@ -24,9 +24,25 @@ export interface UserPopoverProps {
 }
 
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
-  const { checkSession } = useUser();
-
+  const { userEmail, userRole, logout } = useAuth();
   const router = useRouter();
+
+  // Generate display name from email if available
+  const displayName = React.useMemo(() => {
+    if (!userEmail) return 'User';
+    
+    // If email contains a name part before @, use it and capitalize first letter
+    const namePart = userEmail.split('@')[0];
+    if (namePart) {
+      // Split by common separators and capitalize each part
+      return namePart
+        .split(/[._-]/)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    }
+    
+    return 'User';
+  }, [userEmail]);
 
   const handleSignOut = React.useCallback(async (): Promise<void> => {
     try {
@@ -37,16 +53,12 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
         return;
       }
 
-      // Refresh the auth state
-      await checkSession?.();
-
-      // UserProvider, for this case, will not refresh the router and we need to do it manually
-      router.refresh();
-      // After refresh, AuthGuard will handle the redirect
+      // Use the logout function from auth context
+      logout();
     } catch (err) {
       logger.error('Sign out error', err);
     }
-  }, [checkSession, router]);
+  }, [logout]);
 
   return (
     <Popover
@@ -57,9 +69,12 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
       slotProps={{ paper: { sx: { width: '240px' } } }}
     >
       <Box sx={{ p: '16px 20px ' }}>
-        <Typography variant="subtitle1">Sofia Rivers</Typography>
+        <Typography variant="subtitle1">{displayName}</Typography>
         <Typography color="text.secondary" variant="body2">
-          sofia.rivers@devias.io
+          {userEmail || 'No email available'}
+        </Typography>
+        <Typography color="text.secondary" variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+          Role: {userRole ? userRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown'}
         </Typography>
       </Box>
       <Divider />

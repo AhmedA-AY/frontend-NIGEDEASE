@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import Alert from '@mui/material/Alert';
 
 import { paths } from '@/paths';
-import { logger } from '@/lib/default-logger';
-import { useUser } from '@/hooks/use-user';
+import { useAuth } from '@/providers/auth-provider';
 
 export interface AuthGuardProps {
   children: React.ReactNode;
@@ -14,41 +13,30 @@ export interface AuthGuardProps {
 
 export function AuthGuard({ children }: AuthGuardProps): React.JSX.Element | null {
   const router = useRouter();
-  const { user, error, isLoading } = useUser();
+  const { isAuthenticated, userRole } = useAuth();
   const [isChecking, setIsChecking] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const checkPermissions = async (): Promise<void> => {
-    if (isLoading) {
-      return;
-    }
-
-    if (error) {
-      setIsChecking(false);
-      return;
-    }
-
-    if (!user) {
-      logger.debug('[AuthGuard]: User is not logged in, redirecting to sign in');
+  const checkPermissions = React.useCallback(() => {
+    if (!isAuthenticated) {
+      console.log('[AuthGuard]: User is not authenticated, redirecting to sign in');
       router.replace(paths.auth.signIn);
       return;
     }
 
     setIsChecking(false);
-  };
+  }, [isAuthenticated, router]);
 
   React.useEffect(() => {
-    checkPermissions().catch(() => {
-      // noop
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Expected
-  }, [user, error, isLoading]);
+    checkPermissions();
+  }, [checkPermissions]);
 
   if (isChecking) {
     return null;
   }
 
   if (error) {
-    return <Alert color="error">{error}</Alert>;
+    return <Alert color="error" severity="error">{error}</Alert>;
   }
 
   return <React.Fragment>{children}</React.Fragment>;

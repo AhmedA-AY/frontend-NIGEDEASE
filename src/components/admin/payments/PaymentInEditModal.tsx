@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -14,89 +14,58 @@ import MenuItem from '@mui/material/MenuItem';
 import Grid from '@mui/material/Grid';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputAdornment from '@mui/material/InputAdornment';
-
-interface PaymentInData {
-  id?: string;
-  date: string;
-  customer: string;
-  invoiceNo: string;
-  amount: number;
-  bank: string;
-  paymentMethod: string;
-  reference?: string;
-  note?: string;
-}
+import CircularProgress from '@mui/material/CircularProgress';
+import { PaymentInCreateData, Receivable, financialsApi } from '@/services/api/financials';
+import { Customer, TransactionPaymentMode, transactionsApi } from '@/services/api/transactions';
 
 interface PaymentInEditModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: PaymentInData) => void;
-  payment?: PaymentInData;
-  isNew?: boolean;
-  customers?: Array<{id: string; name: string}>;
+  onSave: (data: PaymentInCreateData) => void;
+  payment: PaymentInCreateData & { id?: string };
 }
 
 export default function PaymentInEditModal({
   open,
   onClose,
   onSave,
-  payment = {
-    date: new Date().toISOString().split('T')[0],
-    customer: '',
-    invoiceNo: '',
-    amount: 0,
-    bank: '',
-    paymentMethod: '',
-    reference: '',
-    note: ''
-  },
-  isNew = true,
-  customers = []
+  payment
 }: PaymentInEditModalProps): React.JSX.Element {
-  const [formData, setFormData] = React.useState<PaymentInData>({
-    date: new Date().toISOString().split('T')[0],
-    customer: '',
-    invoiceNo: '',
-    amount: 0,
-    bank: '',
-    paymentMethod: '',
-    reference: '',
-    note: ''
-  });
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [formData, setFormData] = useState<PaymentInCreateData & { id?: string }>(payment);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
+  const [receivables, setReceivables] = useState<Receivable[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Mock customers data if not provided
-  const defaultCustomers = [
-    {id: '1', name: 'Example Customer'},
-    {id: '2', name: 'John Doe'},
-    {id: '3', name: 'Jane Smith'},
-    {id: '4', name: 'Acme Corp.'}
-  ];
+  // Currencies
+  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
   
-  const customerList = customers.length ? customers : defaultCustomers;
-  
-  // Payment methods
-  const paymentMethods = [
-    'Cash',
-    'Credit Card',
-    'Debit Card',
-    'Bank Transfer',
-    'Check',
-    'PayPal',
-    'Other'
-  ];
-
-  // Banks
-  const banks = [
-    'Example Bank',
-    'Another Bank',
-    'City Bank',
-    'National Bank',
-    'Other'
-  ];
+  // Fetch customers, payment modes, and receivables
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        const [customersData, paymentModesData, receivablesData] = await Promise.all([
+          transactionsApi.getCustomers(),
+          transactionsApi.getPaymentModes(),
+          financialsApi.getReceivables()
+        ]);
+        setCustomers(customersData);
+        setPaymentModes(paymentModesData);
+        setReceivables(receivablesData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
   
   // Reset form data when modal opens with new payment data
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setFormData(payment);
       setErrors({});
@@ -105,15 +74,7 @@ export default function PaymentInEditModal({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    if (name === 'amount') {
-      setFormData(prev => ({
-        ...prev,
-        amount: parseFloat(value) || 0
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
     
     // Clear error when field is edited
     if (errors[name]) {
@@ -142,28 +103,24 @@ export default function PaymentInEditModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.customer) {
-      newErrors.customer = 'Customer is required';
+    if (!formData.receivable) {
+      newErrors.receivable = 'Receivable is required';
     }
     
-    if (!formData.date) {
-      newErrors.date = 'Date is required';
+    if (!formData.sale) {
+      newErrors.sale = 'Sale ID is required';
     }
     
-    if (!formData.invoiceNo) {
-      newErrors.invoiceNo = 'Invoice number is required';
-    }
-    
-    if (formData.amount <= 0) {
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'Amount must be greater than zero';
     }
     
-    if (!formData.paymentMethod) {
-      newErrors.paymentMethod = 'Payment method is required';
+    if (!formData.payment_mode_id) {
+      newErrors.payment_mode_id = 'Payment method is required';
     }
     
-    if (!formData.bank) {
-      newErrors.bank = 'Bank is required';
+    if (!formData.currency) {
+      newErrors.currency = 'Currency is required';
     }
     
     setErrors(newErrors);
@@ -176,54 +133,53 @@ export default function PaymentInEditModal({
     }
   };
 
+  if (isLoading) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+          <CircularProgress />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{isNew ? 'Add Payment In' : 'Edit Payment In'}</DialogTitle>
+      <DialogTitle>{payment.id ? 'Edit Payment In' : 'Add Payment In'}</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>
-            <TextField
-              name="date"
-              label="Payment Date"
-              type="date"
-              fullWidth
-              value={formData.date}
-              onChange={handleChange}
-              error={!!errors.date}
-              helperText={errors.date}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth error={!!errors.customer}>
-              <InputLabel id="customer-select-label">Customer</InputLabel>
+            <FormControl fullWidth error={!!errors.receivable}>
+              <InputLabel id="receivable-select-label">Receivable</InputLabel>
               <Select
-                labelId="customer-select-label"
-                id="customer"
-                name="customer"
-                value={formData.customer}
-                label="Customer"
+                labelId="receivable-select-label"
+                id="receivable"
+                name="receivable"
+                value={formData.receivable || ''}
+                label="Receivable"
                 onChange={handleSelectChange}
               >
-                {customerList.map(customer => (
-                  <MenuItem key={customer.id} value={customer.id}>{customer.name}</MenuItem>
+                <MenuItem value="">Select a Receivable</MenuItem>
+                {receivables.map(receivable => (
+                  <MenuItem key={receivable.id} value={receivable.id}>
+                    {receivable.sale} - ${parseFloat(receivable.amount).toLocaleString()}
+                  </MenuItem>
                 ))}
               </Select>
-              {errors.customer && <FormHelperText>{errors.customer}</FormHelperText>}
+              {errors.receivable && <FormHelperText>{errors.receivable}</FormHelperText>}
             </FormControl>
           </Grid>
           
           <Grid item xs={12} md={6}>
             <TextField
-              name="invoiceNo"
-              label="Invoice Number"
+              name="sale"
+              label="Sale ID"
               type="text"
               fullWidth
-              value={formData.invoiceNo}
+              value={formData.sale || ''}
               onChange={handleChange}
-              error={!!errors.invoiceNo}
-              helperText={errors.invoiceNo}
+              error={!!errors.sale}
+              helperText={errors.sale}
             />
           </Grid>
           
@@ -244,65 +200,41 @@ export default function PaymentInEditModal({
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth error={!!errors.bank}>
-              <InputLabel id="bank-select-label">Bank</InputLabel>
+            <FormControl fullWidth error={!!errors.currency}>
+              <InputLabel id="currency-select-label">Currency</InputLabel>
               <Select
-                labelId="bank-select-label"
-                id="bank"
-                name="bank"
-                value={formData.bank}
-                label="Bank"
+                labelId="currency-select-label"
+                id="currency"
+                name="currency"
+                value={formData.currency || ''}
+                label="Currency"
                 onChange={handleSelectChange}
               >
-                {banks.map(bank => (
-                  <MenuItem key={bank} value={bank}>{bank}</MenuItem>
+                {currencies.map(currency => (
+                  <MenuItem key={currency} value={currency}>{currency}</MenuItem>
                 ))}
               </Select>
-              {errors.bank && <FormHelperText>{errors.bank}</FormHelperText>}
+              {errors.currency && <FormHelperText>{errors.currency}</FormHelperText>}
             </FormControl>
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth error={!!errors.paymentMethod}>
+            <FormControl fullWidth error={!!errors.payment_mode_id}>
               <InputLabel id="payment-method-select-label">Payment Method</InputLabel>
               <Select
                 labelId="payment-method-select-label"
-                id="paymentMethod"
-                name="paymentMethod"
-                value={formData.paymentMethod}
+                id="payment_mode_id"
+                name="payment_mode_id"
+                value={formData.payment_mode_id || ''}
                 label="Payment Method"
                 onChange={handleSelectChange}
               >
-                {paymentMethods.map(method => (
-                  <MenuItem key={method} value={method}>{method}</MenuItem>
+                {paymentModes.map(mode => (
+                  <MenuItem key={mode.id} value={mode.id}>{mode.name}</MenuItem>
                 ))}
               </Select>
-              {errors.paymentMethod && <FormHelperText>{errors.paymentMethod}</FormHelperText>}
+              {errors.payment_mode_id && <FormHelperText>{errors.payment_mode_id}</FormHelperText>}
             </FormControl>
-          </Grid>
-          
-          <Grid item xs={12}>
-            <TextField
-              name="reference"
-              label="Reference Number (Optional)"
-              type="text"
-              fullWidth
-              value={formData.reference || ''}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <TextField
-              name="note"
-              label="Note (Optional)"
-              type="text"
-              fullWidth
-              multiline
-              rows={3}
-              value={formData.note || ''}
-              onChange={handleChange}
-            />
           </Grid>
         </Grid>
       </DialogContent>
@@ -313,7 +245,7 @@ export default function PaymentInEditModal({
           variant="contained" 
           sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
         >
-          {isNew ? 'Add Payment' : 'Save Changes'}
+          {payment.id ? 'Save Changes' : 'Add Payment'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,459 +1,412 @@
 'use client';
 
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import Grid from '@mui/material/Grid';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import IconButton from '@mui/material/IconButton';
-import Chip from '@mui/material/Chip';
-import Avatar from '@mui/material/Avatar';
-import Pagination from '@mui/material/Pagination';
-import { ChartLineUp as ChartLineUpIcon } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
-import { ShoppingBag as ShoppingBagIcon } from '@phosphor-icons/react/dist/ssr/ShoppingBag';
-import { Tag as TagIcon } from '@phosphor-icons/react/dist/ssr/Tag';
-import { Bank as BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
-import { ArrowRight as ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import React from 'react';
+import { Box, Card, Container, Grid, Stack, Typography, Button, FormControlLabel, Switch } from '@mui/material';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import { ApexOptions } from 'apexcharts';
 
-export default function AdminDashboard(): React.JSX.Element {
-  // Mock state for date range selection
-  const [dateRange, setDateRange] = React.useState({
-    startDate: '',
-    endDate: '',
+import DynamicApexChart from '@/components/dynamic-apex-chart';
+import { DashboardFilters, dashboardApi, TopSellingProduct, RecentSale, StockAlert, TopCustomer } from '@/services/api/dashboard';
+import { TopSellingProducts } from '@/components/dashboard/overview/top-selling-products';
+import { RecentSales } from '@/components/dashboard/overview/recent-sales';
+import { StockAlerts } from '@/components/dashboard/overview/stock-alerts';
+import { TopCustomers } from '@/components/dashboard/overview/top-customers';
+
+export default function AdminDashboardPage() {
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [useMockData, setUseMockData] = React.useState(true);
+  const [stats, setStats] = React.useState({
+    totalSales: 0,
+    totalExpenses: 0,
+    paymentSent: 0,
+    paymentReceived: 0,
+    topSellingProducts: [] as TopSellingProduct[],
+    recentSales: [] as RecentSale[],
+    stockAlerts: [] as StockAlert[],
+    topCustomers: [] as TopCustomer[],
   });
+  const [salesStats, setSalesStats] = React.useState({
+    dailySales: [] as any[],
+    monthlySales: [] as any[],
+  });
+  const [selectedPeriod, setSelectedPeriod] = React.useState<DashboardFilters['period']>('month');
 
-  // Mock data for summary cards
-  const summaryData = {
-    totalSales: 33531.90,
-    totalExpenses: 98.00,
-    paymentSent: 14937.00,
-    paymentReceived: 16428.44,
+  const fetchDashboardData = React.useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log('Fetching dashboard data with period:', selectedPeriod);
+      
+      if (useMockData) {
+        console.log('Using mock data (toggle enabled)');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        setStats({
+          totalSales: 10250.75,
+          totalExpenses: 3450.25,
+          paymentSent: 2760.20,
+          paymentReceived: 8950.50,
+          topSellingProducts: [
+            { id: '1', name: 'Acer Aspire Desktop', quantity: 78, amount: 54670, percentage: 35 },
+            { id: '2', name: 'Dell Gaming Monitor', quantity: 45, amount: 32990, percentage: 25 },
+            { id: '3', name: 'Sony Bravia Google TV', quantity: 36, amount: 25560, percentage: 20 },
+            { id: '4', name: 'ZINUS Metal Box Spring Mattress', quantity: 32, amount: 12800, percentage: 12 },
+            { id: '5', name: 'ASUS Eye Care Display Monitor', quantity: 23, amount: 9890, percentage: 8 },
+          ],
+          recentSales: [
+            { id: 'SALE-65', date: '19-04-2025', customer: { id: '1', name: 'Maverick Runte' }, status: 'Confirmed', amount: 1671.00, paid: 0.00 },
+            { id: 'SALE-64', date: '29-04-2025', customer: { id: '2', name: 'Charles Rohan' }, status: 'Shipping', amount: 340.90, paid: 0.00 },
+            { id: 'SALE-63', date: '26-04-2025', customer: { id: '3', name: 'Efrain Hermann' }, status: 'Processing', amount: 454.25, paid: 454.25 },
+            { id: 'SALE-62', date: '25-04-2025', customer: { id: '4', name: 'Izaiah Bogisich MD' }, status: 'Shipping', amount: 494.00, paid: 0.00 },
+            { id: 'SALE-61', date: '23-04-2025', customer: { id: '5', name: 'Corbin Hoppe Jr.' }, status: 'Confirmed', amount: 1064.35, paid: 1064.35 },
+          ],
+          stockAlerts: [
+            { id: '1', product: { id: '1', name: 'Furinno Office Computer Desk' }, quantity: 21, alertThreshold: 40 },
+            { id: '2', product: { id: '2', name: 'Infantino Flip Carrier' }, quantity: 38, alertThreshold: 70 },
+            { id: '3', product: { id: '3', name: 'Pampers Pants Girls and Boy' }, quantity: 25, alertThreshold: 25 },
+            { id: '4', product: { id: '4', name: 'Tostitos Rounds Salsa Cups Nacho' }, quantity: 7, alertThreshold: 70 },
+            { id: '5', product: { id: '5', name: "Welch's Fruit Snacks, Mixed Fruit, Gluten Free" }, quantity: 24, alertThreshold: 50 },
+          ],
+          topCustomers: [
+            { id: '1', name: 'Corbin Hoppe Jr.', amount: 7207.35, salesCount: 3 },
+            { id: '2', name: 'Jasper Lueilwitz', amount: 4944.00, salesCount: 1 },
+            { id: '3', name: 'Alexis Collins', amount: 4040.60, salesCount: 1 },
+            { id: '4', name: 'Dr. Sven Stamm Jr.', amount: 3448.00, salesCount: 1 },
+            { id: '5', name: 'Alex Mann Sr.', amount: 3308.96, salesCount: 2 },
+          ],
+        });
+        
+        setSalesStats({
+          dailySales: [
+            { day: 'Mon', sales: 5200, purchases: 3100 },
+            { day: 'Tue', sales: 4800, purchases: 2800 },
+            { day: 'Wed', sales: 6700, purchases: 4100 },
+            { day: 'Thu', sales: 5400, purchases: 3300 },
+            { day: 'Fri', sales: 7900, purchases: 4800 },
+            { day: 'Sat', sales: 8900, purchases: 5400 },
+            { day: 'Sun', sales: 4600, purchases: 2700 },
+          ],
+          monthlySales: [
+            { month: 'Jan', sales: 52000, purchases: 31000 },
+            { month: 'Feb', sales: 48000, purchases: 28000 },
+            { month: 'Mar', sales: 67000, purchases: 41000 },
+            { month: 'Apr', sales: 54000, purchases: 33000 },
+            { month: 'May', sales: 79000, purchases: 48000 },
+            { month: 'Jun', sales: 89000, purchases: 54000 },
+            { month: 'Jul', sales: 46000, purchases: 27000 },
+            { month: 'Aug', sales: 62000, purchases: 38000 },
+            { month: 'Sep', sales: 58000, purchases: 35000 },
+            { month: 'Oct', sales: 71000, purchases: 43000 },
+            { month: 'Nov', sales: 83000, purchases: 50000 },
+            { month: 'Dec', sales: 96000, purchases: 58000 },
+          ],
+        });
+      } else {
+        const [dashboardStats, sales] = await Promise.all([
+          dashboardApi.getDashboardStats({ period: selectedPeriod }),
+          dashboardApi.getSalesStats({ period: selectedPeriod }),
+        ]);
+        
+        console.log('Dashboard data received:', { 
+          totalSales: dashboardStats.totalSales,
+          totalExpenses: dashboardStats.totalExpenses,
+          dailySalesCount: sales.dailySales.length
+        });
+        
+        setStats(dashboardStats);
+        setSalesStats(sales);
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedPeriod, useMockData]);
+
+  React.useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Configure chart options
+  const salesChartOptions: ApexOptions = {
+    chart: {
+      type: 'area',
+      height: 350,
+      toolbar: {
+        show: false,
+      },
+    },
+    dataLabels: {
+      enabled: false,
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 2,
+    },
+    xaxis: {
+      categories: salesStats.dailySales.map((item: any) => item.day),
+    },
+    tooltip: {
+      x: {
+        format: 'dd/MM/yy HH:mm',
+      },
+    },
+    legend: {
+      position: 'top',
+    },
+    colors: ['#4CAF50', '#FF9800'],
   };
 
-  // Mock data for recent sales
-  const recentSales = [
-    { id: 'SALE-65', date: '19-04-2025', customer: 'Maverick Runte', status: 'Confirmed', amount: 1671.00, paid: 0.00 },
-    { id: 'SALE-64', date: '29-04-2025', customer: 'Charles Rohan', status: 'Shipping', amount: 340.90, paid: 0.00 },
-    { id: 'SALE-63', date: '26-04-2025', customer: 'Efrain Hermann', status: 'Processing', amount: 454.25, paid: 454.25 },
-    { id: 'SALE-62', date: '25-04-2025', customer: 'Izaiah Bogisich MD', status: 'Shipping', amount: 494.00, paid: 0.00 },
-    { id: 'SALE-61', date: '23-04-2025', customer: 'Corbin Hoppe Jr.', status: 'Confirmed', amount: 1064.35, paid: 1064.35 },
+  const salesChartSeries = [
+    {
+      name: 'Sales',
+      data: salesStats.dailySales.map((item: any) => item.sales),
+    },
+    {
+      name: 'Purchases',
+      data: salesStats.dailySales.map((item: any) => item.purchases),
+    },
   ];
 
-  // Mock data for stock alerts
-  const stockAlerts = [
-    { product: 'Furinno Office Computer Desk', quantity: 21, alert: 40 },
-    { product: 'Infantino Flip Carrier', quantity: 38, alert: 70 },
-    { product: 'Pampers Pants Girls and Boy', quantity: 25, alert: 25 },
-    { product: 'Tostitos Rounds Salsa Cups Nacho', quantity: 7, alert: 70 },
-    { product: "Welch's Fruit Snacks, Mixed Fruit, Gluten Free", quantity: 24, alert: 50 },
-  ];
+  const handlePeriodChange = (period: DashboardFilters['period']) => {
+    setSelectedPeriod(period);
+  };
 
-  // Mock data for top customers
-  const topCustomers = [
-    { name: 'Corbin Hoppe Jr.', amount: 7207.35, sales: 3 },
-    { name: 'Jasper Lueilwitz', amount: 4944.00, sales: 1 },
-    { name: 'Alexis Collins', amount: 4040.60, sales: 1 },
-    { name: 'Dr. Sven Stamm Jr.', amount: 3448.00, sales: 1 },
-    { name: 'Alex Mann Sr.', amount: 3308.96, sales: 2 },
-  ];
+  const handleRetry = () => {
+    fetchDashboardData();
+  };
+
+  const handleToggleMockData = () => {
+    setUseMockData(!useMockData);
+  };
+
+  if (isLoading) {
+  return (
+      <Container>
+        <Box sx={{ my: 5, textAlign: 'center' }}>
+          <Typography variant="h5">Loading dashboard data...</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Please wait while we fetch the latest statistics...
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Box sx={{ my: 5, textAlign: 'center' }}>
+          <Typography variant="h5" color="error">{error}</Typography>
+          <Button 
+            variant="contained" 
+            sx={{ mt: 2 }}
+            onClick={handleRetry}
+          >
+            Retry
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
-    <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>Dashboard</Typography>
-      
-      {/* Date Filters */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Box sx={{ display: 'flex', border: '1px solid #e0e0e0', borderRadius: 1, overflow: 'hidden' }}>
-          <input 
-            type="text" 
-            placeholder="Start Date"
-            style={{ 
-              border: 'none', 
-              padding: '8px 12px',
-              outline: 'none',
-            }}
-          />
-          <Box sx={{ display: 'flex', alignItems: 'center', px: 1 }}>→</Box>
-          <input 
-            type="text" 
-            placeholder="End Date"
-            style={{ 
-              border: 'none', 
-              padding: '8px 12px',
-              outline: 'none',
-            }}
-          />
-        </Box>
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" size="small">Today</Button>
-          <Button variant="outlined" size="small">Yesterday</Button>
-          <Button variant="outlined" size="small">Last 7 Days</Button>
-          <Button variant="outlined" size="small">This Month</Button>
-          <Button variant="outlined" size="small">This Year</Button>
-        </Stack>
-      </Box>
-
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Box sx={{ 
-                bgcolor: '#4f46e5', 
-                borderRadius: 1,
-                width: 48,
-                height: 48,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white'
-              }}>
-                <ChartLineUpIcon size={24} />
-              </Box>
-              <Box>
-                <Typography variant="h5">${summaryData.totalSales.toFixed(2)}</Typography>
-                <Typography variant="body2" color="text.secondary">Total Sales</Typography>
-              </Box>
-            </Stack>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Box sx={{ 
-                bgcolor: '#4f46e5', 
-                borderRadius: 1,
-                width: 48,
-                height: 48,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white'
-              }}>
-                <ShoppingBagIcon size={24} />
-              </Box>
-              <Box>
-                <Typography variant="h5">${summaryData.totalExpenses.toFixed(2)}</Typography>
-                <Typography variant="body2" color="text.secondary">Total Expenses</Typography>
-              </Box>
-            </Stack>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Box sx={{ 
-                bgcolor: '#4f46e5', 
-                borderRadius: 1,
-                width: 48,
-                height: 48,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white'
-              }}>
-                <TagIcon size={24} />
-              </Box>
-              <Box>
-                <Typography variant="h5">${summaryData.paymentSent.toFixed(2)}</Typography>
-                <Typography variant="body2" color="text.secondary">Payment Sent</Typography>
-              </Box>
-            </Stack>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Box sx={{ 
-                bgcolor: '#4f46e5', 
-                borderRadius: 1,
-                width: 48,
-                height: 48,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white'
-              }}>
-                <BankIcon size={24} />
-              </Box>
-              <Box>
-                <Typography variant="h5">${summaryData.paymentReceived.toFixed(2)}</Typography>
-                <Typography variant="body2" color="text.secondary">Payment Received</Typography>
-              </Box>
-            </Stack>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Charts Section */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 2, height: '100%' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Top Selling Product</Typography>
-            </Box>
-            {/* Placeholder for the pie chart */}
-            <Box sx={{ 
-              height: 300, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              flexDirection: 'column',
-              bgcolor: '#f9fafb',
-              borderRadius: 1,
-              mb: 2
-            }}>
-              <Typography variant="body2" color="text.secondary">Pie chart visualization</Typography>
-            </Box>
-            <Stack spacing={1}>
-              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box sx={{ width: 12, height: 12, bgcolor: '#10b981', borderRadius: '50%', mr: 1 }}></Box>
-                Acer Aspire Desktop
-              </Typography>
-              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box sx={{ width: 12, height: 12, bgcolor: '#6366f1', borderRadius: '50%', mr: 1 }}></Box>
-                Dell Gaming Monitor
-              </Typography>
-              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box sx={{ width: 12, height: 12, bgcolor: '#f97316', borderRadius: '50%', mr: 1 }}></Box>
-                Sony Bravia Google TV
-              </Typography>
-              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box sx={{ width: 12, height: 12, bgcolor: '#facc15', borderRadius: '50%', mr: 1 }}></Box>
-                ZINUS Metal Box Spring Mattress
-              </Typography>
-              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box sx={{ width: 12, height: 12, bgcolor: '#f43f5e', borderRadius: '50%', mr: 1 }}></Box>
-                ASUS Eye Care Display Monitor
-              </Typography>
-            </Stack>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={8}>
-          <Card sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Sales & Purchases</Typography>
-              <Button 
-                endIcon={<ArrowRightIcon />} 
-                sx={{ color: '#4f46e5', textTransform: 'none' }}
-              >
-                View All
-              </Button>
-            </Box>
-            {/* Placeholder for the bar chart */}
-            <Box sx={{ 
-              height: 400, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              bgcolor: '#f9fafb',
-              borderRadius: 1,
-              mb: 1
-            }}>
-              <Typography variant="body2" color="text.secondary">Bar chart visualization for sales and purchases</Typography>
-            </Box>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Recent Stock History */}
-      <Card sx={{ mb: 3 }}>
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Recent Stock History</Typography>
+    <Container maxWidth={false}>
+      <Box sx={{ py: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4">
+            Dashboard
+          </Typography>
           
-          <Box sx={{ display: 'flex', mb: 2, borderBottom: '1px solid #e0e0e0' }}>
-            <Button sx={{ py: 1, borderBottom: '2px solid #4f46e5', borderRadius: 0, color: '#4f46e5' }}>
-              Sales
-            </Button>
-            <Button sx={{ py: 1, borderRadius: 0, color: 'text.secondary' }}>
-              Purchases
-            </Button>
-            <Button sx={{ py: 1, borderRadius: 0, color: 'text.secondary' }}>
-              Purchase Return / Dr. Note
-            </Button>
-            <Button sx={{ py: 1, borderRadius: 0, color: 'text.secondary' }}>
-              Sales Return / Cr. Note
-            </Button>
-          </Box>
-
-          <Box sx={{ display: 'flex', mb: 2 }}>
-            <Box sx={{ width: '25%', p: 2, bgcolor: '#f0fdf4', borderRadius: 1, mr: 2 }}>
-              <Typography variant="body2" color="text.secondary">Total Sales Items</Typography>
-              <Typography variant="h4">293</Typography>
-            </Box>
-            <Box sx={{ width: '25%', p: 2, bgcolor: '#fff1f2', borderRadius: 1, mr: 2 }}>
-              <Typography variant="body2" color="text.secondary">Total Sales Returns Items</Typography>
-              <Typography variant="h4">206</Typography>
-            </Box>
-            <Box sx={{ width: '25%', p: 2, bgcolor: '#eff6ff', borderRadius: 1, mr: 2 }}>
-              <Typography variant="body2" color="text.secondary">Total Purchase Items</Typography>
-              <Typography variant="h4">435</Typography>
-            </Box>
-            <Box sx={{ width: '25%', p: 2, bgcolor: '#fffbeb', borderRadius: 1 }}>
-              <Typography variant="body2" color="text.secondary">Total Purchase Returns Items</Typography>
-              <Typography variant="h4">82</Typography>
-            </Box>
-          </Box>
-
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox"></TableCell>
-                <TableCell>Invoice Number</TableCell>
-                <TableCell>Sales Date</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Sales Status</TableCell>
-                <TableCell>Total Amount</TableCell>
-                <TableCell>Paid Amount</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {recentSales.map((sale) => (
-                <TableRow key={sale.id} hover>
-                  <TableCell padding="checkbox">
-                    <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>+</Button>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="primary">{sale.id}</Typography>
-                  </TableCell>
-                  <TableCell>{sale.date}</TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Avatar sx={{ width: 24, height: 24, bgcolor: '#e0e7ff' }}></Avatar>
-                      <Typography variant="body2" color="primary">{sale.customer}</Typography>
-                    </Stack>
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={sale.status} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: 
-                          sale.status === 'Confirmed' ? '#dcfce7' : 
-                          sale.status === 'Shipping' ? '#f3e8ff' : 
-                          '#ffedd5',
-                        color: 
-                          sale.status === 'Confirmed' ? '#15803d' : 
-                          sale.status === 'Shipping' ? '#7e22ce' : 
-                          '#c2410c',
-                      }} 
-                    />
-                  </TableCell>
-                  <TableCell>${sale.amount.toFixed(2)}</TableCell>
-                  <TableCell>${sale.paid.toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-            <Typography variant="body2">Total: <strong>${recentSales.reduce((sum, sale) => sum + sale.amount, 0).toFixed(2)}</strong></Typography>
-            <Pagination count={5} shape="rounded" />
-          </Box>
+          <FormControlLabel
+            control={
+              <Switch 
+                checked={useMockData}
+                onChange={handleToggleMockData}
+                color="warning"
+              />
+            }
+            label="Use Demo Data"
+          />
         </Box>
-      </Card>
 
-      {/* Stock Alert and Top Customers */}
+        {/* Time period selector */}
+        <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+          <Button 
+            variant={selectedPeriod === 'today' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('today')}
+          >
+            Today
+          </Button>
+          <Button 
+            variant={selectedPeriod === 'week' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('week')}
+          >
+            This Week
+          </Button>
+          <Button 
+            variant={selectedPeriod === 'month' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('month')}
+          >
+            This Month
+          </Button>
+          <Button 
+            variant={selectedPeriod === 'year' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('year')}
+          >
+            This Year
+          </Button>
+        </Stack>
+
+        {/* Statistics summary cards */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+              <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'primary.lighter', 
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
+                  justifyContent: 'center' 
+              }}>
+                  <TrendingUpIcon color="primary" />
+              </Box>
+              <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Total Sales
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.totalSales.toFixed(2)}
+                  </Typography>
+              </Box>
+            </Stack>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+              <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'error.lighter', 
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
+                  justifyContent: 'center' 
+              }}>
+                  <TrendingDownIcon color="error" />
+              </Box>
+              <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Total Expenses
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.totalExpenses.toFixed(2)}
+                  </Typography>
+              </Box>
+            </Stack>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+              <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'success.lighter', 
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
+                  justifyContent: 'center' 
+              }}>
+                  <ReceiptIcon color="success" />
+              </Box>
+              <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Payment Received
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.paymentReceived.toFixed(2)}
+                  </Typography>
+              </Box>
+            </Stack>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+              <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'warning.lighter', 
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
+                  justifyContent: 'center' 
+              }}>
+                  <AccountBalanceIcon color="warning" />
+              </Box>
+              <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Payment Sent
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.paymentSent.toFixed(2)}
+                  </Typography>
+              </Box>
+            </Stack>
+          </Card>
+        </Grid>
+      </Grid>
+
+        {/* Sales Chart */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12}>
+            <Card>
+              <Box sx={{ p: 3, pb: 1 }}>
+                <Typography variant="h6">Sales Overview</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  ({selectedPeriod === 'today' ? 'Today' : 
+                     selectedPeriod === 'week' ? 'This Week' : 
+                     selectedPeriod === 'month' ? 'This Month' : 'This Year'})
+              </Typography>
+            </Box>
+              <Box sx={{ p: 3, pt: 0, height: 400 }}>
+                <DynamicApexChart
+                  type="area"
+                  series={salesChartSeries}
+                  options={salesChartOptions}
+                  height={350}
+                />
+            </Box>
+          </Card>
+        </Grid>
+      </Grid>
+
+        {/* Top selling products & Recent Sales */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={6}>
+            <TopSellingProducts products={stats.topSellingProducts} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <RecentSales sales={stats.recentSales} />
+          </Grid>
+        </Grid>
+        
+        {/* Stock Alerts & Top Customers */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Card>
-            <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="h6">Stock Alert</Typography>
-              <Button 
-                endIcon={<ArrowRightIcon />} 
-                sx={{ color: '#4f46e5', textTransform: 'none' }}
-              >
-                View All
-              </Button>
-            </Box>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Product</TableCell>
-                  <TableCell>Quantity</TableCell>
-                  <TableCell>Quantity Alert</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {stockAlerts.map((item, index) => (
-                  <TableRow key={index} hover>
-                    <TableCell>{item.product}</TableCell>
-                    <TableCell>{item.quantity} pc</TableCell>
-                    <TableCell>{item.alert} pc</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
+            <StockAlerts alerts={stats.stockAlerts} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card>
-            <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="h6">Top Customers</Typography>
-              <Button 
-                endIcon={<ArrowRightIcon />} 
-                sx={{ color: '#4f46e5', textTransform: 'none' }}
-              >
-                View All
-              </Button>
-            </Box>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Customer</TableCell>
-                  <TableCell>Total Amount</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {topCustomers.map((customer, index) => (
-                  <TableRow key={index} hover>
-                    <TableCell>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Avatar sx={{ width: 24, height: 24, bgcolor: '#e0e7ff' }}></Avatar>
-                        <Typography variant="body2" color="primary">{customer.name}</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">${customer.amount.toFixed(2)}</Typography>
-                      <Typography variant="caption" color="text.secondary">Total Sales: {customer.sales}</Typography>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
+            <TopCustomers customers={stats.topCustomers} />
+          </Grid>
         </Grid>
-      </Grid>
-
-      {/* Floating Action Button */}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-        }}
-      >
-        <IconButton
-          sx={{
-            bgcolor: '#4f46e5',
-            color: 'white',
-            width: 56,
-            height: 56,
-            '&:hover': {
-              bgcolor: '#4338ca',
-            },
-          }}
-        >
-          <PlusIcon size={24} />
-        </IconButton>
       </Box>
-    </Box>
+    </Container>
   );
 } 

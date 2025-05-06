@@ -2,25 +2,38 @@
 
 import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
-import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
-import { Bell as BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
 import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
-import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
-import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
 
 import { usePopover } from '@/hooks/use-popover';
+import { useAuth } from '@/providers/auth-provider';
 
 import { MobileNav } from './mobile-nav';
 import { UserPopover } from '@/components/dashboard/layout/user-popover';
 
 export function MainNav(): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
-
+  const { userEmail } = useAuth();
   const userPopover = usePopover<HTMLDivElement>();
+
+  // Generate user initials from email
+  const userInitials = React.useMemo(() => {
+    if (!userEmail) return '';
+    
+    const namePart = userEmail.split('@')[0];
+    if (namePart) {
+      // Get initials from name parts
+      return namePart
+        .split(/[._-]/)
+        .map(part => part.charAt(0).toUpperCase())
+        .slice(0, 2)
+        .join('');
+    }
+    
+    return userEmail.substring(0, 2).toUpperCase();
+  }, [userEmail]);
 
   return (
     <>
@@ -55,29 +68,19 @@ export function MainNav(): React.JSX.Element {
             spacing={2}
             sx={{ alignItems: 'center', flex: '1 1 auto', justifyContent: 'flex-end' }}
           >
-            <Tooltip title="Search">
-              <IconButton>
-                <MagnifyingGlassIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Contacts">
-              <IconButton>
-                <UsersIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Notifications">
-              <IconButton>
-                <Badge color="error" variant="dot">
-                  <BellIcon />
-                </Badge>
-              </IconButton>
-            </Tooltip>
             <Box ref={userPopover.anchorRef}>
               <Avatar
                 onClick={userPopover.handleOpen}
                 src="/assets/avatar.png"
-                sx={{ cursor: 'pointer', height: 40, width: 40 }}
-              />
+                sx={{ 
+                  cursor: 'pointer', 
+                  height: 40, 
+                  width: 40,
+                  bgcolor: 'primary.main' // Use a background color if the image fails to load
+                }}
+              >
+                {userInitials}
+              </Avatar>
             </Box>
           </Stack>
         </Stack>

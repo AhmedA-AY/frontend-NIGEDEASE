@@ -33,6 +33,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
+import { Customer, CustomerCreateData, transactionsApi } from '@/services/api/transactions';
 
 export default function CustomersPage(): React.JSX.Element {
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([]);
@@ -42,24 +43,30 @@ export default function CustomersPage(): React.JSX.Element {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
   const { enqueueSnackbar } = useSnackbar();
+  const [isLoading, setIsLoading] = useState(true);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   
-  // Mock customer data
-  const [customers, setCustomers] = useState([
-    { id: '1', name: 'Walk In Customer', email: 'walkin@email.com', phone: '123-456-7890', createdAt: '30-04-2025 04:56 am', balance: '$0.00', status: 'Enabled' },
-    { id: '2', name: 'Joesph Kulas', email: 'samantha.runolfsdottir@example.com', phone: '234-567-8901', createdAt: '29-04-2025 02:36 pm', balance: '$696,531.00', status: 'Enabled' },
-    { id: '3', name: 'Corbin Hoppe Jr.', email: 'grant.kirlin@example.com', phone: '345-678-9012', createdAt: '29-04-2025 02:36 pm', balance: '$223,229.00', status: 'Enabled' },
-    { id: '4', name: 'Kayli Skiles', email: 'annabell32@example.org', phone: '456-789-0123', createdAt: '29-04-2025 02:36 pm', balance: '$688,035.80', status: 'Enabled' },
-    { id: '5', name: 'Mack O\'Connell MD', email: 'gregoria44@example.org', phone: '567-890-1234', createdAt: '29-04-2025 02:36 pm', balance: '$223,229.00', status: 'Enabled' },
-    { id: '6', name: 'Bettie Barrows', email: 'damore.ressie@example.net', phone: '678-901-2345', createdAt: '29-04-2025 02:36 pm', balance: '$742,003.85', status: 'Enabled' },
-    { id: '7', name: 'Maverick Runte', email: 'kris.cordie@example.org', phone: '789-012-3456', createdAt: '29-04-2025 02:36 pm', balance: '$263,697.00', status: 'Enabled' },
-    { id: '8', name: 'Dr. Durward Shields Jr.', email: 'kelsi.funk@example.org', phone: '890-123-4567', createdAt: '29-04-2025 02:36 pm', balance: '$828,702.25', status: 'Enabled' },
-    { id: '9', name: 'Prof. Luciano Wolff', email: 'darion83@example.net', phone: '901-234-5678', createdAt: '29-04-2025 02:36 pm', balance: '$309,087.00', status: 'Enabled' },
-    { id: '10', name: 'Josianne Wunsch', email: 'nborer@example.com', phone: '012-345-6789', createdAt: '29-04-2025 02:36 pm', balance: '$142,094.00', status: 'Enabled' },
-  ]);
+  // Fetch customers
+  const fetchCustomers = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await transactionsApi.getCustomers();
+      setCustomers(data);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      enqueueSnackbar('Failed to load customers', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enqueueSnackbar]);
+
+  React.useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
 
   // Calculate total balance
   const totalBalance = customers.reduce((sum, customer) => {
-    const amount = parseFloat(customer.balance.replace(/[$,]/g, ''));
+    const amount = parseFloat(customer.credit_limit || '0');
     return sum + amount;
   }, 0);
 
@@ -88,21 +95,16 @@ export default function CustomersPage(): React.JSX.Element {
     setIsEditModalOpen(true);
   };
   
-  const handleOpenEditModal = (customer: any) => {
-    // Convert balance string to number for the form
-    const balanceStr = customer.balance.replace(/[$,]/g, '');
-    const balanceNum = parseFloat(balanceStr);
-    
+  const handleOpenEditModal = (customer: Customer) => {
     setCurrentCustomer({
       id: customer.id,
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
-      status: customer.status as 'Enabled' | 'Disabled',
-      openingBalance: balanceNum,
-      // Other fields can be added as needed
+      status: 'Enabled', // Status is not in Customer model, assuming Enabled by default
+      openingBalance: parseFloat(customer.credit_limit || '0'),
       taxNumber: '',
-      address: '',
+      address: customer.address,
       city: '',
       state: '',
       zipCode: '',
@@ -115,45 +117,32 @@ export default function CustomersPage(): React.JSX.Element {
     setIsEditModalOpen(false);
   };
   
-  const handleSaveCustomer = (customerData: CustomerFormData) => {
-    if (customerData.id) {
-      // Update existing customer
-      setCustomers(prevCustomers => 
-        prevCustomers.map(customer => 
-          customer.id === customerData.id 
-            ? {
-                ...customer,
-                name: customerData.name,
-                email: customerData.email,
-                phone: customerData.phone,
-                status: customerData.status,
-                balance: `$${customerData.openingBalance?.toLocaleString() || '0.00'}`,
-              }
-            : customer
-        )
-      );
-      enqueueSnackbar('Customer updated successfully', { variant: 'success' });
-    } else {
-      // Add new customer
-      const newCustomer = {
-        id: (customers.length + 1).toString(),
+  const handleSaveCustomer = async (customerData: CustomerFormData) => {
+    try {
+      const customerPayload: CustomerCreateData = {
         name: customerData.name,
         email: customerData.email,
         phone: customerData.phone,
-        createdAt: new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }).replace(/\//g, '-'),
-        balance: `$${customerData.openingBalance?.toLocaleString() || '0.00'}`,
-        status: customerData.status
+        address: customerData.address || '',
+        credit_limit: (customerData.openingBalance || 0).toString(),
       };
+
+      if (customerData.id) {
+        // Update existing customer
+        await transactionsApi.updateCustomer(customerData.id, customerPayload);
+        enqueueSnackbar('Customer updated successfully', { variant: 'success' });
+      } else {
+        // Add new customer
+        await transactionsApi.createCustomer(customerPayload);
+        enqueueSnackbar('Customer added successfully', { variant: 'success' });
+      }
       
-      setCustomers(prevCustomers => [...prevCustomers, newCustomer]);
-      enqueueSnackbar('Customer added successfully', { variant: 'success' });
+      // Refresh the customer list
+      fetchCustomers();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving customer:', error);
+      enqueueSnackbar('Failed to save customer', { variant: 'error' });
     }
   };
   
@@ -167,15 +156,21 @@ export default function CustomersPage(): React.JSX.Element {
     setCustomerToDelete(null);
   };
   
-  const handleDeleteCustomer = () => {
+  const handleDeleteCustomer = async () => {
     if (customerToDelete) {
-      setCustomers(prevCustomers => 
-        prevCustomers.filter(customer => customer.id !== customerToDelete)
-      );
-      setSelectedCustomers(prevSelected => 
-        prevSelected.filter(id => id !== customerToDelete)
-      );
-      enqueueSnackbar('Customer deleted successfully', { variant: 'success' });
+      try {
+        await transactionsApi.deleteCustomer(customerToDelete);
+        enqueueSnackbar('Customer deleted successfully', { variant: 'success' });
+        // Refresh the customer list
+        fetchCustomers();
+        // Clear selection if the deleted customer was selected
+        setSelectedCustomers(prevSelected => 
+          prevSelected.filter(id => id !== customerToDelete)
+        );
+      } catch (error) {
+        console.error('Error deleting customer:', error);
+        enqueueSnackbar('Failed to delete customer', { variant: 'error' });
+      }
     }
     handleCloseDeleteDialog();
   };
@@ -315,75 +310,86 @@ export default function CustomersPage(): React.JSX.Element {
             </TableRow>
           </TableHead>
           <TableBody>
-            {customers.map((customer) => (
-              <TableRow key={customer.id} hover>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedCustomers.includes(customer.id)}
-                    onChange={() => handleSelectOne(customer.id)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        bgcolor: '#0ea5e9',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        mr: 1,
-                      }}
-                    >
-                      {customer.name.charAt(0)}
-                    </Box>
-                    {customer.name}
-                  </Box>
-                </TableCell>
-                <TableCell>{customer.email}</TableCell>
-                <TableCell>{customer.createdAt}</TableCell>
-                <TableCell>{customer.balance}</TableCell>
-                <TableCell>
-                  <Box 
-                    sx={{ 
-                      bgcolor: 'rgba(16, 185, 129, 0.1)', 
-                      color: 'rgb(16, 185, 129)', 
-                      py: 0.5, 
-                      px: 1.5, 
-                      borderRadius: 1, 
-                      display: 'inline-block',
-                      fontSize: '0.75rem'
-                    }}
-                  >
-                    {customer.status}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleOpenEditModal(customer)}
-                      sx={{ color: '#0ea5e9' }}
-                    >
-                      <PencilSimpleIcon size={18} />
-                    </IconButton>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleOpenDeleteDialog(customer.id)}
-                      sx={{ color: '#f43f5e' }}
-                    >
-                      <TrashIcon size={18} />
-                    </IconButton>
-                    <IconButton size="small" sx={{ color: '#0f766e' }}>
-                      <EyeIcon size={18} />
-                    </IconButton>
-                  </Stack>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1">Loading customers...</Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : customers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1">No customers found</Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              customers.map((customer) => {
+                const isSelected = selectedCustomers.includes(customer.id);
+                
+                return (
+                  <TableRow 
+                    hover 
+                    key={customer.id}
+                    selected={isSelected}
+                    sx={{ 
+                      '&:last-child td, &:last-child th': { border: 0 },
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox 
+                        checked={isSelected}
+                        onChange={() => handleSelectOne(customer.id)}
+                        inputProps={{ 'aria-labelledby': `customer-${customer.id}` }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box 
+                        onClick={() => handleOpenEditModal(customer)}
+                        sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          color: 'primary.main',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {customer.name}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{customer.email}</TableCell>
+                    <TableCell>{customer.phone}</TableCell>
+                    <TableCell>{new Date(customer.created_at).toLocaleDateString('en-US', { 
+                      day: '2-digit', 
+                      month: '2-digit', 
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    }).replace(/\//g, '-')}</TableCell>
+                    <TableCell align="right">${parseFloat(customer.credit_limit || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell align="right">
+                      <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenEditModal(customer)}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <PencilSimpleIcon size={20} />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenDeleteDialog(customer.id)}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <TrashIcon size={20} />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
             <TableRow>
               <TableCell colSpan={4} sx={{ fontWeight: 'bold' }}>
                 Total

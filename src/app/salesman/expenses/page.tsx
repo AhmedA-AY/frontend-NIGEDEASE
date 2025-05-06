@@ -22,11 +22,24 @@ import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { paths } from '@/paths';
 import ExpenseEditModal from '@/components/admin/expenses/ExpenseEditModal';
+import { ExpenseCategory } from '@/services/api/financials';
 
 export default function ExpensesPage(): React.JSX.Element {
   const [selectedExpenses, setSelectedExpenses] = React.useState<number[]>([]);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = React.useState(false);
   const [currentExpense, setCurrentExpense] = React.useState<any>(null);
+  
+  // Mock categories data
+  const categories = [
+    { id: '1', company: 'company1', name: 'Travel', description: 'Travel expenses', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '2', company: 'company1', name: 'Utilities', description: 'Utility bills', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '3', company: 'company1', name: 'Office Supplies', description: 'Office supplies and equipment', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '4', company: 'company1', name: 'Marketing', description: 'Marketing and advertising', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '5', company: 'company1', name: 'Rent', description: 'Rent and lease payments', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '6', company: 'company1', name: 'Insurance', description: 'Insurance payments', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '7', company: 'company1', name: 'Salaries', description: 'Employee salaries', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '8', company: 'company1', name: 'Repairs', description: 'Repair and maintenance', created_at: '2023-01-01', updated_at: '2023-01-01' },
+  ];
   
   // Mock expenses data
   const expenses = [
@@ -295,7 +308,7 @@ export default function ExpensesPage(): React.JSX.Element {
           onClose={() => setIsExpenseModalOpen(false)}
           onSave={handleSaveExpense}
           expense={currentExpense}
-          isNew={!currentExpense.id}
+          categories={categories}
         />
       )}
     </Box>

@@ -33,6 +33,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
+import { Supplier, SupplierCreateData, transactionsApi } from '@/services/api/transactions';
 
 export default function SuppliersPage(): React.JSX.Element {
   const [selectedSuppliers, setSelectedSuppliers] = React.useState<string[]>([]);
@@ -42,24 +43,30 @@ export default function SuppliersPage(): React.JSX.Element {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState<string | null>(null);
   const { enqueueSnackbar } = useSnackbar();
+  const [isLoading, setIsLoading] = useState(true);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   
-  // Mock supplier data
-  const [suppliers, setSuppliers] = useState([
-    { id: '1', name: 'Aggie Suppliers Inc', email: 'info@aggiesuppliers.com', phone: '123-456-7890', createdAt: '30-04-2025 04:56 am', balance: '$0.00', status: 'Enabled' },
-    { id: '2', name: 'Osborne Logistics', email: 'contact@osbornelogistics.net', phone: '234-567-8901', createdAt: '29-04-2025 02:36 pm', balance: '$473,918.00', status: 'Enabled' },
-    { id: '3', name: 'Morgan Tech Solutions', email: 'support@morgantech.com', phone: '345-678-9012', createdAt: '29-04-2025 02:36 pm', balance: '$182,556.00', status: 'Enabled' },
-    { id: '4', name: 'Hamilton Distributors', email: 'sales@hamiltondist.org', phone: '456-789-0123', createdAt: '29-04-2025 02:36 pm', balance: '$382,471.75', status: 'Enabled' },
-    { id: '5', name: 'Patel Manufacturing', email: 'orders@patelmfg.com', phone: '567-890-1234', createdAt: '29-04-2025 02:36 pm', balance: '$107,382.00', status: 'Enabled' },
-    { id: '6', name: 'Silva Industrial', email: 'info@silvaindustrial.net', phone: '678-901-2345', createdAt: '29-04-2025 02:36 pm', balance: '$538,921.50', status: 'Enabled' },
-    { id: '7', name: 'Lee Electronics', email: 'sales@leeelectronics.org', phone: '789-012-3456', createdAt: '29-04-2025 02:36 pm', balance: '$219,546.00', status: 'Enabled' },
-    { id: '8', name: 'Torres Raw Materials', email: 'supply@torresraw.com', phone: '890-123-4567', createdAt: '29-04-2025 02:36 pm', balance: '$693,275.25', status: 'Enabled' },
-    { id: '9', name: 'Mendoza Equipment', email: 'info@mendozaequip.net', phone: '901-234-5678', createdAt: '29-04-2025 02:36 pm', balance: '$285,932.00', status: 'Enabled' },
-    { id: '10', name: 'Nguyen Exports', email: 'export@nguyen.com', phone: '012-345-6789', createdAt: '29-04-2025 02:36 pm', balance: '$127,853.00', status: 'Enabled' },
-  ]);
+  // Fetch suppliers
+  const fetchSuppliers = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await transactionsApi.getSuppliers();
+      setSuppliers(data);
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+      enqueueSnackbar('Failed to load suppliers', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enqueueSnackbar]);
+
+  React.useEffect(() => {
+    fetchSuppliers();
+  }, [fetchSuppliers]);
 
   // Calculate total balance
   const totalBalance = suppliers.reduce((sum, supplier) => {
-    const amount = parseFloat(supplier.balance.replace(/[$,]/g, ''));
+    const amount = parseFloat(supplier.credit_limit || '0');
     return sum + amount;
   }, 0);
 
@@ -88,21 +95,16 @@ export default function SuppliersPage(): React.JSX.Element {
     setIsEditModalOpen(true);
   };
   
-  const handleOpenEditModal = (supplier: any) => {
-    // Convert balance string to number for the form
-    const balanceStr = supplier.balance.replace(/[$,]/g, '');
-    const balanceNum = parseFloat(balanceStr);
-    
+  const handleOpenEditModal = (supplier: Supplier) => {
     setCurrentSupplier({
       id: supplier.id,
       name: supplier.name,
       email: supplier.email,
       phone: supplier.phone,
-      status: supplier.status as 'Enabled' | 'Disabled',
-      openingBalance: balanceNum,
-      // Other fields can be added as needed
+      status: supplier.is_active ? 'Enabled' : 'Disabled',
+      openingBalance: parseFloat(supplier.credit_limit || '0'),
       taxNumber: '',
-      address: '',
+      address: supplier.address,
       city: '',
       state: '',
       zipCode: '',
@@ -115,45 +117,33 @@ export default function SuppliersPage(): React.JSX.Element {
     setIsEditModalOpen(false);
   };
   
-  const handleSaveSupplier = (supplierData: SupplierFormData) => {
-    if (supplierData.id) {
-      // Update existing supplier
-      setSuppliers(prevSuppliers => 
-        prevSuppliers.map(supplier => 
-          supplier.id === supplierData.id 
-            ? {
-                ...supplier,
-                name: supplierData.name,
-                email: supplierData.email,
-                phone: supplierData.phone,
-                status: supplierData.status,
-                balance: `$${supplierData.openingBalance?.toLocaleString() || '0.00'}`,
-              }
-            : supplier
-        )
-      );
-      enqueueSnackbar('Supplier updated successfully', { variant: 'success' });
-    } else {
-      // Add new supplier
-      const newSupplier = {
-        id: (suppliers.length + 1).toString(),
+  const handleSaveSupplier = async (supplierData: SupplierFormData) => {
+    try {
+      const supplierPayload: SupplierCreateData = {
         name: supplierData.name,
         email: supplierData.email,
         phone: supplierData.phone,
-        createdAt: new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }).replace(/\//g, '-'),
-        balance: `$${supplierData.openingBalance?.toLocaleString() || '0.00'}`,
-        status: supplierData.status
+        address: supplierData.address || '',
+        credit_limit: (supplierData.openingBalance || 0).toString(),
+        is_active: supplierData.status === 'Enabled'
       };
+
+      if (supplierData.id) {
+        // Update existing supplier
+        await transactionsApi.updateSupplier(supplierData.id, supplierPayload);
+        enqueueSnackbar('Supplier updated successfully', { variant: 'success' });
+      } else {
+        // Add new supplier
+        await transactionsApi.createSupplier(supplierPayload);
+        enqueueSnackbar('Supplier added successfully', { variant: 'success' });
+      }
       
-      setSuppliers(prevSuppliers => [...prevSuppliers, newSupplier]);
-      enqueueSnackbar('Supplier added successfully', { variant: 'success' });
+      // Refresh the supplier list
+      fetchSuppliers();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving supplier:', error);
+      enqueueSnackbar('Failed to save supplier', { variant: 'error' });
     }
   };
   
@@ -167,15 +157,21 @@ export default function SuppliersPage(): React.JSX.Element {
     setSupplierToDelete(null);
   };
   
-  const handleDeleteSupplier = () => {
+  const handleDeleteSupplier = async () => {
     if (supplierToDelete) {
-      setSuppliers(prevSuppliers => 
-        prevSuppliers.filter(supplier => supplier.id !== supplierToDelete)
-      );
-      setSelectedSuppliers(prevSelected => 
-        prevSelected.filter(id => id !== supplierToDelete)
-      );
-      enqueueSnackbar('Supplier deleted successfully', { variant: 'success' });
+      try {
+        await transactionsApi.deleteSupplier(supplierToDelete);
+        enqueueSnackbar('Supplier deleted successfully', { variant: 'success' });
+        // Refresh the supplier list
+        fetchSuppliers();
+        // Clear selection if the deleted supplier was selected
+        setSelectedSuppliers(prevSelected => 
+          prevSelected.filter(id => id !== supplierToDelete)
+        );
+      } catch (error) {
+        console.error('Error deleting supplier:', error);
+        enqueueSnackbar('Failed to delete supplier', { variant: 'error' });
+      }
     }
     handleCloseDeleteDialog();
   };
@@ -315,75 +311,101 @@ export default function SuppliersPage(): React.JSX.Element {
             </TableRow>
           </TableHead>
           <TableBody>
-            {suppliers.map((supplier) => (
-              <TableRow key={supplier.id} hover>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedSuppliers.includes(supplier.id)}
-                    onChange={() => handleSelectOne(supplier.id)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        bgcolor: '#0ea5e9',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        mr: 1,
-                      }}
-                    >
-                      {supplier.name.charAt(0)}
-                    </Box>
-                    {supplier.name}
-                  </Box>
-                </TableCell>
-                <TableCell>{supplier.email}</TableCell>
-                <TableCell>{supplier.createdAt}</TableCell>
-                <TableCell>{supplier.balance}</TableCell>
-                <TableCell>
-                  <Box 
-                    sx={{ 
-                      bgcolor: 'rgba(16, 185, 129, 0.1)', 
-                      color: 'rgb(16, 185, 129)', 
-                      py: 0.5, 
-                      px: 1.5, 
-                      borderRadius: 1, 
-                      display: 'inline-block',
-                      fontSize: '0.75rem'
-                    }}
-                  >
-                    {supplier.status}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleOpenEditModal(supplier)}
-                      sx={{ color: '#0ea5e9' }}
-                    >
-                      <PencilSimpleIcon size={18} />
-                    </IconButton>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleOpenDeleteDialog(supplier.id)}
-                      sx={{ color: '#f43f5e' }}
-                    >
-                      <TrashIcon size={18} />
-                    </IconButton>
-                    <IconButton size="small" sx={{ color: '#0f766e' }}>
-                      <EyeIcon size={18} />
-                    </IconButton>
-                  </Stack>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1">Loading suppliers...</Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : suppliers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1">No suppliers found</Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              suppliers.map((supplier) => {
+                const isSelected = selectedSuppliers.includes(supplier.id);
+                
+                return (
+                  <TableRow 
+                    hover 
+                    key={supplier.id}
+                    selected={isSelected}
+                    sx={{ 
+                      '&:last-child td, &:last-child th': { border: 0 },
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox 
+                        checked={isSelected}
+                        onChange={() => handleSelectOne(supplier.id)}
+                        inputProps={{ 'aria-labelledby': `supplier-${supplier.id}` }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box 
+                        onClick={() => handleOpenEditModal(supplier)}
+                        sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          color: 'primary.main',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {supplier.name}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{supplier.email}</TableCell>
+                    <TableCell>{supplier.phone}</TableCell>
+                    <TableCell>{new Date(supplier.created_at).toLocaleDateString('en-US', { 
+                      day: '2-digit', 
+                      month: '2-digit', 
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    }).replace(/\//g, '-')}</TableCell>
+                    <TableCell align="right">${parseFloat(supplier.credit_limit || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>
+                      <Box 
+                        sx={{ 
+                          bgcolor: supplier.is_active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                          color: supplier.is_active ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)', 
+                          py: 0.5, 
+                          px: 1.5, 
+                          borderRadius: 1, 
+                          display: 'inline-block',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        {supplier.is_active ? 'Enabled' : 'Disabled'}
+                      </Box>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenEditModal(supplier)}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <PencilSimpleIcon size={20} />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenDeleteDialog(supplier.id)}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <TrashIcon size={20} />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
             <TableRow>
               <TableCell colSpan={4} sx={{ fontWeight: 'bold' }}>
                 Total

@@ -2,46 +2,63 @@
 
 import * as React from 'react';
 import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import GlobalStyles from '@mui/material/GlobalStyles';
+
 import { AuthGuard } from '@/components/auth/auth-guard';
+import { SalesmanGuard } from '@/components/auth/salesman-guard';
+import { MainNav } from '@/components/salesman/layout/main-nav';
 import { SideNav } from '@/components/salesman/layout/side-nav';
 import { MobileNav } from '@/components/salesman/layout/mobile-nav';
 import { salesmanNavItems } from '@/components/dashboard/layout/config';
 
-export default function Layout({ children }: { children: React.ReactNode }): React.JSX.Element {
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+export default function Layout({ children }: LayoutProps): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
 
   return (
     <AuthGuard>
-      <Box
-        sx={{
-          '--SideNav-width': '280px',
-          '--SideNav-zIndex': 1200,
-          '--TopNav-zIndex': 1100,
-          '--MobileNav-width': '320px',
-          '--MobileNav-zIndex': 1100,
-          display: 'flex',
-          minHeight: '100vh',
-        }}
-      >
-        <SideNav />
-        <MobileNav
-          onClose={() => setOpenNav(false)}
-          open={openNav}
-          items={salesmanNavItems}
+      <SalesmanGuard>
+        <GlobalStyles
+          styles={{
+            body: {
+              '--MainNav-height': '56px',
+              '--MainNav-zIndex': 1000,
+              '--SideNav-width': '280px',
+              '--SideNav-zIndex': 1100,
+              '--MobileNav-width': '320px',
+              '--MobileNav-zIndex': 1100,
+            },
+          }}
         />
         <Box
-          component="main"
           sx={{
-            flexGrow: 1,
-            ml: { lg: '280px' },
+            bgcolor: 'var(--mui-palette-background-default)',
+            display: 'flex',
+            flexDirection: 'column',
             position: 'relative',
-            pt: { xs: 'calc(64px + 24px)', lg: '24px' },
-            px: { xs: 2, lg: 3 },
+            minHeight: '100%',
           }}
         >
-          {children}
+          <SideNav />
+          <Box sx={{ display: 'flex', flex: '1 1 auto', flexDirection: 'column', pl: { lg: 'var(--SideNav-width)' } }}>
+            <MainNav onMobileNavOpen={() => setOpenNav(true)} />
+            <main>
+              <Container maxWidth="xl" sx={{ py: '64px' }}>
+                {children}
+              </Container>
+            </main>
+          </Box>
+          <MobileNav
+            onClose={() => setOpenNav(false)}
+            open={openNav}
+            items={salesmanNavItems}
+          />
         </Box>
-      </Box>
+      </SalesmanGuard>
     </AuthGuard>
   );
 } 

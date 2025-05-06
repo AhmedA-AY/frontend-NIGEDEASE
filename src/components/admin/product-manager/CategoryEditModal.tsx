@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -8,22 +8,16 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
+import CircularProgress from '@mui/material/CircularProgress';
+import { useSnackbar } from 'notistack';
+import { useCurrentUser } from '@/hooks/use-auth';
+import { companiesApi } from '@/services/api/companies';
 
 interface CategoryData {
   id?: string;
   name: string;
   description?: string;
-  logoUrl?: string;
-  parentCategory?: string;
-  hasExpand?: boolean;
+  company_id?: string;
 }
 
 interface CategoryEditModalProps {
@@ -32,29 +26,60 @@ interface CategoryEditModalProps {
   onSave: (data: CategoryData) => void;
   category?: CategoryData;
   isNew?: boolean;
-  parentCategories?: Array<{id: string; name: string}>;
 }
 
 export default function CategoryEditModal({
   open,
   onClose,
   onSave,
-  category = { name: '', description: '', logoUrl: '' },
-  isNew = true,
-  parentCategories = []
+  category = { name: '', description: '' },
+  isNew = true
 }: CategoryEditModalProps): React.JSX.Element {
-  const [formData, setFormData] = React.useState<CategoryData>({ name: '', description: '', logoUrl: '' });
+  const [formData, setFormData] = React.useState<CategoryData>({ name: '', description: '' });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const [logoPreview, setLogoPreview] = React.useState<string>('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { userInfo } = useCurrentUser();
+  const { enqueueSnackbar } = useSnackbar();
+  const [companies, setCompanies] = React.useState<any[]>([]);
+  
+  // Fetch companies if needed
+  useEffect(() => {
+    if (open && !category.company_id) {
+      const fetchCompanies = async () => {
+        try {
+          const companiesData = await companiesApi.getCompanies();
+          setCompanies(companiesData);
+        } catch (error) {
+          console.error('Error fetching companies:', error);
+        }
+      };
+      
+      fetchCompanies();
+    }
+  }, [open, category.company_id]);
   
   // Reset form data when modal opens with new category data
   React.useEffect(() => {
     if (open) {
-      setFormData(category);
-      setLogoPreview(category.logoUrl || '');
+      // If company_id isn't provided, try to get it from userInfo or fetch it
+      let companyId = category.company_id;
+      
+      if (!companyId) {
+        if (userInfo?.company_id) {
+          companyId = userInfo.company_id;
+        } else if (companies.length > 0) {
+          companyId = companies[0].id;
+        }
+      }
+      
+      setFormData({
+        ...category,
+        company_id: companyId
+      });
       setErrors({});
+      setIsSubmitting(false);
     }
-  }, [category, open]);
+  }, [category, open, userInfo, companies]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -70,34 +95,6 @@ export default function CategoryEditModal({
     }
   };
 
-  const handleSelectChange = (e: any) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      const reader = new FileReader();
-      
-      reader.onload = (event) => {
-        if (event.target) {
-          const logoUrl = event.target.result as string;
-          setLogoPreview(logoUrl);
-          setFormData(prev => ({ ...prev, logoUrl }));
-        }
-      };
-      
-      reader.readAsDataURL(file);
-    }
-  };
-
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
@@ -105,13 +102,53 @@ export default function CategoryEditModal({
       newErrors.name = 'Category name is required';
     }
     
+    if (!formData.company_id) {
+      newErrors.company_id = 'Company ID is required';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    console.log('Submitting category with data:', formData);
+    
     if (validateForm()) {
-      onSave(formData);
+      setIsSubmitting(true);
+      try {
+        // Make sure we have a company_id
+        if (!formData.company_id) {
+          if (userInfo?.company_id) {
+            formData.company_id = userInfo.company_id;
+          } else if (companies.length > 0) {
+            formData.company_id = companies[0].id;
+          } else {
+            throw new Error('Company ID is required');
+          }
+        }
+        
+        // Ensure we have a description (API requires it)
+        if (!formData.description) {
+          formData.description = '';
+        }
+        
+        await onSave({
+          ...formData,
+          id: formData.id,
+          name: formData.name.trim(),
+          description: formData.description,
+          company_id: formData.company_id
+        });
+        
+        console.log('Category saved successfully');
+      } catch (error) {
+        console.error('Error submitting category:', error);
+        enqueueSnackbar('Failed to save category', { variant: 'error' });
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      console.log('Validation failed with errors:', errors);
     }
   };
 
@@ -131,6 +168,7 @@ export default function CategoryEditModal({
           error={!!errors.name}
           helperText={errors.name}
           sx={{ mb: 2 }}
+          disabled={isSubmitting}
         />
         
         <TextField
@@ -144,110 +182,29 @@ export default function CategoryEditModal({
           value={formData.description || ''}
           onChange={handleChange}
           sx={{ mb: 3 }}
+          disabled={isSubmitting}
         />
         
-        {parentCategories.length > 0 && (
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel id="parent-category-label">Parent Category (Optional)</InputLabel>
-            <Select
-              labelId="parent-category-label"
-              id="parentCategory"
-              name="parentCategory"
-              value={formData.parentCategory || ''}
-              label="Parent Category (Optional)"
-              onChange={handleSelectChange}
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {parentCategories.map(parent => (
-                <MenuItem key={parent.id} value={parent.id}>{parent.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-        
-        <FormControlLabel
-          control={
-            <Switch 
-              checked={!!formData.hasExpand} 
-              onChange={handleSwitchChange}
-              name="hasExpand"
-            />
-          }
-          label="Can have subcategories"
-          sx={{ mb: 3, display: 'block' }}
-        />
-        
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            Category Logo
-          </Typography>
-          
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-            {logoPreview ? (
-              <Box
-                component="img"
-                src={logoPreview}
-                alt="Category Logo Preview"
-                sx={{
-                  width: 100,
-                  height: 100,
-                  objectFit: 'contain',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 1,
-                  p: 1
-                }}
-              />
-            ) : (
-              <Box
-                sx={{
-                  width: 100,
-                  height: 100,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 1,
-                  bgcolor: '#f5f5f5'
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  No logo
-                </Typography>
-              </Box>
-            )}
-            
-            <Box>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<UploadIcon weight="bold" />}
-                sx={{ mb: 1 }}
-              >
-                Upload Logo
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-              </Button>
-              <Typography variant="caption" display="block" color="text.secondary">
-                Recommended size: 200x200px. Max file size: 2MB.
-              </Typography>
-            </Box>
+        {errors.company_id && (
+          <Box sx={{ color: 'error.main', mb: 2, fontSize: '0.75rem' }}>
+            {errors.company_id}
           </Box>
-        </Box>
+        )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} disabled={isSubmitting}>Cancel</Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
-          sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
+          sx={{ 
+            bgcolor: '#0ea5e9', 
+            '&:hover': { bgcolor: '#0284c7' },
+            minWidth: 100 
+          }}
+          disabled={isSubmitting}
+          startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
         >
-          {isNew ? 'Add Category' : 'Save Changes'}
+          {isSubmitting ? 'Saving...' : isNew ? 'Add Category' : 'Save Changes'}
         </Button>
       </DialogActions>
     </Dialog>

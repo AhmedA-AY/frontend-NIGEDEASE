@@ -29,6 +29,13 @@ import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsT
 import { paths } from '@/paths';
 import PurchaseEditModal from '@/components/admin/purchases/PurchaseEditModal';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
+import { useState, useEffect, useCallback } from 'react';
+import { Purchase, Supplier, PurchaseCreateData, PurchaseUpdateData, transactionsApi, TransactionPaymentMode } from '@/services/api/transactions';
+import { inventoryApi, InventoryStore } from '@/services/api/inventory';
+import { companiesApi, Company, Currency } from '@/services/api/companies';
+import CircularProgress from '@mui/material/CircularProgress';
+import Grid from '@mui/material/Grid';
+import { SelectChangeEvent } from '@mui/material/Select';
 
 export default function PurchasesPage(): React.JSX.Element {
   const [tabValue, setTabValue] = React.useState(0);
@@ -38,33 +45,78 @@ export default function PurchasesPage(): React.JSX.Element {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [currentPurchase, setCurrentPurchase] = React.useState<any>(null);
   const [purchaseToDelete, setPurchaseToDelete] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [stores, setStores] = useState<InventoryStore[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
+  const [selectedSupplier, setSelectedSupplier] = useState<string>('');
+  const [selectedPurchaseDetails, setSelectedPurchaseDetails] = useState<Purchase | null>(null);
   
-  // Mock purchases data
-  const purchases = [
-    { id: 'PUR-32', date: '18-04-2025', supplier: 'Lang, Wolff and Zemlak', status: 'Pending', totalAmount: 433.00, paidAmount: 0.00, dueAmount: 433.00, paymentStatus: 'Unpaid' },
-    { id: 'PUR-31', date: '24-04-2025', supplier: 'Cruickshank-Turcotte', status: 'Received', totalAmount: 336.00, paidAmount: 40.00, dueAmount: 296.00, paymentStatus: 'Partially Paid' },
-    { id: 'PUR-30', date: '24-04-2025', supplier: 'Hahn and Sons', status: 'Pending', totalAmount: 3067.00, paidAmount: 0.00, dueAmount: 3067.00, paymentStatus: 'Unpaid' },
-    { id: 'PUR-29', date: '28-04-2025', supplier: 'Mohr Ltd', status: 'Ordered', totalAmount: 6757.00, paidAmount: 0.00, dueAmount: 6757.00, paymentStatus: 'Unpaid' },
-    { id: 'PUR-28', date: '26-04-2025', supplier: 'Lakin-Beatty', status: 'Pending', totalAmount: 156.00, paidAmount: 146.00, dueAmount: 10.00, paymentStatus: 'Partially Paid' },
-    { id: 'PUR-27', date: '17-04-2025', supplier: 'Johnson Ltd', status: 'Pending', totalAmount: 1342.00, paidAmount: 1342.00, dueAmount: 0.00, paymentStatus: 'Paid' },
-    { id: 'PUR-26', date: '23-04-2025', supplier: 'Carroll Inc', status: 'Ordered', totalAmount: 217.00, paidAmount: 217.00, dueAmount: 0.00, paymentStatus: 'Paid' },
-    { id: 'PUR-25', date: '19-04-2025', supplier: 'Mayert-Schmeler', status: 'Ordered', totalAmount: 484.00, paidAmount: 0.00, dueAmount: 484.00, paymentStatus: 'Unpaid' },
-    { id: 'PUR-24', date: '21-04-2025', supplier: 'Miller, Marks and Kub', status: 'Pending', totalAmount: 43.00, paidAmount: 43.00, dueAmount: 0.00, paymentStatus: 'Paid' },
-    { id: 'PUR-23', date: '23-04-2025', supplier: 'Rutherford-Harvey', status: 'Received', totalAmount: 412.00, paidAmount: 0.00, dueAmount: 412.00, paymentStatus: 'Unpaid' },
-  ];
+  // Fetch purchases and suppliers
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [
+        purchasesData, 
+        suppliersData, 
+        companiesData, 
+        storesData, 
+        currenciesData, 
+        paymentModesData
+      ] = await Promise.all([
+        transactionsApi.getPurchases(),
+        transactionsApi.getSuppliers(),
+        companiesApi.getCompanies(),
+        inventoryApi.getStores(),
+        companiesApi.getCurrencies(),
+        transactionsApi.getPaymentModes()
+      ]);
+      
+      setPurchases(purchasesData);
+      setSuppliers(suppliersData);
+      setCompanies(companiesData);
+      setStores(storesData);
+      setCurrencies(currenciesData);
+      setPaymentModes(paymentModesData);
+      
+      console.log('Fetched data:', {
+        companies: companiesData,
+        stores: storesData,
+        currencies: currenciesData,
+        paymentModes: paymentModesData
+      });
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Filter purchases by selected supplier
+  const filteredPurchases = selectedSupplier
+    ? purchases.filter(purchase => purchase.supplier.id === selectedSupplier)
+    : purchases;
 
   // Calculate total amounts
-  const totalAmount = purchases.reduce((sum, purchase) => sum + purchase.totalAmount, 0);
-  const totalPaid = purchases.reduce((sum, purchase) => sum + purchase.paidAmount, 0);
-  const totalDue = purchases.reduce((sum, purchase) => sum + purchase.dueAmount, 0);
+  const totalAmount = filteredPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.total_amount), 0);
+  const totalPaid = 0; // Not available in the API directly
+  const totalDue = totalAmount - totalPaid;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    setSelectedPurchaseDetails(null); // Reset selected purchase details when changing tabs
   };
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      setSelectedPurchases(purchases.map(purchase => purchase.id));
+      setSelectedPurchases(filteredPurchases.map(purchase => purchase.id));
     } else {
       setSelectedPurchases([]);
     }
@@ -78,6 +130,10 @@ export default function PurchasesPage(): React.JSX.Element {
     }
   };
 
+  const handleSupplierChange = (event: SelectChangeEvent) => {
+    setSelectedSupplier(event.target.value);
+  };
+
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
     setAnchorElMap({ ...anchorElMap, [id]: event.currentTarget });
   };
@@ -86,7 +142,18 @@ export default function PurchasesPage(): React.JSX.Element {
     setAnchorElMap({ ...anchorElMap, [id]: null });
   };
 
+  const handleRowClick = (purchase: Purchase) => {
+    setSelectedPurchaseDetails(purchase);
+    setTabValue(3); // Switch to a new tab for viewing purchase details
+  };
+
   const handleAddNewPurchase = () => {
+    // Get default IDs for required fields
+    const defaultCompanyId = companies.length > 0 ? companies[0].id : '';
+    const defaultStoreId = stores.length > 0 ? stores[0].id : '';
+    const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
+    const defaultPaymentModeId = paymentModes.length > 0 ? paymentModes[0].id : '';
+    
     setCurrentPurchase({
       date: new Date().toISOString().split('T')[0],
       supplier: '',
@@ -95,28 +162,76 @@ export default function PurchasesPage(): React.JSX.Element {
       totalAmount: 0,
       paidAmount: 0,
       dueAmount: 0,
-      paymentStatus: 'Unpaid'
+      paymentStatus: 'Unpaid',
+      company_id: defaultCompanyId,
+      store_id: defaultStoreId,
+      currency_id: defaultCurrencyId,
+      payment_mode_id: defaultPaymentModeId,
+      is_credit: false
     });
     setIsPurchaseModalOpen(true);
   };
 
-  const handleEditPurchase = (id: string) => {
+  const handleEditPurchase = async (id: string) => {
     const purchaseToEdit = purchases.find(purchase => purchase.id === id);
     if (purchaseToEdit) {
-      // Convert the purchase data to the format expected by the modal
-      setCurrentPurchase({
-        id: purchaseToEdit.id,
-        date: purchaseToEdit.date,
-        supplier: purchaseToEdit.supplier,
-        status: purchaseToEdit.status,
-        products: [], // We would need to fetch product details in a real app
-        totalAmount: purchaseToEdit.totalAmount,
-        paidAmount: purchaseToEdit.paidAmount,
-        dueAmount: purchaseToEdit.dueAmount,
-        paymentStatus: purchaseToEdit.paymentStatus
-      });
-      setIsPurchaseModalOpen(true);
-      handleMenuClose(id);
+      // Show loading indicator
+      setIsLoading(true);
+      
+      try {
+        // Fetch purchase items for this purchase
+        const purchaseItems = await transactionsApi.getPurchaseItems(id);
+        
+        // Convert purchase items to the format expected by the form
+        const products = await Promise.all(
+          purchaseItems.map(async (item) => {
+            // Get product details
+            let product;
+            try {
+              product = await inventoryApi.getProduct(item.product.id);
+            } catch (err) {
+              console.error(`Error fetching product ${item.product.id}:`, err);
+              product = item.product;
+            }
+            
+            return {
+              id: item.product.id,
+              name: product.name,
+              quantity: parseInt(item.quantity),
+              unitPrice: product.purchase_price ? parseFloat(product.purchase_price) : 0,
+              discount: 0, // Not available from API, default to 0
+              tax: 0, // Not available from API, default to 0
+              subtotal: parseFloat(item.quantity) * (product.purchase_price ? parseFloat(product.purchase_price) : 0)
+            };
+          })
+        );
+        
+        // Convert the purchase data to the format expected by the modal
+        setCurrentPurchase({
+          id: purchaseToEdit.id,
+          date: new Date(purchaseToEdit.created_at).toISOString().split('T')[0],
+          supplier: purchaseToEdit.supplier.id,
+          status: purchaseToEdit.is_credit ? 'Credit' : 'Paid',
+          products: products,
+          totalAmount: parseFloat(purchaseToEdit.total_amount),
+          paidAmount: 0, // Not available directly
+          dueAmount: parseFloat(purchaseToEdit.total_amount), // Assuming full amount is due
+          paymentStatus: purchaseToEdit.is_credit ? 'Unpaid' : 'Paid',
+          company_id: purchaseToEdit.company.id,
+          store_id: purchaseToEdit.store.id,
+          currency_id: purchaseToEdit.currency.id,
+          payment_mode_id: purchaseToEdit.payment_mode.id,
+          is_credit: purchaseToEdit.is_credit
+        });
+        
+        setIsPurchaseModalOpen(true);
+        handleMenuClose(id);
+      } catch (error) {
+        console.error('Error fetching purchase items:', error);
+        alert('Failed to fetch purchase details. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -126,24 +241,89 @@ export default function PurchasesPage(): React.JSX.Element {
     handleMenuClose(id);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (purchaseToDelete) {
-      // In a real application, this would call an API to delete the purchase
-      console.log(`Deleted purchase with ID: ${purchaseToDelete}`);
-      setIsDeleteModalOpen(false);
-      setPurchaseToDelete(null);
+      try {
+        await transactionsApi.deletePurchase(purchaseToDelete);
+        console.log(`Deleted purchase with ID: ${purchaseToDelete}`);
+        // Refresh data
+        fetchData();
+        setIsDeleteModalOpen(false);
+        setPurchaseToDelete(null);
+      } catch (error) {
+        console.error('Error deleting purchase:', error);
+      }
     }
   };
 
-  const handleSavePurchase = (purchaseData: any) => {
-    if (purchaseData.id) {
-      // Update existing purchase
-      console.log(`Updated purchase: ${JSON.stringify(purchaseData)}`);
-    } else {
-      // Add new purchase
-      console.log(`Added new purchase: ${JSON.stringify(purchaseData)}`);
+  const handleSavePurchase = async (purchaseData: any) => {
+    try {
+      // Log data before creating/updating
+      console.log('Purchase data to save:', purchaseData);
+      
+      // Get default IDs if not provided
+      const company_id = purchaseData.company_id || (companies.length > 0 ? companies[0].id : '');
+      const store_id = purchaseData.store_id || (stores.length > 0 ? stores[0].id : '');
+      const currency_id = purchaseData.currency_id || (currencies.length > 0 ? currencies[0].id : '');
+      const payment_mode_id = purchaseData.payment_mode_id || (paymentModes.length > 0 ? paymentModes[0].id : '');
+      
+      // Log IDs being used
+      console.log('Using IDs:', {
+        company_id,
+        store_id,
+        currency_id,
+        payment_mode_id
+      });
+      
+      // Convert product items to the format expected by the API
+      const items = (purchaseData.products || []).map((product: {id: string; quantity: number}) => ({
+        product_id: product.id,
+        quantity: String(product.quantity) // Ensure quantity is a string
+      }));
+      
+      // Make sure we have at least one item
+      if (items.length === 0) {
+        alert("You must add at least one product to create a purchase.");
+        return;
+      }
+      
+      const purchasePayload: PurchaseCreateData = {
+        company_id: company_id,
+        store_id: store_id,
+        supplier_id: purchaseData.supplier,
+        total_amount: purchaseData.totalAmount.toString(),
+        currency_id: currency_id,
+        payment_mode_id: payment_mode_id,
+        is_credit: purchaseData.status === 'Credit',
+        items: items
+      };
+
+      // Show final payload
+      console.log('Final purchase payload:', purchasePayload);
+
+      if (purchaseData.id) {
+        // Update existing purchase
+        await transactionsApi.updatePurchase(purchaseData.id, purchasePayload);
+        console.log(`Updated purchase: ${JSON.stringify(purchasePayload)}`);
+      } else {
+        // Add new purchase
+        await transactionsApi.createPurchase(purchasePayload);
+        console.log(`Added new purchase: ${JSON.stringify(purchasePayload)}`);
+      }
+      
+      // Refresh the data
+      fetchData();
+      setIsPurchaseModalOpen(false);
+    } catch (error: any) {
+      console.error('Error saving purchase:', error);
+      // Display the error details if available
+      if (error.response && error.response.data) {
+        console.error('API error details:', error.response.data);
+        alert(`Error: ${JSON.stringify(error.response.data)}`);
+      } else {
+        alert("An error occurred while saving the purchase.");
+      }
     }
-    setIsPurchaseModalOpen(false);
   };
 
   // Generate breadcrumb path links
@@ -202,20 +382,22 @@ export default function PurchasesPage(): React.JSX.Element {
           />
           <Select
             displayEmpty
-            value=""
+            value={selectedSupplier}
+            onChange={handleSupplierChange}
             input={<OutlinedInput size="small" />}
             renderValue={(selected) => {
               if (!selected) {
                 return <Typography color="text.secondary">Select Supplier...</Typography>;
               }
-              return selected;
+              const supplier = suppliers.find(s => s.id === selected);
+              return supplier ? supplier.name : "";
             }}
             sx={{ minWidth: 200 }}
           >
             <MenuItem value="">All Suppliers</MenuItem>
-            <MenuItem value="Johnson Ltd">Johnson Ltd</MenuItem>
-            <MenuItem value="Lakin-Beatty">Lakin-Beatty</MenuItem>
-            <MenuItem value="Cruickshank-Turcotte">Cruickshank-Turcotte</MenuItem>
+            {suppliers.map(supplier => (
+              <MenuItem key={supplier.id} value={supplier.id}>{supplier.name}</MenuItem>
+            ))}
           </Select>
           <Box sx={{ 
             display: 'flex', 
@@ -280,125 +462,205 @@ export default function PurchasesPage(): React.JSX.Element {
               '&.Mui-selected': { color: '#0ea5e9' }
             }} 
           />
+          {selectedPurchaseDetails && (
+            <Tab 
+              label="Purchase Details" 
+              sx={{ 
+                textTransform: 'none',
+                minHeight: 48,
+                borderBottom: tabValue === 3 ? '2px solid #0ea5e9' : 'none',
+                '&.Mui-selected': { color: '#0ea5e9' }
+              }} 
+            />
+          )}
         </Tabs>
       </Box>
 
-      {/* Purchases Table */}
-      <Card>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={purchases.length > 0 && selectedPurchases.length === purchases.length}
-                  indeterminate={selectedPurchases.length > 0 && selectedPurchases.length < purchases.length}
-                  onChange={handleSelectAll}
+      {/* Purchases Table or Purchase Details */}
+      {tabValue === 3 && selectedPurchaseDetails ? (
+        <Card sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>Purchase Details</Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">Invoice Number</Typography>
+                <Typography variant="body1">{selectedPurchaseDetails.id}</Typography>
+              </Box>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">Purchase Date</Typography>
+                <Typography variant="body1">
+                  {new Date(selectedPurchaseDetails.created_at).toLocaleDateString('en-US', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })}
+                </Typography>
+              </Box>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">Status</Typography>
+                <Chip 
+                  label={selectedPurchaseDetails.is_credit ? 'Credit' : 'Paid'} 
+                  size="small"
+                  sx={{ 
+                    bgcolor: selectedPurchaseDetails.is_credit ? 'warning.100' : 'success.100',
+                    color: selectedPurchaseDetails.is_credit ? 'warning.main' : 'success.main',
+                    fontWeight: 500
+                  }}
                 />
-              </TableCell>
-              <TableCell>Invoice Number</TableCell>
-              <TableCell>Purchase Date</TableCell>
-              <TableCell>Supplier</TableCell>
-              <TableCell>Purchase Status</TableCell>
-              <TableCell>Total Amount</TableCell>
-              <TableCell>Paid Amount</TableCell>
-              <TableCell>Due Amount</TableCell>
-              <TableCell>Payment Status</TableCell>
-              <TableCell>Action</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {purchases.map((purchase) => (
-              <TableRow key={purchase.id} hover>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">Supplier</Typography>
+                <Typography variant="body1">{selectedPurchaseDetails.supplier.name}</Typography>
+              </Box>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">Contact Info</Typography>
+                <Typography variant="body1">{selectedPurchaseDetails.supplier.email}</Typography>
+                <Typography variant="body1">{selectedPurchaseDetails.supplier.phone}</Typography>
+              </Box>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">Total Amount</Typography>
+                <Typography variant="body1">${parseFloat(selectedPurchaseDetails.total_amount).toFixed(2)}</Typography>
+              </Box>
+            </Grid>
+          </Grid>
+          
+          <Box sx={{ mt: 3 }}>
+            <Button 
+              variant="outlined" 
+              onClick={() => setTabValue(0)}
+              sx={{ mr: 1 }}
+            >
+              Back to Purchases
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={() => handleEditPurchase(selectedPurchaseDetails.id)}
+              sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
+            >
+              Edit Purchase
+            </Button>
+          </Box>
+        </Card>
+      ) : (
+        <Card>
+          <Table>
+            <TableHead>
+              <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={selectedPurchases.includes(purchase.id)}
-                    onChange={() => handleSelectOne(purchase.id)}
+                    checked={filteredPurchases.length > 0 && selectedPurchases.length === filteredPurchases.length}
+                    indeterminate={selectedPurchases.length > 0 && selectedPurchases.length < filteredPurchases.length}
+                    onChange={handleSelectAll}
                   />
                 </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Button size="small" sx={{ minWidth: 'auto', p: 0, mr: 1, color: 'text.secondary' }}>+</Button>
-                    <Typography variant="body2" color="primary">
-                      {purchase.id}
-                    </Typography>
-                  </Box>
-                </TableCell>
-                <TableCell>{purchase.date}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Avatar sx={{ width: 24, height: 24, bgcolor: '#e0e7ff' }}></Avatar>
-                    <Typography variant="body2" color="primary">
-                      {purchase.supplier}
-                    </Typography>
-                  </Stack>
-                </TableCell>
-                <TableCell>
-                  <Chip 
-                    label={purchase.status} 
-                    size="small" 
-                    sx={{ 
-                      bgcolor: 
-                        purchase.status === 'Received' ? '#dcfce7' : 
-                        purchase.status === 'Ordered' ? '#e0f2fe' : 
-                        '#fef9c3',
-                      color: 
-                        purchase.status === 'Received' ? '#15803d' : 
-                        purchase.status === 'Ordered' ? '#0284c7' : 
-                        '#ca8a04',
-                    }} 
-                  />
-                </TableCell>
-                <TableCell>${purchase.totalAmount.toFixed(2)}</TableCell>
-                <TableCell>${purchase.paidAmount.toFixed(2)}</TableCell>
-                <TableCell>${purchase.dueAmount.toFixed(2)}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={purchase.paymentStatus} 
-                    size="small" 
-                    sx={{ 
-                      bgcolor: 
-                        purchase.paymentStatus === 'Paid' ? '#dcfce7' : 
-                        purchase.paymentStatus === 'Partially Paid' ? '#fef9c3' : 
-                        '#fee2e2',
-                      color: 
-                        purchase.paymentStatus === 'Paid' ? '#15803d' : 
-                        purchase.paymentStatus === 'Partially Paid' ? '#ca8a04' : 
-                        '#dc2626',
-                    }} 
-                  />
-                </TableCell>
-                <TableCell>
-                  <IconButton 
-                    size="small" 
-                    onClick={(e) => handleMenuOpen(e, purchase.id)}
-                  >
-                    <DotsThreeIcon size={20} />
-                  </IconButton>
-                  <Menu
-                    anchorEl={anchorElMap[purchase.id]}
-                    open={Boolean(anchorElMap[purchase.id])}
-                    onClose={() => handleMenuClose(purchase.id)}
-                  >
-                    <MenuItem onClick={() => {alert(`View purchase details: ${purchase.id}`); handleMenuClose(purchase.id);}}>View Details</MenuItem>
-                    <MenuItem onClick={() => handleEditPurchase(purchase.id)}>Edit</MenuItem>
-                    <MenuItem onClick={() => handleDeletePurchase(purchase.id)}>Delete</MenuItem>
-                    <MenuItem onClick={() => {alert(`Print invoice: ${purchase.id}`); handleMenuClose(purchase.id);}}>Print Invoice</MenuItem>
-                  </Menu>
-                </TableCell>
+                <TableCell>Invoice Number</TableCell>
+                <TableCell>Purchase Date</TableCell>
+                <TableCell>Supplier</TableCell>
+                <TableCell>Purchase Status</TableCell>
+                <TableCell>Total Amount</TableCell>
+                <TableCell>Paid Amount</TableCell>
+                <TableCell>Due Amount</TableCell>
+                <TableCell>Payment Status</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
-            ))}
-            <TableRow>
-              <TableCell colSpan={5} align="right" sx={{ fontWeight: 'bold' }}>
-                Total
-              </TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>${totalAmount.toFixed(2)}</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>${totalPaid.toFixed(2)}</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>${totalDue.toFixed(2)}</TableCell>
-              <TableCell colSpan={2}></TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </Card>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
+                    <CircularProgress size={24} />
+                    <Typography sx={{ ml: 2 }}>Loading purchases...</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : filteredPurchases.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
+                    <Typography>No purchases found</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredPurchases.map(purchase => {
+                  const isSelected = selectedPurchases.includes(purchase.id);
+                  const isMenuOpen = Boolean(anchorElMap[purchase.id]);
+                  const formattedDate = new Date(purchase.created_at).toLocaleDateString('en-US', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  }).replace(/\//g, '-');
+                  
+                  const displayStatus = purchase.is_credit ? 'Credit' : 'Paid';
+                  const displayPaymentStatus = purchase.is_credit ? 'Unpaid' : 'Paid';
+                  
+                  return (
+                    <TableRow 
+                      hover 
+                      key={purchase.id}
+                      selected={isSelected}
+                      onClick={() => handleRowClick(purchase)}
+                      sx={{ cursor: 'pointer' }}
+                    >
+                      <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox 
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(purchase.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="subtitle2">{purchase.id.substring(0, 8)}</Typography>
+                      </TableCell>
+                      <TableCell>{formattedDate}</TableCell>
+                      <TableCell>{purchase.supplier.name}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={displayStatus} 
+                          size="small"
+                          sx={{ 
+                            bgcolor: displayStatus === 'Credit' ? 'warning.100' : 'success.100',
+                            color: displayStatus === 'Credit' ? 'warning.main' : 'success.main',
+                            fontWeight: 500
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>${parseFloat(purchase.total_amount).toFixed(2)}</TableCell>
+                      <TableCell>$0.00</TableCell>
+                      <TableCell>${parseFloat(purchase.total_amount).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={displayPaymentStatus} 
+                          size="small"
+                          sx={{ 
+                            bgcolor: displayPaymentStatus === 'Unpaid' ? 'error.100' : 'success.100',
+                            color: displayPaymentStatus === 'Unpaid' ? 'error.main' : 'success.main',
+                            fontWeight: 500
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <IconButton 
+                          size="small"
+                          onClick={(event) => handleMenuOpen(event, purchase.id)}
+                        >
+                          <DotsThreeIcon />
+                        </IconButton>
+                        <Menu
+                          anchorEl={anchorElMap[purchase.id]}
+                          open={isMenuOpen}
+                          onClose={() => handleMenuClose(purchase.id)}
+                        >
+                          <MenuItem onClick={() => handleEditPurchase(purchase.id)}>Edit</MenuItem>
+                          <MenuItem onClick={() => handleDeletePurchase(purchase.id)}>Delete</MenuItem>
+                        </Menu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
 
       {/* Modals */}
       {isPurchaseModalOpen && currentPurchase && (
@@ -415,9 +677,8 @@ export default function PurchasesPage(): React.JSX.Element {
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        itemName={purchaseToDelete ? purchases.find(p => p.id === purchaseToDelete)?.id || '' : ''}
-        itemType="Purchase"
-        dependentItems={0}
+        title="Confirm Delete"
+        message={`Are you sure you want to delete this purchase?`}
       />
     </Box>
   );

@@ -10,31 +10,63 @@ export const navItems = [
   { key: 'error', title: 'Error', href: paths.errors.notFound, icon: 'x-square' },
 ] satisfies NavItemConfig[];
 
+export interface NavItemsConfig {
+  items?: NavItemConfig[];
+  subheader?: string;
+}
+
+export interface NavSearchConfig {
+  placeholder?: string;
+}
+
 export const adminNavItems = [
   { key: 'admin-dashboard', title: 'Dashboard', href: paths.admin.dashboard, icon: 'chart-pie' },
-  { key: 'admin-product-manager', title: 'Product Manager', href: paths.admin.productManager, icon: 'package' },
+  { 
+    key: 'admin-product-manager', 
+    title: 'Product Manager', 
+    href: paths.admin.productManager, 
+    icon: 'package',
+    items: [
+      { key: 'admin-categories', title: 'Categories', href: paths.admin.categories },
+      { key: 'admin-products', title: 'Products', href: paths.admin.products },
+      { 
+        key: 'admin-clothing', 
+        title: 'Clothing', 
+        href: paths.admin.clothing,
+        items: [
+          { key: 'admin-clothing-colors', title: 'Colors', href: paths.admin.clothingColors },
+          { key: 'admin-clothing-seasons', title: 'Seasons', href: paths.admin.clothingSeasons },
+          { key: 'admin-clothing-collections', title: 'Collections', href: paths.admin.clothingCollections },
+          { key: 'admin-clothing-sizes', title: 'Sizes', href: paths.admin.clothingSizes },
+          { key: 'admin-clothing-materials', title: 'Materials', href: paths.admin.clothingMaterials },
+        ]
+      },
+    ]
+  },
   { key: 'admin-sales', title: 'Sales', href: paths.admin.sales, icon: 'currency-dollar' },
   { key: 'admin-purchases', title: 'Purchases', href: paths.admin.purchases, icon: 'shopping-bag' },
-  { key: 'admin-expenses', title: 'Expenses', href: paths.admin.expenses, icon: 'bank' },
+  { 
+    key: 'admin-expenses', 
+    title: 'Expenses', 
+    href: paths.admin.expenses, 
+    icon: 'bank',
+    items: [
+      { key: 'admin-expense-main', title: 'All Expenses', href: paths.admin.expenses },
+      { key: 'admin-expense-categories', title: 'Categories', href: paths.admin.expenseCategories }
+    ]
+  },
   { key: 'admin-payments', title: 'Payments', href: paths.admin.payments, icon: 'credit-card' },
   { key: 'admin-parties', title: 'Parties', href: paths.admin.parties, icon: 'users' },
+  { key: 'admin-stores', title: 'Stores', href: paths.admin.stores, icon: 'storefront' },
 ] satisfies NavItemConfig[];
 
 export const stockManagerNavItems = [
-  { key: 'stockmanager-dashboard', title: 'Dashboard', href: paths.stockManager.dashboard, icon: 'chart-pie' },
-  { key: 'stockmanager-parties', title: 'Parties', href: paths.stockManager.parties, icon: 'users' },
-  { 
-    key: 'stockmanager-purchases', 
-    title: 'Purchases', 
-    href: paths.stockManager.purchases, 
-    icon: 'shopping-bag',
-    items: [
-      { key: 'stockmanager-purchases-list', title: 'Purchases List', href: paths.stockManager.purchases },
-      { key: 'stockmanager-purchases-payment-out', title: 'Payment Out', href: paths.stockManager.purchases + '/payment-out' }
-    ]
-  },
-  { key: 'stockmanager-expenses', title: 'Expenses', href: paths.stockManager.expenses, icon: 'bank' },
-  { key: 'stockmanager-reports', title: 'Reports', href: paths.stockManager.reports, icon: 'chart-line-up' },
+  { key: 'stock-manager-dashboard', title: 'Dashboard', href: paths.stockManager.dashboard, icon: 'chart-pie' },
+  { key: 'stock-manager-parties', title: 'Parties', href: paths.stockManager.parties, icon: 'users' },
+  { key: 'stock-manager-purchases', title: 'Purchases', href: paths.stockManager.purchases, icon: 'shopping-bag' },
+  { key: 'stock-manager-expenses', title: 'Expenses', href: paths.stockManager.expenses, icon: 'bank' },
+  { key: 'stock-manager-payments', title: 'Payments', href: paths.stockManager.payments, icon: 'credit-card' },
+  { key: 'stock-manager-reports', title: 'Reports', href: paths.stockManager.reports, icon: 'file-text' },
 ] satisfies NavItemConfig[];
 
 export const superAdminNavItems = [
@@ -47,16 +79,7 @@ export const superAdminNavItems = [
 export const salesmanNavItems = [
   { key: 'salesman-dashboard', title: 'Dashboard', href: paths.salesman.dashboard, icon: 'chart-pie' },
   { key: 'salesman-parties', title: 'Parties', href: paths.salesman.parties, icon: 'users' },
-  { 
-    key: 'salesman-sales', 
-    title: 'Sales', 
-    href: paths.salesman.sales, 
-    icon: 'currency-dollar',
-    items: [
-      { key: 'salesman-sales-list', title: 'Sales List', href: paths.salesman.sales },
-      { key: 'salesman-sales-payment-in', title: 'Payment In', href: paths.salesman.paymentIn }
-    ]
-  },
+  { key: 'salesman-sales', title: 'Sales', href: paths.salesman.sales, icon: 'currency-dollar' },
   { key: 'salesman-expenses', title: 'Expenses', href: paths.salesman.expenses, icon: 'bank' },
-  { key: 'salesman-reports', title: 'Reports', href: paths.salesman.reports, icon: 'chart-line-up' },
+  { key: 'salesman-reports', title: 'Reports', href: paths.salesman.reports, icon: 'file-text' },
 ] satisfies NavItemConfig[];

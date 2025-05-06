@@ -32,7 +32,7 @@ export default function SuppliersPage(): React.JSX.Element {
   const [selectedSuppliers, setSelectedSuppliers] = React.useState<string[]>([]);
   const [tabValue, setTabValue] = React.useState(0);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-  const [currentSupplier, setCurrentSupplier] = React.useState<SupplierFormData | null>(null);
+  const [currentSupplier, setCurrentSupplier] = React.useState<SupplierFormData | undefined>(undefined);
   const { enqueueSnackbar } = useSnackbar();
   
   // Mock supplier data
@@ -76,7 +76,7 @@ export default function SuppliersPage(): React.JSX.Element {
   };
   
   const handleOpenAddModal = () => {
-    setCurrentSupplier(null);
+    setCurrentSupplier(undefined);
     setIsEditModalOpen(true);
   };
   

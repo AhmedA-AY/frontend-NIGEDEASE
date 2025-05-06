@@ -8,6 +8,8 @@ import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { CaretUpDown as CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/CaretUpDown';
+import { CaretDown as CaretDownIcon } from '@phosphor-icons/react/dist/ssr/CaretDown';
+import { CaretRight as CaretRightIcon } from '@phosphor-icons/react/dist/ssr/CaretRight';
 
 import type { NavItemConfig } from '@/types/nav';
 import { paths } from '@/paths';
@@ -103,21 +105,28 @@ function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pat
   );
 }
 
-function NavItem({ disabled, external, href, icon, matcher, pathname, title }: NavItemProps): React.JSX.Element {
-  const active = isNavItemActive({ disabled, external, href, matcher, pathname });
+function NavItem({ disabled, external, href, icon, matcher, pathname, title, items }: NavItemProps): React.JSX.Element {
+  const [open, setOpen] = React.useState(false);
+  const hasChildren = items && items.length > 0;
+  const active = isNavItemActive({ disabled, external, href, matcher, pathname }) || 
+    (hasChildren && items!.some(item => isNavItemActive({ href: item.href, pathname })));
   const Icon = icon ? navIcons[icon] : null;
+
+  const handleToggle = () => {
+    setOpen(!open);
+  };
 
   return (
     <li>
       <Box
-        {...(href
+        {...(href && !hasChildren
           ? {
               component: external ? 'a' : RouterLink,
               href,
               target: external ? '_blank' : undefined,
               rel: external ? 'noreferrer' : undefined,
             }
-          : { role: 'button' })}
+          : { role: 'button', onClick: handleToggle })}
         sx={{
           alignItems: 'center',
           borderRadius: 1,
@@ -155,7 +164,21 @@ function NavItem({ disabled, external, href, icon, matcher, pathname, title }: N
             {title}
           </Typography>
         </Box>
+        {hasChildren && (
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {open ? (
+              <CaretDownIcon fontSize="var(--icon-fontSize-sm)" />
+            ) : (
+              <CaretRightIcon fontSize="var(--icon-fontSize-sm)" />
+            )}
+          </Box>
+        )}
       </Box>
+      {hasChildren && open && (
+        <Box sx={{ pl: 3, mt: 1 }}>
+          {renderNavItems({ items: items, pathname })}
+        </Box>
+      )}
     </li>
   );
 } 

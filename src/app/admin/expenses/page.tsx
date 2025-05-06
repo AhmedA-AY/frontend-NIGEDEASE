@@ -17,34 +17,83 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Pagination from '@mui/material/Pagination';
+import CircularProgress from '@mui/material/CircularProgress';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { paths } from '@/paths';
 import ExpenseEditModal from '@/components/admin/expenses/ExpenseEditModal';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
+import { useState, useEffect, useCallback } from 'react';
+import { Expense, ExpenseCategory, ExpenseCreateData, financialsApi } from '@/services/api/financials';
+import { TransactionPaymentMode, transactionsApi } from '@/services/api/transactions';
+import { companiesApi, Currency, Company } from '@/services/api/companies';
+import { useSnackbar } from 'notistack';
+import { useCurrentUser } from '@/hooks/use-auth';
+
+// Payment Mode Name Display component
+const PaymentModeDisplay = ({ modeId, paymentModes }: { modeId: string, paymentModes: TransactionPaymentMode[] }) => {
+  const mode = paymentModes.find(m => m.id === modeId);
+  return <span>{mode ? mode.name : 'Unknown'}</span>;
+};
+
+// Currency Display component - optimized to use currencies from props
+const CurrencyDisplay = ({ currencyId, currencies }: { currencyId: string, currencies: Currency[] }) => {
+  const currency = currencies.find(c => c.id === currencyId);
+  return <span>{currency ? currency.code : 'Unknown'}</span>;
+};
 
 export default function ExpensesPage(): React.JSX.Element {
-  const [selectedExpenses, setSelectedExpenses] = React.useState<number[]>([]);
+  const [selectedExpenses, setSelectedExpenses] = React.useState<string[]>([]);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
-  const [currentExpense, setCurrentExpense] = React.useState<any>(null);
-  const [expenseToDelete, setExpenseToDelete] = React.useState<number | null>(null);
+  const [currentExpense, setCurrentExpense] = React.useState<Partial<ExpenseCreateData> & { id?: string }>({
+    expense_category: '',
+    amount: '',
+    description: '',
+    currency: '',
+    payment_mode: '',
+  });
+  const [expenseToDelete, setExpenseToDelete] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const { userInfo } = useCurrentUser();
+  const { enqueueSnackbar } = useSnackbar();
   
-  // Mock expenses data
-  const expenses = [
-    { id: 1, category: 'Travel', amount: 48.00, date: '26-04-2025', user: 'Salesman' },
-    { id: 2, category: 'Utilities', amount: 50.00, date: '26-04-2025', user: 'Mafalda Bahringer DDS' },
-    { id: 3, category: 'Office Supplies', amount: 125.50, date: '24-04-2025', user: 'Admin User' },
-    { id: 4, category: 'Marketing', amount: 350.00, date: '22-04-2025', user: 'Salesman' },
-    { id: 5, category: 'Rent', amount: 1200.00, date: '20-04-2025', user: 'Admin User' },
-    { id: 6, category: 'Insurance', amount: 480.75, date: '18-04-2025', user: 'Mafalda Bahringer DDS' },
-    { id: 7, category: 'Salaries', amount: 2500.00, date: '15-04-2025', user: 'Admin User' },
-    { id: 8, category: 'Repairs', amount: 175.25, date: '10-04-2025', user: 'Salesman' },
-  ];
+  // Fetch expenses, categories, and currencies
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [expensesData, categoriesData, currenciesData, modesData, companiesData] = await Promise.all([
+        financialsApi.getExpenses(),
+        financialsApi.getExpenseCategories(),
+        companiesApi.getCurrencies(),
+        transactionsApi.getPaymentModes(),
+        companiesApi.getCompanies()
+      ]);
+      setExpenses(expensesData);
+      setCategories(categoriesData);
+      setCurrencies(currenciesData);
+      setPaymentModes(modesData);
+      setCompanies(companiesData);
+    } catch (error: any) {
+      console.error('Error fetching data:', error);
+      enqueueSnackbar('Failed to load expenses', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enqueueSnackbar]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Calculate total amount
-  const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalAmount = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -54,7 +103,7 @@ export default function ExpensesPage(): React.JSX.Element {
     }
   };
 
-  const handleSelectOne = (id: number) => {
+  const handleSelectOne = (id: string) => {
     if (selectedExpenses.includes(id)) {
       setSelectedExpenses(selectedExpenses.filter(expenseId => expenseId !== id));
     } else {
@@ -63,56 +112,96 @@ export default function ExpensesPage(): React.JSX.Element {
   };
 
   const handleAddNewExpense = () => {
+    console.log('handleAddNewExpense called');
+    console.log('Currencies available:', currencies);
+    console.log('Companies available:', companies);
+    
+    // Use the first company if userInfo is not available
+    const companyId = userInfo?.company_id || (companies.length > 0 ? companies[0].id : '');
+    
+    if (!companyId) {
+      console.log('No company ID available');
+      enqueueSnackbar('Unable to add expense: Company data not available.', { variant: 'error' });
+      return;
+    }
+    
     setCurrentExpense({
-      category: '',
-      amount: 0,
-      date: new Date().toISOString().split('T')[0],
-      user: '',
+      company: companyId,
+      expense_category: '',
+      amount: '',
       description: '',
-      reference: ''
+      currency: currencies.length > 0 ? currencies[0].id : '', 
+      payment_mode: '',
     });
+    
+    console.log('currentExpense set with company ID:', companyId);
+    
     setIsExpenseModalOpen(true);
   };
 
-  const handleEditExpense = (id: number) => {
-    const expenseToEdit = expenses.find(expense => expense.id === id);
-    if (expenseToEdit) {
-      setCurrentExpense({
-        id: expenseToEdit.id,
-        category: expenseToEdit.category,
-        amount: expenseToEdit.amount,
-        date: expenseToEdit.date,
-        user: expenseToEdit.user,
-        description: '', // We would fetch this in a real app
-        reference: ''    // We would fetch this in a real app
-      });
+  const handleEditExpense = (id: string) => {
+    const expense = expenses.find(e => e.id === id);
+    if (expense) {
+      setCurrentExpense(expense);
       setIsExpenseModalOpen(true);
+    } else {
+      enqueueSnackbar('Expense not found', { variant: 'error' });
     }
   };
 
-  const handleDeleteExpense = (id: number) => {
+  const handleDeleteExpense = (id: string) => {
     setExpenseToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (expenseToDelete) {
-      // In a real application, this would call an API to delete the expense
-      console.log(`Deleted expense with ID: ${expenseToDelete}`);
-      setIsDeleteModalOpen(false);
-      setExpenseToDelete(null);
+      try {
+        await financialsApi.deleteExpense(expenseToDelete);
+        enqueueSnackbar('Expense deleted successfully', { variant: 'success' });
+        fetchData();
+        setIsDeleteModalOpen(false);
+        setExpenseToDelete(null);
+      } catch (error: any) {
+        console.error('Error deleting expense:', error);
+        enqueueSnackbar('Failed to delete expense', { variant: 'error' });
+      }
     }
   };
 
-  const handleSaveExpense = (expenseData: any) => {
-    if (expenseData.id) {
-      // Update existing expense
-      console.log(`Updated expense: ${JSON.stringify(expenseData)}`);
-    } else {
-      // Add new expense
-      console.log(`Added new expense: ${JSON.stringify(expenseData)}`);
+  const handleSaveExpense = async (expenseData: ExpenseCreateData & { id?: string }) => {
+    console.log('handleSaveExpense called with data:', expenseData);
+    try {
+      if (expenseData.id) {
+        // Update existing expense
+        console.log('Updating expense with ID:', expenseData.id);
+        await financialsApi.updateExpense(expenseData.id, expenseData);
+        enqueueSnackbar('Expense updated successfully', { variant: 'success' });
+      } else {
+        // Add new expense - company ID is now properly set in the modal component
+        console.log('Creating new expense with data:', expenseData);
+        await financialsApi.createExpense(expenseData);
+        enqueueSnackbar('Expense added successfully', { variant: 'success' });
+      }
+      fetchData();
+      setIsExpenseModalOpen(false);
+    } catch (error: any) {
+      console.error('Error saving expense:', error);
+      console.log('Error response:', error.response);
+      if (error.response && error.response.data) {
+        // Display backend validation errors
+        console.log('Backend validation errors:', error.response.data);
+        enqueueSnackbar(JSON.stringify(error.response.data), { variant: 'error' });
+      } else {
+        enqueueSnackbar('Failed to save expense', { variant: 'error' });
+      }
     }
-    setIsExpenseModalOpen(false);
+  };
+
+  // Find category name by ID
+  const getCategoryName = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Unknown Category';
   };
 
   // Generate breadcrumb path links
@@ -146,14 +235,21 @@ export default function ExpensesPage(): React.JSX.Element {
 
       {/* Action Buttons and Filters */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           <Button 
             variant="contained" 
             startIcon={<PlusIcon weight="bold" />}
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddNewExpense}
+            disabled={isLoading || currencies.length === 0 || (companies.length === 0 && !userInfo)}
           >
             Add New Expense
+          </Button>
+          <Button
+            variant="outlined"
+            href={paths.admin.expenseCategories}
+          >
+            Manage Categories
           </Button>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -170,31 +266,9 @@ export default function ExpensesPage(): React.JSX.Element {
             sx={{ minWidth: 200 }}
           >
             <MenuItem value="">All Categories</MenuItem>
-            <MenuItem value="Travel">Travel</MenuItem>
-            <MenuItem value="Utilities">Utilities</MenuItem>
-            <MenuItem value="Office Supplies">Office Supplies</MenuItem>
-            <MenuItem value="Marketing">Marketing</MenuItem>
-            <MenuItem value="Rent">Rent</MenuItem>
-            <MenuItem value="Salaries">Salaries</MenuItem>
-            <MenuItem value="Repairs">Repairs</MenuItem>
-            <MenuItem value="Insurance">Insurance</MenuItem>
-          </Select>
-          <Select
-            displayEmpty
-            value=""
-            input={<OutlinedInput size="small" />}
-            renderValue={(selected) => {
-              if (!selected) {
-                return <Typography color="text.secondary">Select User...</Typography>;
-              }
-              return selected;
-            }}
-            sx={{ minWidth: 200 }}
-          >
-            <MenuItem value="">All Users</MenuItem>
-            <MenuItem value="Salesman">Salesman</MenuItem>
-            <MenuItem value="Mafalda Bahringer DDS">Mafalda Bahringer DDS</MenuItem>
-            <MenuItem value="Admin User">Admin User</MenuItem>
+            {categories.map(category => (
+              <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
+            ))}
           </Select>
           <Box sx={{ 
             display: 'flex', 
@@ -243,105 +317,105 @@ export default function ExpensesPage(): React.JSX.Element {
               <TableCell>Expense Category</TableCell>
               <TableCell>Amount</TableCell>
               <TableCell>Date</TableCell>
-              <TableCell>User</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Currency</TableCell>
+              <TableCell>Payment Mode</TableCell>
               <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {expenses.map((expense) => (
-              <TableRow key={expense.id} hover>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedExpenses.includes(expense.id)}
-                    onChange={() => handleSelectOne(expense.id)}
-                  />
-                </TableCell>
-                <TableCell>{expense.category}</TableCell>
-                <TableCell>${expense.amount.toFixed(2)}</TableCell>
-                <TableCell>{expense.date}</TableCell>
-                <TableCell>{expense.user}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <IconButton 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: '#0ea5e9', 
-                        color: 'white',
-                        '&:hover': { bgcolor: '#0284c7' }  
-                      }}
-                      onClick={() => handleEditExpense(expense.id)}
-                    >
-                      <PencilSimpleIcon size={18} />
-                    </IconButton>
-                    <IconButton 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: '#ef4444', 
-                        color: 'white',
-                        '&:hover': { bgcolor: '#dc2626' }  
-                      }}
-                      onClick={() => handleDeleteExpense(expense.id)}
-                    >
-                      <TrashIcon size={18} />
-                    </IconButton>
-                  </Stack>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                  <CircularProgress size={24} />
+                  <Typography sx={{ ml: 2 }}>Loading expenses...</Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : expenses.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                  <Typography>No expenses found</Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              expenses.map((expense) => {
+                const isSelected = selectedExpenses.includes(expense.id);
+                const formattedDate = new Date(expense.created_at).toLocaleDateString('en-US', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                }).replace(/\//g, '-');
+                
+                return (
+                  <TableRow 
+                    hover 
+                    key={expense.id}
+                    selected={isSelected}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox 
+                        checked={isSelected}
+                        onChange={() => handleSelectOne(expense.id)}
+                      />
+                    </TableCell>
+                    <TableCell>{getCategoryName(expense.expense_category)}</TableCell>
+                    <TableCell>${parseFloat(expense.amount).toLocaleString()}</TableCell>
+                    <TableCell>{formattedDate}</TableCell>
+                    <TableCell>{expense.description}</TableCell>
+                    <TableCell><CurrencyDisplay currencyId={expense.currency} currencies={currencies} /></TableCell>
+                    <TableCell><PaymentModeDisplay modeId={expense.payment_mode} paymentModes={paymentModes} /></TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleEditExpense(expense.id)}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <PencilSimpleIcon size={20} />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <TrashIcon size={20} />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
             <TableRow>
-              <TableCell colSpan={1} sx={{ fontWeight: 'bold' }}>
+              <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>
                 Total
               </TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>${totalAmount.toFixed(2)}</TableCell>
-              <TableCell colSpan={4}></TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>${totalAmount.toLocaleString()}</TableCell>
+              <TableCell colSpan={5}></TableCell>
             </TableRow>
           </TableBody>
         </Table>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&lt;</Button>
-              <Button 
-                size="small" 
-                sx={{ 
-                  minWidth: 24, 
-                  height: 24, 
-                  p: 0, 
-                  mx: 0.5, 
-                  border: '1px solid #0ea5e9', 
-                  borderRadius: 1,
-                  color: '#0ea5e9' 
-                }}
-              >
-                1
-              </Button>
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&gt;</Button>
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              10 / page <Box component="span" sx={{ ml: 0.5, cursor: 'pointer' }}>▼</Box>
-            </Typography>
-          </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+          <Pagination count={1} color="primary" />
         </Box>
       </Card>
 
-      {/* Modals */}
-      {isExpenseModalOpen && currentExpense && (
-        <ExpenseEditModal
-          open={isExpenseModalOpen}
-          onClose={() => setIsExpenseModalOpen(false)}
-          onSave={handleSaveExpense}
-          expense={currentExpense}
-          isNew={!currentExpense.id}
-        />
-      )}
+      {/* Expense Edit Modal */}
+      <ExpenseEditModal
+        open={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
+        onSave={handleSaveExpense}
+        expense={currentExpense}
+        categories={categories}
+      />
       
+      {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        itemName={expenseToDelete ? expenses.find(e => e.id === expenseToDelete)?.category || '' : ''}
-        itemType="Expense"
-        dependentItems={0}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
       />
     </Box>
   );

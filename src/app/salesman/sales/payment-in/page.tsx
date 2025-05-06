@@ -295,7 +295,6 @@ export default function PaymentInPage(): React.JSX.Element {
           onClose={() => setIsPaymentModalOpen(false)}
           onSave={handleSavePayment}
           payment={currentPayment}
-          isNew={!currentPayment.id}
         />
       )}
     </Box>

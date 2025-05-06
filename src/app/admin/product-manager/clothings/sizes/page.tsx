@@ -140,7 +140,7 @@ export default function ClothingSizesPage(): React.JSX.Element {
   const breadcrumbItems = [
     { label: 'Dashboard', url: paths.admin.dashboard },
     { label: 'Product Manager', url: paths.admin.productManager },
-    { label: 'Clothings', url: paths.admin.clothings },
+    { label: 'Clothings', url: paths.admin.clothing },
     { label: 'Sizes', url: paths.admin.clothingSizes },
   ];
 
@@ -360,9 +360,8 @@ export default function ClothingSizesPage(): React.JSX.Element {
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        itemName={sizeToDelete ? sizes.find(s => s.id === sizeToDelete)?.name || '' : ''}
-        itemType="Size"
-        dependentItems={sizeToDelete ? sizes.find(s => s.id === sizeToDelete)?.productsCount || 0 : 0}
+        title="Confirm Delete"
+        message={`Are you sure you want to delete this size?`}
       />
     </Box>
   );

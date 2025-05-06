@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -17,6 +18,7 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
+import CircularProgress from '@mui/material/CircularProgress';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
@@ -24,23 +26,45 @@ import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/di
 import { paths } from '@/paths';
 import PaymentOutEditModal from '@/components/admin/payments/PaymentOutEditModal';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
+import { PaymentOut, financialsApi } from '@/services/api/financials';
+import { Supplier, transactionsApi } from '@/services/api/transactions';
+import { useSnackbar } from 'notistack';
 
 export default function PaymentOutPage(): React.JSX.Element {
-  const [selectedPayments, setSelectedPayments] = React.useState<string[]>([]);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
-  const [currentPayment, setCurrentPayment] = React.useState<any>(null);
-  const [paymentToDelete, setPaymentToDelete] = React.useState<string | null>(null);
+  const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [currentPayment, setCurrentPayment] = useState<any>(null);
+  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [payments, setPayments] = useState<PaymentOut[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const { enqueueSnackbar } = useSnackbar();
   
-  // Mock payment data
-  const payments = [
-    { id: '1', date: '19-04-2025', supplier: 'ABC Supplier', purchaseNo: 'PO-1', amount: 1250.00, bank: 'Example Bank', paymentMethod: 'Bank Transfer' },
-    { id: '2', date: '19-04-2025', supplier: 'XYZ Supplier', purchaseNo: 'PO-2', amount: 780.00, bank: 'Another Bank', paymentMethod: 'Bank Transfer' },
-    { id: '3', date: '19-04-2025', supplier: 'Office Supply Co', purchaseNo: 'PO-3', amount: 420.00, bank: 'Example Bank', paymentMethod: 'Check' },
-  ];
+  // Fetch payments and suppliers
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [paymentsData, suppliersData] = await Promise.all([
+        financialsApi.getPaymentsOut(),
+        transactionsApi.getSuppliers()
+      ]);
+      setPayments(paymentsData);
+      setSuppliers(suppliersData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      enqueueSnackbar('Failed to load payments', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enqueueSnackbar]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Calculate total amount
-  const totalAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+  const totalAmount = payments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -60,14 +84,12 @@ export default function PaymentOutPage(): React.JSX.Element {
 
   const handleAddNewPayment = () => {
     setCurrentPayment({
-      date: new Date().toISOString().split('T')[0],
-      supplier: '',
-      purchaseNo: '',
-      amount: 0,
-      bank: '',
-      paymentMethod: '',
-      reference: '',
-      note: ''
+      company: "",
+      payable: "",
+      purchase: "",
+      amount: "0",
+      currency: "",
+      payment_mode_id: ""
     });
     setIsPaymentModalOpen(true);
   };
@@ -77,14 +99,12 @@ export default function PaymentOutPage(): React.JSX.Element {
     if (paymentToEdit) {
       setCurrentPayment({
         id: paymentToEdit.id,
-        date: paymentToEdit.date,
-        supplier: paymentToEdit.supplier,
-        purchaseNo: paymentToEdit.purchaseNo,
+        company: paymentToEdit.company,
+        payable: paymentToEdit.payable,
+        purchase: paymentToEdit.purchase,
         amount: paymentToEdit.amount,
-        bank: paymentToEdit.bank,
-        paymentMethod: paymentToEdit.paymentMethod,
-        reference: '', // Would fetch in a real app
-        note: ''       // Would fetch in a real app
+        currency: paymentToEdit.currency,
+        payment_mode_id: paymentToEdit.payment_mode.id
       });
       setIsPaymentModalOpen(true);
     }
@@ -95,24 +115,38 @@ export default function PaymentOutPage(): React.JSX.Element {
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (paymentToDelete) {
-      // In a real application, this would call an API to delete the payment
-      console.log(`Deleted payment with ID: ${paymentToDelete}`);
-      setIsDeleteModalOpen(false);
-      setPaymentToDelete(null);
+      try {
+        await financialsApi.deletePaymentOut(paymentToDelete);
+        enqueueSnackbar('Payment deleted successfully', { variant: 'success' });
+        fetchData();
+        setIsDeleteModalOpen(false);
+        setPaymentToDelete(null);
+      } catch (error) {
+        console.error('Error deleting payment:', error);
+        enqueueSnackbar('Failed to delete payment', { variant: 'error' });
+      }
     }
   };
 
-  const handleSavePayment = (paymentData: any) => {
-    if (paymentData.id) {
-      // Update existing payment
-      console.log(`Updated payment: ${JSON.stringify(paymentData)}`);
-    } else {
-      // Add new payment
-      console.log(`Added new payment: ${JSON.stringify(paymentData)}`);
+  const handleSavePayment = async (paymentData: any) => {
+    try {
+      if (paymentData.id) {
+        // Update existing payment
+        await financialsApi.updatePaymentOut(paymentData.id, paymentData);
+        enqueueSnackbar('Payment updated successfully', { variant: 'success' });
+      } else {
+        // Add new payment
+        await financialsApi.createPaymentOut(paymentData);
+        enqueueSnackbar('Payment added successfully', { variant: 'success' });
+      }
+      fetchData();
+      setIsPaymentModalOpen(false);
+    } catch (error) {
+      console.error('Error saving payment:', error);
+      enqueueSnackbar('Failed to save payment', { variant: 'error' });
     }
-    setIsPaymentModalOpen(false);
   };
 
   // Generate breadcrumb path links
@@ -181,9 +215,9 @@ export default function PaymentOutPage(): React.JSX.Element {
             sx={{ minWidth: 200 }}
           >
             <MenuItem value="">All Suppliers</MenuItem>
-            <MenuItem value="ABC Supplier">ABC Supplier</MenuItem>
-            <MenuItem value="XYZ Supplier">XYZ Supplier</MenuItem>
-            <MenuItem value="Office Supply Co">Office Supply Co</MenuItem>
+            {suppliers.map(supplier => (
+              <MenuItem key={supplier.id} value={supplier.id}>{supplier.name}</MenuItem>
+            ))}
           </Select>
           <Box sx={{ 
             display: 'flex', 
@@ -230,111 +264,103 @@ export default function PaymentOutPage(): React.JSX.Element {
                 />
               </TableCell>
               <TableCell>Date</TableCell>
-              <TableCell>Supplier</TableCell>
-              <TableCell>Purchase No.</TableCell>
+              <TableCell>Purchase ID</TableCell>
               <TableCell>Amount</TableCell>
-              <TableCell>Bank</TableCell>
+              <TableCell>Currency</TableCell>
               <TableCell>Payment Method</TableCell>
               <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {payments.map((payment) => (
-              <TableRow key={payment.id} hover>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedPayments.includes(payment.id)}
-                    onChange={() => handleSelectOne(payment.id)}
-                  />
-                </TableCell>
-                <TableCell>{payment.date}</TableCell>
-                <TableCell>{payment.supplier}</TableCell>
-                <TableCell>{payment.purchaseNo}</TableCell>
-                <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                <TableCell>{payment.bank}</TableCell>
-                <TableCell>{payment.paymentMethod}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <IconButton 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: '#0ea5e9', 
-                        color: 'white',
-                        '&:hover': { bgcolor: '#0284c7' }  
-                      }}
-                      onClick={() => handleEditPayment(payment.id)}
-                    >
-                      <PencilSimpleIcon size={18} />
-                    </IconButton>
-                    <IconButton 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: '#ef4444', 
-                        color: 'white',
-                        '&:hover': { bgcolor: '#dc2626' }  
-                      }}
-                      onClick={() => handleDeletePayment(payment.id)}
-                    >
-                      <TrashIcon size={18} />
-                    </IconButton>
-                  </Stack>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <CircularProgress size={24} />
+                  <Typography sx={{ ml: 2 }}>Loading payments...</Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : payments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <Typography>No payments found</Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              payments.map((payment) => {
+                const isSelected = selectedPayments.includes(payment.id);
+                const formattedDate = new Date(payment.created_at).toLocaleDateString('en-US', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                }).replace(/\//g, '-');
+                
+                return (
+                  <TableRow 
+                    hover 
+                    key={payment.id}
+                    selected={isSelected}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox 
+                        checked={isSelected}
+                        onChange={() => handleSelectOne(payment.id)}
+                      />
+                    </TableCell>
+                    <TableCell>{formattedDate}</TableCell>
+                    <TableCell>{payment.purchase}</TableCell>
+                    <TableCell>${parseFloat(payment.amount).toLocaleString()}</TableCell>
+                    <TableCell>{payment.currency}</TableCell>
+                    <TableCell>{payment.payment_mode.name}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleEditPayment(payment.id)}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <PencilSimpleIcon size={20} />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDeletePayment(payment.id)}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <TrashIcon size={20} />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
             <TableRow>
-              <TableCell colSpan={4} sx={{ fontWeight: 'bold' }}>
+              <TableCell colSpan={3} sx={{ fontWeight: 'bold' }}>
                 Total
               </TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>${totalAmount.toFixed(2)}</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>${totalAmount.toLocaleString()}</TableCell>
               <TableCell colSpan={3}></TableCell>
             </TableRow>
           </TableBody>
         </Table>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&lt;</Button>
-              <Button 
-                size="small" 
-                sx={{ 
-                  minWidth: 24, 
-                  height: 24, 
-                  p: 0, 
-                  mx: 0.5, 
-                  border: '1px solid #0ea5e9', 
-                  borderRadius: 1,
-                  color: '#0ea5e9' 
-                }}
-              >
-                1
-              </Button>
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&gt;</Button>
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              10 / page <Box component="span" sx={{ ml: 0.5, cursor: 'pointer' }}>▼</Box>
-            </Typography>
-          </Box>
-        </Box>
       </Card>
 
-      {/* Modals */}
-      {isPaymentModalOpen && currentPayment && (
+      {/* Payment Edit Modal */}
+      {isPaymentModalOpen && (
         <PaymentOutEditModal
           open={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
           onSave={handleSavePayment}
           payment={currentPayment}
-          isNew={!currentPayment.id}
         />
       )}
       
+      {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        itemName={paymentToDelete ? (payments.find(p => p.id === paymentToDelete)?.purchaseNo || '') : ''}
-        itemType="Payment"
-        dependentItems={0}
+        title="Confirm Delete"
+        message={`Are you sure you want to delete ${paymentToDelete ? 'this payment' : ''}?`}
       />
     </Box>
   );

@@ -1,377 +1,374 @@
 'use client';
 
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import Checkbox from '@mui/material/Checkbox';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import FormControl from '@mui/material/FormControl';
-import Grid from '@mui/material/Grid';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import Stack from '@mui/material/Stack';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
-import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import React, { useState } from 'react';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  IconButton,
+  Paper,
+  Snackbar,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  Alert,
+  CircularProgress
+} from '@mui/material';
+import { PencilSimple, Plus, Trash } from '@phosphor-icons/react/dist/ssr';
+import { z as zod } from 'zod';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-import { useAdmin } from '@/contexts/admin-context';
+import { useCurrencies, useCreateCurrency, useUpdateCurrency, useDeleteCurrency } from '@/hooks/use-companies';
 
-export default function Page(): React.JSX.Element {
-  const { currencies, addCurrency, updateCurrency, deleteCurrency, loading, error } = useAdmin();
+const currencySchema = zod.object({
+  id: zod.string().optional(),
+  name: zod.string().min(1, 'Currency name is required'),
+  code: zod.string().min(2, 'Currency code is required').max(3, 'Currency code must be 2-3 characters')
+});
+
+type CurrencyFormValues = zod.infer<typeof currencySchema>;
+
+export default function CurrenciesPage(): React.JSX.Element {
+  const { data: currencies, isLoading: isLoadingCurrencies, error: currenciesError } = useCurrencies();
+  const createCurrencyMutation = useCreateCurrency();
+  const updateCurrencyMutation = useUpdateCurrency();
+  const deleteCurrencyMutation = useDeleteCurrency();
   
-  // State
-  const [selectedCurrencies, setSelectedCurrencies] = React.useState<string[]>([]);
-  const [addDialogOpen, setAddDialogOpen] = React.useState(false);
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [formState, setFormState] = React.useState({
-    id: '',
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  
+  const defaultValues: CurrencyFormValues = {
     name: '',
-    symbol: '',
-    position: 'front',
     code: '',
+  };
+  
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors }
+  } = useForm<CurrencyFormValues>({
+    resolver: zodResolver(currencySchema),
+    defaultValues
   });
-  const [successMessage, setSuccessMessage] = React.useState('');
-
-  // Handlers
-  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked) {
-      setSelectedCurrencies(currencies.map((currency) => currency.id));
-    } else {
-      setSelectedCurrencies([]);
+  
+  const isLoading = isLoadingCurrencies || 
+    createCurrencyMutation.isPending || 
+    updateCurrencyMutation.isPending || 
+    deleteCurrencyMutation.isPending;
+  
+  const handleCreateDialogOpen = () => {
+    reset(defaultValues);
+    setCreateDialogOpen(true);
+  };
+  
+  const handleEditDialogOpen = (currency: any) => {
+    setValue('id', currency.id);
+    setValue('name', currency.name);
+    setValue('code', currency.code);
+    setEditDialogOpen(true);
+  };
+  
+  const handleDeleteDialogOpen = (currency: any) => {
+    setValue('id', currency.id);
+    setValue('name', currency.name);
+    setValue('code', currency.code);
+    setDeleteDialogOpen(true);
+  };
+  
+  const handleCreateSubmit = async (data: CurrencyFormValues) => {
+    try {
+      await createCurrencyMutation.mutateAsync({
+        name: data.name,
+        code: data.code
+      });
+      setCreateDialogOpen(false);
+      setSuccessMessage('Currency created successfully');
+      reset(defaultValues);
+    } catch (error) {
+      console.error('Error creating currency:', error);
     }
   };
-
-  const handleSelectOne = (id: string) => {
-    if (selectedCurrencies.includes(id)) {
-      setSelectedCurrencies(selectedCurrencies.filter((currencyId) => currencyId !== id));
-    } else {
-      setSelectedCurrencies([...selectedCurrencies, id]);
+  
+  const handleEditSubmit = async (data: CurrencyFormValues) => {
+    try {
+      if (data.id) {
+        await updateCurrencyMutation.mutateAsync({
+          id: data.id,
+          data: {
+            name: data.name,
+            code: data.code
+          }
+        });
+        setEditDialogOpen(false);
+        setSuccessMessage('Currency updated successfully');
+        reset(defaultValues);
+      }
+    } catch (error) {
+      console.error('Error updating currency:', error);
     }
   };
-
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }> | SelectChangeEvent) => {
-    const { name, value, checked } = e.target as HTMLInputElement;
-    setFormState((prev) => ({
-      ...prev,
-      [name]: name === 'active' ? checked : value,
-    }));
-  };
-
-  const handleAddSubmit = () => {
-    const { id, ...newCurrency } = formState;
-    addCurrency(newCurrency);
-    setAddDialogOpen(false);
-    setSuccessMessage('Currency added successfully');
-    resetForm();
-  };
-
-  const handleEditSubmit = () => {
-    const { id, ...updates } = formState;
-    updateCurrency(id, updates);
-    setEditDialogOpen(false);
-    setSuccessMessage('Currency updated successfully');
-    resetForm();
-  };
-
-  const handleDeleteSubmit = () => {
-    deleteCurrency(formState.id);
-    setDeleteDialogOpen(false);
-    setSuccessMessage('Currency deleted successfully');
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setFormState({
-      id: '',
-      name: '',
-      symbol: '',
-      position: 'front',
-      code: '',
-    });
-  };
-
-  const handleEditClick = (id: string) => {
-    const currency = currencies.find((c) => c.id === id);
-    if (currency) {
-      setFormState(currency);
-      setEditDialogOpen(true);
+  
+  const handleDeleteSubmit = async () => {
+    try {
+      const id = control._formValues.id;
+      if (id) {
+        await deleteCurrencyMutation.mutateAsync(id);
+        setDeleteDialogOpen(false);
+        setSuccessMessage('Currency deleted successfully');
+        reset(defaultValues);
+      }
+    } catch (error) {
+      console.error('Error deleting currency:', error);
     }
   };
-
-  const handleDeleteClick = (id: string) => {
-    const currency = currencies.find((c) => c.id === id);
-    if (currency) {
-      setFormState(currency);
-      setDeleteDialogOpen(true);
-    }
-  };
-
-  const closeSnackbar = () => {
-    setSuccessMessage('');
-  };
-
+  
   return (
-    <>
-      <Box component="main" sx={{ flexGrow: 1, py: 8 }}>
-        <Box sx={{ py: 3 }}>
-          <Typography variant="h4">Currencies</Typography>
-        </Box>
-        
-        <Card>
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+    <Box component="main" sx={{ flexGrow: 1, py: 8 }}>
+      <Container maxWidth="lg">
+        <Stack spacing={3}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            spacing={4}
+          >
+            <Stack spacing={1}>
+              <Typography variant="h4">
+                Currencies
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Manage system currencies
+              </Typography>
+            </Stack>
             <Button
-              startIcon={<PlusIcon />}
+              startIcon={<Plus />}
               variant="contained"
-              onClick={() => setAddDialogOpen(true)}
+              onClick={handleCreateDialogOpen}
             >
-              Add New Currency
+              Add Currency
             </Button>
-          </Box>
-          <Box sx={{ overflowX: 'auto' }}>
-            <Table sx={{ minWidth: 800 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox">
-                    <Checkbox 
-                      checked={currencies.length > 0 && selectedCurrencies.length === currencies.length}
-                      indeterminate={selectedCurrencies.length > 0 && selectedCurrencies.length < currencies.length}
-                      onChange={handleSelectAll}
-                      aria-label="Select all currencies"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    Currency Name
-                  </TableCell>
-                  <TableCell>
-                    Currency Symbol
-                  </TableCell>
-                  <TableCell>
-                    Currency Position
-                  </TableCell>
-                  <TableCell>
-                    Currency Code
-                  </TableCell>
-                  <TableCell>
-                    Action
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {currencies.map((currency) => (
-                  <TableRow
-                    hover
-                    key={currency.id}
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={selectedCurrencies.includes(currency.id)}
-                        onChange={() => handleSelectOne(currency.id)}
-                        aria-label={`Select ${currency.name}`}
+          </Stack>
+          
+          {currenciesError && (
+            <Alert severity="error">{(currenciesError as any)?.message || 'Failed to load currencies'}</Alert>
+          )}
+          
+          {createCurrencyMutation.isError && (
+            <Alert severity="error">{(createCurrencyMutation.error as any)?.message || 'Failed to create currency'}</Alert>
+          )}
+          
+          {updateCurrencyMutation.isError && (
+            <Alert severity="error">{(updateCurrencyMutation.error as any)?.message || 'Failed to update currency'}</Alert>
+          )}
+          
+          {deleteCurrencyMutation.isError && (
+            <Alert severity="error">{(deleteCurrencyMutation.error as any)?.message || 'Failed to delete currency'}</Alert>
+          )}
+          
+          <Card>
+            <CardContent>
+              {isLoadingCurrencies ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Currency Name</TableCell>
+                        <TableCell>Code</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {currencies?.map((currency) => (
+                        <TableRow key={currency.id}>
+                          <TableCell>{currency.name}</TableCell>
+                          <TableCell>{currency.code}</TableCell>
+                          <TableCell align="right">
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleEditDialogOpen(currency)}
+                            >
+                              <PencilSimple />
+                            </IconButton>
+                            <IconButton
+                              color="error"
+                              onClick={() => handleDeleteDialogOpen(currency)}
+                            >
+                              <Trash />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {currencies?.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} align="center">
+                            No currencies found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Create Dialog */}
+          <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)}>
+            <form onSubmit={handleSubmit(handleCreateSubmit)}>
+              <DialogTitle>Add Currency</DialogTitle>
+              <Divider />
+              <DialogContent sx={{ pt: 2 }}>
+                <Stack spacing={3} sx={{ minWidth: 400 }}>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Currency Name"
+                        error={!!errors.name}
+                        helperText={errors.name?.message}
+                        fullWidth
+                        required
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="subtitle2">
-                        {currency.name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {currency.symbol}
-                    </TableCell>
-                    <TableCell>
-                      {currency.position === 'front' ? 'Before Amount' : 'After Amount'}
-                    </TableCell>
-                    <TableCell>
-                      {currency.code}
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <Button
-                          color="primary"
-                          size="small"
-                          startIcon={<PencilSimpleIcon />}
-                          onClick={() => handleEditClick(currency.id)}
-                        />
-                        <Button
-                          color="error"
-                          size="small"
-                          startIcon={<TrashIcon />}
-                          onClick={() => handleDeleteClick(currency.id)}
-                        />
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Box>
-        </Card>
-      </Box>
-
-      {/* Add Currency Dialog */}
-      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)}>
-        <DialogTitle>Add New Currency</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Currency Name"
-                name="name"
-                value={formState.name}
-                onChange={handleFormChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Currency Symbol"
-                name="symbol"
-                value={formState.symbol}
-                onChange={handleFormChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Currency Position</InputLabel>
-                <Select
-                  name="position"
-                  value={formState.position}
-                  onChange={handleFormChange}
-                  label="Currency Position"
+                    )}
+                  />
+                  <Controller
+                    name="code"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Currency Code"
+                        error={!!errors.code}
+                        helperText={errors.code?.message}
+                        fullWidth
+                        required
+                      />
+                    )}
+                  />
+                </Stack>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+                <Button 
+                  type="submit" 
+                  variant="contained"
+                  disabled={isLoading}
                 >
-                  <MenuItem value="front">Before Amount</MenuItem>
-                  <MenuItem value="back">After Amount</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Currency Code"
-                name="code"
-                value={formState.code}
-                onChange={handleFormChange}
-                required
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddSubmit} variant="contained" disabled={loading}>
-            {loading ? 'Adding...' : 'Add Currency'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit Currency Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
-        <DialogTitle>Edit Currency</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Currency Name"
-                name="name"
-                value={formState.name}
-                onChange={handleFormChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Currency Symbol"
-                name="symbol"
-                value={formState.symbol}
-                onChange={handleFormChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Currency Position</InputLabel>
-                <Select
-                  name="position"
-                  value={formState.position}
-                  onChange={handleFormChange}
-                  label="Currency Position"
+                  {isLoading ? <CircularProgress size={24} /> : 'Create'}
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
+          
+          {/* Edit Dialog */}
+          <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
+            <form onSubmit={handleSubmit(handleEditSubmit)}>
+              <DialogTitle>Edit Currency</DialogTitle>
+              <Divider />
+              <DialogContent sx={{ pt: 2 }}>
+                <Stack spacing={3} sx={{ minWidth: 400 }}>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Currency Name"
+                        error={!!errors.name}
+                        helperText={errors.name?.message}
+                        fullWidth
+                        required
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="code"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Currency Code"
+                        error={!!errors.code}
+                        helperText={errors.code?.message}
+                        fullWidth
+                        required
+                      />
+                    )}
+                  />
+                </Stack>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                <Button 
+                  type="submit" 
+                  variant="contained"
+                  disabled={isLoading}
                 >
-                  <MenuItem value="front">Before Amount</MenuItem>
-                  <MenuItem value="back">After Amount</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Currency Code"
-                name="code"
-                value={formState.code}
-                onChange={handleFormChange}
-                required
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleEditSubmit} variant="contained" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Currency</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete <strong>{formState.name}</strong>? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteSubmit} color="error" variant="contained" disabled={loading}>
-            {loading ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Success message */}
-      <Snackbar open={!!successMessage} autoHideDuration={6000} onClose={closeSnackbar}>
-        <Alert onClose={closeSnackbar} severity="success" sx={{ width: '100%' }}>
-          {successMessage}
-        </Alert>
-      </Snackbar>
-      
-      {/* Error message */}
-      {error && (
-        <Snackbar open={!!error} autoHideDuration={6000}>
-          <Alert severity="error" sx={{ width: '100%' }}>
-            {error}
-          </Alert>
-        </Snackbar>
-      )}
-    </>
+                  {isLoading ? <CircularProgress size={24} /> : 'Update'}
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
+          
+          {/* Delete Dialog */}
+          <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+            <DialogTitle>Delete Currency</DialogTitle>
+            <Divider />
+            <DialogContent>
+              <DialogContentText>
+                Are you sure you want to delete the currency "{control._formValues.name}"?
+                This action cannot be undone.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+              <Button 
+                onClick={handleDeleteSubmit} 
+                color="error"
+                disabled={isLoading}
+              >
+                {isLoading ? <CircularProgress size={24} /> : 'Delete'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+          
+          {/* Success Message */}
+          <Snackbar
+            open={!!successMessage}
+            autoHideDuration={6000}
+            onClose={() => setSuccessMessage('')}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          >
+            <Alert onClose={() => setSuccessMessage('')} severity="success">
+              {successMessage}
+            </Alert>
+          </Snackbar>
+        </Stack>
+      </Container>
+    </Box>
   );
 } 

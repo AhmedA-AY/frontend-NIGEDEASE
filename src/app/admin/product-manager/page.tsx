@@ -26,14 +26,6 @@ export default function ProductManagerPage(): React.JSX.Element {
       link: paths.admin.categories,
     },
     {
-      id: 'brands',
-      title: 'Brands',
-      description: 'Manage product brands and logos',
-      icon: <TagIcon size={52} weight="bold" />,
-      color: '#0ea5e9',
-      link: paths.admin.brands,
-    },
-    {
       id: 'products',
       title: 'Products',
       description: 'Manage product inventory and details',
@@ -47,7 +39,7 @@ export default function ProductManagerPage(): React.JSX.Element {
       description: 'Manage clothing attributes like colors, sizes, and materials',
       icon: <TShirtIcon size={52} weight="bold" />,
       color: '#0ea5e9',
-      link: paths.admin.clothings,
+      link: paths.admin.clothing,
     },
   ];
 

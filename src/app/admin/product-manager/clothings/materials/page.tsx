@@ -146,7 +146,7 @@ export default function ClothingMaterialsPage(): React.JSX.Element {
   const breadcrumbItems = [
     { label: 'Dashboard', url: paths.admin.dashboard },
     { label: 'Product Manager', url: paths.admin.productManager },
-    { label: 'Clothings', url: paths.admin.clothings },
+    { label: 'Clothings', url: paths.admin.clothing },
     { label: 'Materials', url: paths.admin.clothingMaterials },
   ];
 
@@ -356,9 +356,8 @@ export default function ClothingMaterialsPage(): React.JSX.Element {
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        itemName={materialToDelete ? materials.find(m => m.id === materialToDelete)?.name || '' : ''}
-        itemType="Material"
-        dependentItems={materialToDelete ? materials.find(m => m.id === materialToDelete)?.productsCount || 0 : 0}
+        title="Confirm Delete"
+        message={`Are you sure you want to delete this material?`}
       />
     </Box>
   );

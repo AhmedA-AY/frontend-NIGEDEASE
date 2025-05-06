@@ -129,7 +129,7 @@ export default function ClothingColorsPage(): React.JSX.Element {
   const breadcrumbItems = [
     { label: 'Dashboard', url: paths.admin.dashboard },
     { label: 'Product Manager', url: paths.admin.productManager },
-    { label: 'Clothings', url: paths.admin.clothings },
+    { label: 'Clothings', url: paths.admin.clothing },
     { label: 'Colors', url: paths.admin.clothingColors },
   ];
 
@@ -310,9 +310,8 @@ export default function ClothingColorsPage(): React.JSX.Element {
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        itemName={colorToDelete ? colors.find(c => c.id === colorToDelete)?.name || '' : ''}
-        itemType="Color"
-        dependentItems={colorToDelete ? colors.find(c => c.id === colorToDelete)?.productsCount || 0 : 0}
+        title="Confirm Delete"
+        message={`Are you sure you want to delete ${colorToDelete ? colors.find(c => c.id === colorToDelete)?.name || '' : ''}?`}
       />
     </Box>
   );
