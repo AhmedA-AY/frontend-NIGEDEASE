@@ -24,6 +24,11 @@ export const coreApiClient = axios.create({
 // Generic API client (primarily for backward compatibility)
 export const apiClient = coreApiClient;
 
+interface TokenResponse {
+  access: string;
+  refresh?: string;
+}
+
 // Add a request interceptor to include auth token for user management service
 userManagementApiClient.interceptors.request.use(
   (config) => {
@@ -31,11 +36,8 @@ userManagementApiClient.interceptors.request.use(
     const token = tokenStorage.getAccessToken();
     
     // If token exists, add it to the headers
-    if (token) {
-      if (!config.headers) {
-        config.headers = {};
-      }
-      config.headers.Authorization = `Bearer ${token}`;
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
     
     return config;
@@ -52,11 +54,8 @@ coreApiClient.interceptors.request.use(
     const token = tokenStorage.getAccessToken();
     
     // If token exists, add it to the headers
-    if (token) {
-      if (!config.headers) {
-        config.headers = {};
-      }
-      config.headers.Authorization = `Bearer ${token}`;
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
     
     return config;
@@ -65,11 +64,6 @@ coreApiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
-interface TokenResponse {
-  access: string;
-  refresh?: string;
-}
 
 // Add a response interceptor to handle token refresh for the user management service
 userManagementApiClient.interceptors.response.use(
@@ -108,10 +102,9 @@ userManagementApiClient.interceptors.response.use(
           );
           
           // Retry the original request with the new token
-          if (!originalRequest.headers) {
-            originalRequest.headers = {};
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = `Bearer ${response.data.access}`;
           }
-          originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
           return userManagementApiClient(originalRequest);
         }
       } catch (refreshError) {
@@ -162,10 +155,9 @@ coreApiClient.interceptors.response.use(
           );
           
           // Retry the original request with the new token
-          if (!originalRequest.headers) {
-            originalRequest.headers = {};
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = `Bearer ${response.data.access}`;
           }
-          originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
           return coreApiClient(originalRequest);
         }
       } catch (refreshError) {
