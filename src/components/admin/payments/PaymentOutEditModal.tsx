@@ -16,7 +16,8 @@ import FormHelperText from '@mui/material/FormHelperText';
 import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 import { PaymentOutCreateData, Payable, financialsApi } from '@/services/api/financials';
-import { Supplier, TransactionPaymentMode, transactionsApi } from '@/services/api/transactions';
+import { Purchase, transactionsApi, TransactionPaymentMode } from '@/services/api/transactions';
+import { Company, companiesApi, Currency } from '@/services/api/companies';
 
 interface PaymentOutEditModalProps {
   open: boolean;
@@ -33,27 +34,30 @@ export default function PaymentOutEditModal({
 }: PaymentOutEditModalProps): React.JSX.Element {
   const [formData, setFormData] = useState<PaymentOutCreateData & { id?: string }>(payment);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
   const [payables, setPayables] = useState<Payable[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Currencies
-  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
-  
-  // Fetch suppliers, payment modes, and payables
+  // Fetch data
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       try {
-        const [suppliersData, paymentModesData, payablesData] = await Promise.all([
-          transactionsApi.getSuppliers(),
+        const [companiesData, paymentModesData, payablesData, purchasesData, currenciesData] = await Promise.all([
+          companiesApi.getCompanies(),
           transactionsApi.getPaymentModes(),
-          financialsApi.getPayables()
+          financialsApi.getPayables(),
+          transactionsApi.getPurchases(),
+          companiesApi.getCurrencies()
         ]);
-        setSuppliers(suppliersData);
+        setCompanies(companiesData);
         setPaymentModes(paymentModesData);
         setPayables(payablesData);
+        setPurchases(purchasesData);
+        setCurrencies(currenciesData);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -103,12 +107,8 @@ export default function PaymentOutEditModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.payable) {
-      newErrors.payable = 'Payable is required';
-    }
-    
-    if (!formData.purchase) {
-      newErrors.purchase = 'Purchase ID is required';
+    if (!formData.company) {
+      newErrors.company = 'Company is required';
     }
     
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
@@ -149,6 +149,28 @@ export default function PaymentOutEditModal({
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>
+            <FormControl fullWidth error={!!errors.company}>
+              <InputLabel id="company-select-label">Company</InputLabel>
+              <Select
+                labelId="company-select-label"
+                id="company"
+                name="company"
+                value={formData.company || ''}
+                label="Company"
+                onChange={handleSelectChange}
+              >
+                <MenuItem value="">Select a Company</MenuItem>
+                {companies.map(company => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {company.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.company && <FormHelperText>{errors.company}</FormHelperText>}
+            </FormControl>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
             <FormControl fullWidth error={!!errors.payable}>
               <InputLabel id="payable-select-label">Payable</InputLabel>
               <Select
@@ -162,7 +184,7 @@ export default function PaymentOutEditModal({
                 <MenuItem value="">Select a Payable</MenuItem>
                 {payables.map(payable => (
                   <MenuItem key={payable.id} value={payable.id}>
-                    {payable.purchase} - ${parseFloat(payable.amount).toLocaleString()}
+                    {payable.id} - ${parseFloat(payable.amount).toLocaleString()}
                   </MenuItem>
                 ))}
               </Select>
@@ -171,16 +193,25 @@ export default function PaymentOutEditModal({
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <TextField
-              name="purchase"
-              label="Purchase ID"
-              type="text"
-              fullWidth
-              value={formData.purchase || ''}
-              onChange={handleChange}
-              error={!!errors.purchase}
-              helperText={errors.purchase}
-            />
+            <FormControl fullWidth error={!!errors.purchase}>
+              <InputLabel id="purchase-select-label">Purchase</InputLabel>
+              <Select
+                labelId="purchase-select-label"
+                id="purchase"
+                name="purchase"
+                value={formData.purchase || ''}
+                label="Purchase"
+                onChange={handleSelectChange}
+              >
+                <MenuItem value="">Select a Purchase</MenuItem>
+                {purchases.map(purchase => (
+                  <MenuItem key={purchase.id} value={purchase.id}>
+                    {purchase.id}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.purchase && <FormHelperText>{errors.purchase}</FormHelperText>}
+            </FormControl>
           </Grid>
           
           <Grid item xs={12} md={6}>
@@ -210,8 +241,11 @@ export default function PaymentOutEditModal({
                 label="Currency"
                 onChange={handleSelectChange}
               >
+                <MenuItem value="">Select Currency</MenuItem>
                 {currencies.map(currency => (
-                  <MenuItem key={currency} value={currency}>{currency}</MenuItem>
+                  <MenuItem key={currency.id} value={currency.id}>
+                    {currency.name} ({currency.code})
+                  </MenuItem>
                 ))}
               </Select>
               {errors.currency && <FormHelperText>{errors.currency}</FormHelperText>}
@@ -220,17 +254,20 @@ export default function PaymentOutEditModal({
           
           <Grid item xs={12} md={6}>
             <FormControl fullWidth error={!!errors.payment_mode_id}>
-              <InputLabel id="payment-method-select-label">Payment Method</InputLabel>
+              <InputLabel id="payment-mode-select-label">Payment Method</InputLabel>
               <Select
-                labelId="payment-method-select-label"
+                labelId="payment-mode-select-label"
                 id="payment_mode_id"
                 name="payment_mode_id"
                 value={formData.payment_mode_id || ''}
                 label="Payment Method"
                 onChange={handleSelectChange}
               >
+                <MenuItem value="">Select Payment Method</MenuItem>
                 {paymentModes.map(mode => (
-                  <MenuItem key={mode.id} value={mode.id}>{mode.name}</MenuItem>
+                  <MenuItem key={mode.id} value={mode.id}>
+                    {mode.name}
+                  </MenuItem>
                 ))}
               </Select>
               {errors.payment_mode_id && <FormHelperText>{errors.payment_mode_id}</FormHelperText>}
@@ -242,10 +279,10 @@ export default function PaymentOutEditModal({
         <Button onClick={onClose}>Cancel</Button>
         <Button 
           onClick={handleSubmit} 
-          variant="contained" 
+          variant="contained"
           sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
         >
-          {payment.id ? 'Save Changes' : 'Add Payment'}
+          {payment.id ? 'Update' : 'Save'}
         </Button>
       </DialogActions>
     </Dialog>

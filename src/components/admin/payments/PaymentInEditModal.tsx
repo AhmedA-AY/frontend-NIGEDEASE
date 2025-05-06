@@ -16,7 +16,8 @@ import FormHelperText from '@mui/material/FormHelperText';
 import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 import { PaymentInCreateData, Receivable, financialsApi } from '@/services/api/financials';
-import { Customer, TransactionPaymentMode, transactionsApi } from '@/services/api/transactions';
+import { Sale, transactionsApi, TransactionPaymentMode } from '@/services/api/transactions';
+import { Company, companiesApi, Currency } from '@/services/api/companies';
 
 interface PaymentInEditModalProps {
   open: boolean;
@@ -33,27 +34,30 @@ export default function PaymentInEditModal({
 }: PaymentInEditModalProps): React.JSX.Element {
   const [formData, setFormData] = useState<PaymentInCreateData & { id?: string }>(payment);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
   const [receivables, setReceivables] = useState<Receivable[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Currencies
-  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
-  
-  // Fetch customers, payment modes, and receivables
+  // Fetch data
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       try {
-        const [customersData, paymentModesData, receivablesData] = await Promise.all([
-          transactionsApi.getCustomers(),
+        const [companiesData, paymentModesData, receivablesData, salesData, currenciesData] = await Promise.all([
+          companiesApi.getCompanies(),
           transactionsApi.getPaymentModes(),
-          financialsApi.getReceivables()
+          financialsApi.getReceivables(),
+          transactionsApi.getSales(),
+          companiesApi.getCurrencies()
         ]);
-        setCustomers(customersData);
+        setCompanies(companiesData);
         setPaymentModes(paymentModesData);
         setReceivables(receivablesData);
+        setSales(salesData);
+        setCurrencies(currenciesData);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -103,12 +107,8 @@ export default function PaymentInEditModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.receivable) {
-      newErrors.receivable = 'Receivable is required';
-    }
-    
-    if (!formData.sale) {
-      newErrors.sale = 'Sale ID is required';
+    if (!formData.company) {
+      newErrors.company = 'Company is required';
     }
     
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
@@ -149,6 +149,28 @@ export default function PaymentInEditModal({
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>
+            <FormControl fullWidth error={!!errors.company}>
+              <InputLabel id="company-select-label">Company</InputLabel>
+              <Select
+                labelId="company-select-label"
+                id="company"
+                name="company"
+                value={formData.company || ''}
+                label="Company"
+                onChange={handleSelectChange}
+              >
+                <MenuItem value="">Select a Company</MenuItem>
+                {companies.map(company => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {company.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.company && <FormHelperText>{errors.company}</FormHelperText>}
+            </FormControl>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
             <FormControl fullWidth error={!!errors.receivable}>
               <InputLabel id="receivable-select-label">Receivable</InputLabel>
               <Select
@@ -162,7 +184,7 @@ export default function PaymentInEditModal({
                 <MenuItem value="">Select a Receivable</MenuItem>
                 {receivables.map(receivable => (
                   <MenuItem key={receivable.id} value={receivable.id}>
-                    {receivable.sale} - ${parseFloat(receivable.amount).toLocaleString()}
+                    {receivable.id} - ${parseFloat(receivable.amount).toLocaleString()}
                   </MenuItem>
                 ))}
               </Select>
@@ -171,16 +193,25 @@ export default function PaymentInEditModal({
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <TextField
-              name="sale"
-              label="Sale ID"
-              type="text"
-              fullWidth
-              value={formData.sale || ''}
-              onChange={handleChange}
-              error={!!errors.sale}
-              helperText={errors.sale}
-            />
+            <FormControl fullWidth error={!!errors.sale}>
+              <InputLabel id="sale-select-label">Sale</InputLabel>
+              <Select
+                labelId="sale-select-label"
+                id="sale"
+                name="sale"
+                value={formData.sale || ''}
+                label="Sale"
+                onChange={handleSelectChange}
+              >
+                <MenuItem value="">Select a Sale</MenuItem>
+                {sales.map(sale => (
+                  <MenuItem key={sale.id} value={sale.id}>
+                    {sale.id}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.sale && <FormHelperText>{errors.sale}</FormHelperText>}
+            </FormControl>
           </Grid>
           
           <Grid item xs={12} md={6}>
@@ -210,8 +241,11 @@ export default function PaymentInEditModal({
                 label="Currency"
                 onChange={handleSelectChange}
               >
+                <MenuItem value="">Select Currency</MenuItem>
                 {currencies.map(currency => (
-                  <MenuItem key={currency} value={currency}>{currency}</MenuItem>
+                  <MenuItem key={currency.id} value={currency.id}>
+                    {currency.name} ({currency.code})
+                  </MenuItem>
                 ))}
               </Select>
               {errors.currency && <FormHelperText>{errors.currency}</FormHelperText>}
@@ -220,17 +254,20 @@ export default function PaymentInEditModal({
           
           <Grid item xs={12} md={6}>
             <FormControl fullWidth error={!!errors.payment_mode_id}>
-              <InputLabel id="payment-method-select-label">Payment Method</InputLabel>
+              <InputLabel id="payment-mode-select-label">Payment Method</InputLabel>
               <Select
-                labelId="payment-method-select-label"
+                labelId="payment-mode-select-label"
                 id="payment_mode_id"
                 name="payment_mode_id"
                 value={formData.payment_mode_id || ''}
                 label="Payment Method"
                 onChange={handleSelectChange}
               >
+                <MenuItem value="">Select Payment Method</MenuItem>
                 {paymentModes.map(mode => (
-                  <MenuItem key={mode.id} value={mode.id}>{mode.name}</MenuItem>
+                  <MenuItem key={mode.id} value={mode.id}>
+                    {mode.name}
+                  </MenuItem>
                 ))}
               </Select>
               {errors.payment_mode_id && <FormHelperText>{errors.payment_mode_id}</FormHelperText>}
@@ -242,10 +279,10 @@ export default function PaymentInEditModal({
         <Button onClick={onClose}>Cancel</Button>
         <Button 
           onClick={handleSubmit} 
-          variant="contained" 
+          variant="contained"
           sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
         >
-          {payment.id ? 'Save Changes' : 'Add Payment'}
+          {payment.id ? 'Update' : 'Save'}
         </Button>
       </DialogActions>
     </Dialog>

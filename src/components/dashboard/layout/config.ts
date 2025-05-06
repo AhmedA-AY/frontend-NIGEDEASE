@@ -37,8 +37,6 @@ export const adminNavItems = [
           { key: 'admin-clothing-colors', title: 'Colors', href: paths.admin.clothingColors },
           { key: 'admin-clothing-seasons', title: 'Seasons', href: paths.admin.clothingSeasons },
           { key: 'admin-clothing-collections', title: 'Collections', href: paths.admin.clothingCollections },
-          { key: 'admin-clothing-sizes', title: 'Sizes', href: paths.admin.clothingSizes },
-          { key: 'admin-clothing-materials', title: 'Materials', href: paths.admin.clothingMaterials },
         ]
       },
     ]
@@ -57,7 +55,7 @@ export const adminNavItems = [
   },
   { key: 'admin-payments', title: 'Payments', href: paths.admin.payments, icon: 'credit-card' },
   { key: 'admin-parties', title: 'Parties', href: paths.admin.parties, icon: 'users' },
-  { key: 'admin-stores', title: 'Stores', href: paths.admin.stores, icon: 'storefront' },
+  { key: 'admin-users', title: 'Users', href: paths.admin.users, icon: 'user-gear' },
 ] satisfies NavItemConfig[];
 
 export const stockManagerNavItems = [
@@ -66,7 +64,6 @@ export const stockManagerNavItems = [
   { key: 'stock-manager-purchases', title: 'Purchases', href: paths.stockManager.purchases, icon: 'shopping-bag' },
   { key: 'stock-manager-expenses', title: 'Expenses', href: paths.stockManager.expenses, icon: 'bank' },
   { key: 'stock-manager-payments', title: 'Payments', href: paths.stockManager.payments, icon: 'credit-card' },
-  { key: 'stock-manager-reports', title: 'Reports', href: paths.stockManager.reports, icon: 'file-text' },
 ] satisfies NavItemConfig[];
 
 export const superAdminNavItems = [
@@ -81,5 +78,4 @@ export const salesmanNavItems = [
   { key: 'salesman-parties', title: 'Parties', href: paths.salesman.parties, icon: 'users' },
   { key: 'salesman-sales', title: 'Sales', href: paths.salesman.sales, icon: 'currency-dollar' },
   { key: 'salesman-expenses', title: 'Expenses', href: paths.salesman.expenses, icon: 'bank' },
-  { key: 'salesman-reports', title: 'Reports', href: paths.salesman.reports, icon: 'file-text' },
 ] satisfies NavItemConfig[];

@@ -27,6 +27,7 @@ export const paths = {
     paymentIn: '/admin/payments/payment-in',
     paymentOut: '/admin/payments/payment-out',
     parties: '/admin/parties',
+    users: '/admin/users',
     companies: '/admin/companies',
     stores: '/admin/stores',
   },

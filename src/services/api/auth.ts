@@ -67,7 +67,7 @@ export interface CreateUserData {
   password: string;
   first_name?: string;
   last_name?: string;
-  role: 'super_admin' | 'admin' | 'salesman' | 'stock_manager';
+  role: string;
   profile_image?: string;
 }
 

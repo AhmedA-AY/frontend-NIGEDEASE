@@ -12,6 +12,7 @@ import { ShoppingBag as ShoppingBagIcon } from '@phosphor-icons/react/dist/ssr/S
 import { Bank as BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
 import { CreditCard as CreditCardIcon } from '@phosphor-icons/react/dist/ssr/CreditCard';
 import { Storefront as StorefrontIcon } from '@phosphor-icons/react/dist/ssr/Storefront';
+import { UserGear as UserGearIcon } from '@phosphor-icons/react/dist/ssr/UserGear';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -19,6 +20,7 @@ export const navIcons = {
   'plugs-connected': PlugsConnectedIcon,
   'x-square': XSquare,
   user: UserIcon,
+  'user-gear': UserGearIcon,
   users: UsersIcon,
   buildings: BuildingsIcon,
   package: PackageIcon,

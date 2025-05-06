@@ -89,104 +89,217 @@ export const dashboardApi = {
   // Get dashboard statistics
   getDashboardStats: async (filters?: DashboardFilters): Promise<DashboardStats> => {
     try {
-      // For development/testing, uncomment to use mock data directly
-      // return getMockDashboardStats();
+      // In a real application, we would pass filters to the API
+      // For now, we'll get the data from multiple endpoints and combine them
       
       console.log('Fetching dashboard statistics...');
       
       // Create combined stats from different endpoints
-      let salesData: Sale[] = [];
-      let expensesData: Expense[] = [];
-      let paymentsData: Payment[] = [];
-      
+      // In a real app, you'd make an API call with the filters
       try {
-        // Try to get real data from API
-        const [salesResponse, expensesResponse, paymentsResponse] = await Promise.all([
-          coreApiClient.get<ApiResponse<Sale[]> | Sale[]>('/transactions/sales/'),
-          coreApiClient.get<ApiResponse<Expense[]> | Expense[]>('/financials/expenses/'),
-          coreApiClient.get<ApiResponse<Payment[]> | Payment[]>('/financials/payment-in/')
+        const [salesResponse, expensesResponse, paymentsInResponse, paymentsOutResponse] = await Promise.all([
+          coreApiClient.get<ApiResponse<Sale[]> | Sale[]>('/transactions/sales'),
+          coreApiClient.get<ApiResponse<Expense[]> | Expense[]>('/financials/expenses'),
+          coreApiClient.get<ApiResponse<Payment[]> | Payment[]>('/financials/payment-in'),
+          coreApiClient.get<ApiResponse<Payment[]> | Payment[]>('/financials/payment-out')
         ]);
         
         console.log('API responses received');
+        console.log('Sales response status:', salesResponse.status);
+        console.log('Expenses response status:', expensesResponse.status);
+        console.log('Payments In response status:', paymentsInResponse.status);
+        console.log('Payments Out response status:', paymentsOutResponse.status);
+        
+        // Get data from response based on actual API structure
+        // The API might return { data: [...] } or the array directly
+        let sales: Sale[] = [];
+        let expenses: Expense[] = [];
+        let paymentsIn: Payment[] = [];
+        let paymentsOut: Payment[] = [];
         
         // Extract sales data
         if (salesResponse && salesResponse.data) {
+          console.log('Sales response type:', typeof salesResponse.data);
           if (Array.isArray(salesResponse.data)) {
-            salesData = salesResponse.data;
+            sales = salesResponse.data;
           } else if (salesResponse.data.data && Array.isArray(salesResponse.data.data)) {
-            salesData = salesResponse.data.data;
+            sales = salesResponse.data.data;
+          } else {
+            console.warn('Unexpected sales response format:', salesResponse);
           }
         }
+        console.log('Raw sales response data:', salesResponse.data);
+        console.log('Extracted sales data:', sales);
         
         // Extract expenses data
         if (expensesResponse && expensesResponse.data) {
+          console.log('Expenses response type:', typeof expensesResponse.data);
           if (Array.isArray(expensesResponse.data)) {
-            expensesData = expensesResponse.data;
+            expenses = expensesResponse.data;
           } else if (expensesResponse.data.data && Array.isArray(expensesResponse.data.data)) {
-            expensesData = expensesResponse.data.data;
+            expenses = expensesResponse.data.data;
+          } else {
+            console.warn('Unexpected expenses response format:', expensesResponse);
           }
         }
+        console.log('Raw expenses response data:', expensesResponse.data);
+        console.log('Extracted expenses data:', expenses);
         
-        // Extract payments data
-        if (paymentsResponse && paymentsResponse.data) {
-          if (Array.isArray(paymentsResponse.data)) {
-            paymentsData = paymentsResponse.data;
-          } else if (paymentsResponse.data.data && Array.isArray(paymentsResponse.data.data)) {
-            paymentsData = paymentsResponse.data.data;
+        // Extract payments in data
+        if (paymentsInResponse && paymentsInResponse.data) {
+          console.log('Payments In response type:', typeof paymentsInResponse.data);
+          if (Array.isArray(paymentsInResponse.data)) {
+            paymentsIn = paymentsInResponse.data;
+          } else if (paymentsInResponse.data.data && Array.isArray(paymentsInResponse.data.data)) {
+            paymentsIn = paymentsInResponse.data.data;
+          } else {
+            console.warn('Unexpected payments in response format:', paymentsInResponse);
           }
         }
+        console.log('Raw payments in response data:', paymentsInResponse.data);
+        console.log('Extracted payments in data:', paymentsIn);
         
-        console.log('Extracted data counts:', {
-          salesCount: salesData.length,
-          expensesCount: expensesData.length,
-          paymentsCount: paymentsData.length
+        // Extract payments out data
+        if (paymentsOutResponse && paymentsOutResponse.data) {
+          console.log('Payments Out response type:', typeof paymentsOutResponse.data);
+          if (Array.isArray(paymentsOutResponse.data)) {
+            paymentsOut = paymentsOutResponse.data;
+          } else if (paymentsOutResponse.data.data && Array.isArray(paymentsOutResponse.data.data)) {
+            paymentsOut = paymentsOutResponse.data.data;
+          } else {
+            console.warn('Unexpected payments out response format:', paymentsOutResponse);
+          }
+        }
+        console.log('Raw payments out response data:', paymentsOutResponse.data);
+        console.log('Extracted payments out data:', paymentsOut);
+        
+        console.log('Extracted data:', {
+          salesCount: sales.length,
+          expensesCount: expenses.length,
+          paymentsInCount: paymentsIn.length,
+          paymentsOutCount: paymentsOut.length
         });
-      } catch (error) {
-        console.error('Error fetching API data:', error);
-        // Continue with empty arrays, will fall back to mock data
+        
+        // If any API calls succeeded but returned data without expected fields,
+        // we need to use fallback logic
+        const hasSalesData = sales.length > 0 && sales.some(s => s.total_amount);
+        const hasExpensesData = expenses.length > 0 && expenses.some(e => e.amount);
+        const hasPaymentsInData = paymentsIn.length > 0 && paymentsIn.some(p => p.amount);
+        const hasPaymentsOutData = paymentsOut.length > 0 && paymentsOut.some(p => p.amount);
+        
+        console.log('API data field validation:', {
+          hasSalesData,
+          hasExpensesData,
+          hasPaymentsInData,
+          hasPaymentsOutData
+        });
+        
+        // Calculate summary statistics from real data
+        // For total sales, use total_amount from sales data
+        const totalSales = sales.reduce((sum: number, sale: any) => {
+          if (!sale.total_amount) {
+            console.warn('Sale missing total_amount:', sale);
+            return sum;
+          }
+          const amount = parseFloat(sale.total_amount || '0');
+          console.log('Sale record:', sale, 'Total amount:', sale.total_amount, 'Parsed amount:', amount);
+          return sum + amount;
+        }, 0);
+        
+        // For total expenses, sum amount fields from expenses data
+        const totalExpenses = expenses.reduce((sum: number, expense: any) => {
+          if (!expense.amount) {
+            console.warn('Expense missing amount:', expense);
+            return sum;
+          }
+          const amount = parseFloat(expense.amount || '0');
+          console.log('Expense record:', expense, 'Amount:', expense.amount, 'Parsed amount:', amount);
+          return sum + amount;
+        }, 0);
+        
+        // For payment received, sum amount fields from payments-in data
+        const paymentReceived = paymentsIn.reduce((sum: number, payment: any) => {
+          if (!payment.amount) {
+            console.warn('Payment in missing amount:', payment);
+            return sum;
+          }
+          const amount = parseFloat(payment.amount || '0');
+          console.log('Payment in record:', payment, 'Amount:', payment.amount, 'Parsed amount:', amount);
+          return sum + amount;
+        }, 0);
+        
+        // For payment sent, sum amount fields from payments-out data
+        const paymentSent = paymentsOut.reduce((sum: number, payment: any) => {
+          if (!payment.amount) {
+            console.warn('Payment out missing amount:', payment);
+            return sum;
+          }
+          const amount = parseFloat(payment.amount || '0');
+          console.log('Payment out record:', payment, 'Amount:', payment.amount, 'Parsed amount:', amount);
+          return sum + amount;
+        }, 0);
+        
+        console.log('Calculated totals:', { 
+          totalSales, 
+          totalExpenses, 
+          paymentReceived,
+          paymentSent
+        });
+        
+        // If we have no data, try mock data for development
+        if (!hasSalesData && !hasExpensesData && !hasPaymentsInData && !hasPaymentsOutData) {
+          console.log('No usable data found in API responses, using development mock data');
+          // Return mock data
+          return {
+            totalSales: 10250.75,
+            totalExpenses: 3450.25,
+            paymentSent: 2760.20,
+            paymentReceived: 8950.50,
+            topSellingProducts: generateMockTopSellingProducts(),
+            recentSales: generateMockRecentSales([]),
+            stockAlerts: generateMockStockAlerts(),
+            topCustomers: generateMockTopCustomers(),
+          };
+        }
+        
+        // Return real data with some mock data for items we don't have real data for yet
+        return {
+          totalSales: hasSalesData ? totalSales : 10250.75,
+          totalExpenses: hasExpensesData ? totalExpenses : 3450.25,
+          paymentSent: hasPaymentsOutData ? paymentSent : 2760.20,
+          paymentReceived: hasPaymentsInData ? paymentReceived : 8950.50,
+          topSellingProducts: generateMockTopSellingProducts(),
+          recentSales: generateMockRecentSales(sales),
+          stockAlerts: generateMockStockAlerts(),
+          topCustomers: generateMockTopCustomers(),
+        };
+      } catch (apiError) {
+        console.error('Error in API calls:', apiError);
+        // Return mock data if API calls fail
+        return {
+          totalSales: 10250.75,
+          totalExpenses: 3450.25,
+          paymentSent: 2760.20,
+          paymentReceived: 8950.50,
+          topSellingProducts: generateMockTopSellingProducts(),
+          recentSales: generateMockRecentSales([]),
+          stockAlerts: generateMockStockAlerts(),
+          topCustomers: generateMockTopCustomers(),
+        };
       }
-      
-      // If we have no real data or very little, use mock data for development
-      if (salesData.length === 0 && expensesData.length === 0 && paymentsData.length === 0) {
-        console.log('No data found in API responses, using mock data');
-        return getMockDashboardStats();
-      }
-      
-      // Calculate summary statistics from real data
-      const totalSales = salesData.length > 0 
-        ? salesData.reduce((sum: number, sale: any) => sum + parseFloat(sale.total_amount || sale.amount || '0'), 0)
-        : 0;
-      
-      const totalExpenses = expensesData.length > 0
-        ? expensesData.reduce((sum: number, expense: any) => sum + parseFloat(expense.amount || '0'), 0)
-        : 0;
-      
-      const paymentReceived = paymentsData.length > 0
-        ? paymentsData.reduce((sum: number, payment: any) => sum + parseFloat(payment.amount || '0'), 0)
-        : 0;
-      
-      console.log('Calculated totals:', { totalSales, totalExpenses, paymentReceived });
-      
-      // If all totals are 0, use mock data
-      if (totalSales === 0 && totalExpenses === 0 && paymentReceived === 0) {
-        console.log('All totals are zero, using mock data');
-        return getMockDashboardStats();
-      }
-      
-      // Return data with real totals but mock data for detailed components
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      // Return default empty data
       return {
-        totalSales,
-        totalExpenses,
-        paymentSent: totalExpenses * 0.8, // Assume 80% of expenses are paid
-        paymentReceived,
+        totalSales: 10250.75,
+        totalExpenses: 3450.25,
+        paymentSent: 2760.20,
+        paymentReceived: 8950.50,
         topSellingProducts: generateMockTopSellingProducts(),
-        recentSales: generateMockRecentSales(salesData),
+        recentSales: generateMockRecentSales([]),
         stockAlerts: generateMockStockAlerts(),
         topCustomers: generateMockTopCustomers(),
       };
-    } catch (error) {
-      console.error('Error in getDashboardStats:', error);
-      return getMockDashboardStats();
     }
   },
   
@@ -195,46 +308,44 @@ export const dashboardApi = {
     try {
       // Try to get real sales data for the chart
       console.log('Fetching sales statistics...');
-      let salesData: Sale[] = [];
+      const salesResponse = await coreApiClient.get<ApiResponse<Sale[]> | Sale[]>('/transactions/sales/');
       
-      try {
-        const salesResponse = await coreApiClient.get<ApiResponse<Sale[]> | Sale[]>('/transactions/sales/');
-        
-        // Extract sales data
-        if (salesResponse && salesResponse.data) {
-          if (Array.isArray(salesResponse.data)) {
-            salesData = salesResponse.data;
-          } else if (salesResponse.data.data && Array.isArray(salesResponse.data.data)) {
-            salesData = salesResponse.data.data;
-          }
+      console.log('Sales response:', salesResponse);
+      
+      // Extract sales data
+      let sales: Sale[] = [];
+      if (salesResponse && salesResponse.data) {
+        if (Array.isArray(salesResponse.data)) {
+          sales = salesResponse.data;
+        } else if (salesResponse.data.data && Array.isArray(salesResponse.data.data)) {
+          sales = salesResponse.data.data;
+        } else {
+          console.warn('Unexpected sales response format:', salesResponse);
         }
-        
-        console.log(`Found ${salesData.length} sales records`);
-      } catch (error) {
-        console.error('Error fetching sales data:', error);
-        // Continue with empty array
       }
       
+      console.log(`Found ${sales.length} sales records`);
+      
       // If we have real data, organize by day and month
-      if (salesData.length > 0) {
-        const dailySalesData = generateDailySalesData(salesData);
-        const monthlySalesData = generateMonthlySalesData(salesData);
+      if (sales.length > 0) {
+        // Group sales by day of week and month for charts
+        const dailySalesData = generateDailySalesData(sales);
+        const monthlySalesData = generateMonthlySalesData(sales);
         
-        // If real data processing resulted in empty arrays, use mock data
         return {
           dailySales: dailySalesData.length > 0 ? dailySalesData : generateMockDailySales(),
           monthlySales: monthlySalesData.length > 0 ? monthlySalesData : generateMockMonthlySales(),
         };
       }
       
-      // No sales data, use mock data
-      console.log('No valid sales data found, using mock data for charts');
+      // Fall back to mock data if no real data available
+      console.log('No sales data found, using mock data for charts');
       return {
         dailySales: generateMockDailySales(),
         monthlySales: generateMockMonthlySales(),
       };
     } catch (error) {
-      console.error('Error in getSalesStats:', error);
+      console.error('Error fetching sales stats:', error);
       return {
         dailySales: generateMockDailySales(),
         monthlySales: generateMockMonthlySales(),
@@ -253,20 +364,6 @@ export const dashboardApi = {
     };
   }
 };
-
-// Helper function to get mock dashboard stats for development/fallback
-function getMockDashboardStats(): DashboardStats {
-  return {
-    totalSales: 10250.75,
-    totalExpenses: 3450.25,
-    paymentSent: 2760.20,
-    paymentReceived: 8950.50,
-    topSellingProducts: generateMockTopSellingProducts(),
-    recentSales: generateMockRecentSales([]),
-    stockAlerts: generateMockStockAlerts(),
-    topCustomers: generateMockTopCustomers(),
-  };
-}
 
 // Helper functions to generate mock data
 function generateMockTopSellingProducts(): TopSellingProduct[] {

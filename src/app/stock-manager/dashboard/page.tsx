@@ -1,131 +1,337 @@
 'use client';
 
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import { ChartLineUp as ChartLineUpIcon } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
-import { CurrencyDollar as CurrencyDollarIcon } from '@phosphor-icons/react/dist/ssr/CurrencyDollar';
-import { ShoppingBag as ShoppingBagIcon } from '@phosphor-icons/react/dist/ssr/ShoppingBag';
-import { Bank as BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
-import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
+import React from 'react';
+import { Box, Card, Container, Grid, Stack, Typography, Button } from '@mui/material';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import { ApexOptions } from 'apexcharts';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
-export default function DashboardPage(): React.JSX.Element {
-  // Sample dashboard data
-  const dashboardStats = [
+import DynamicApexChart from '@/components/dynamic-apex-chart';
+import { DashboardFilters, dashboardApi, TopSellingProduct, RecentSale, StockAlert, TopCustomer } from '@/services/api/dashboard';
+import { TopSellingProducts } from '@/components/dashboard/overview/top-selling-products';
+import { RecentSales } from '@/components/dashboard/overview/recent-sales';
+import { StockAlerts } from '@/components/dashboard/overview/stock-alerts';
+import { TopCustomers } from '@/components/dashboard/overview/top-customers';
+
+export default function StockManagerDashboardPage() {
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [stats, setStats] = React.useState({
+    totalSales: 0,
+    totalExpenses: 0,
+    paymentSent: 0,
+    paymentReceived: 0,
+    topSellingProducts: [] as TopSellingProduct[],
+    recentSales: [] as RecentSale[],
+    stockAlerts: [] as StockAlert[],
+    topCustomers: [] as TopCustomer[],
+  });
+  const [salesStats, setSalesStats] = React.useState({
+    dailySales: [] as any[],
+    monthlySales: [] as any[],
+  });
+  const [selectedPeriod, setSelectedPeriod] = React.useState<DashboardFilters['period']>('month');
+  const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
+
+  const fetchDashboardData = React.useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log('Fetching dashboard data with period:', selectedPeriod);
+      const [dashboardStats, sales] = await Promise.all([
+        dashboardApi.getDashboardStats({ period: selectedPeriod }),
+        dashboardApi.getSalesStats({ period: selectedPeriod }),
+      ]);
+      
+      console.log('Dashboard data received:', { 
+        totalSales: dashboardStats.totalSales,
+        totalExpenses: dashboardStats.totalExpenses,
+        paymentSent: dashboardStats.paymentSent,
+        paymentReceived: dashboardStats.paymentReceived,
+        dailySalesCount: sales.dailySales.length
+      });
+      
+      setStats(dashboardStats);
+      setSalesStats(sales);
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedPeriod]);
+
+  React.useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Configure chart options
+  const salesChartOptions: ApexOptions = {
+    chart: {
+      type: 'area',
+      height: 350,
+      toolbar: {
+        show: false,
+      },
+    },
+    dataLabels: {
+      enabled: false,
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 2,
+    },
+    xaxis: {
+      categories: salesStats.dailySales.map((item: any) => item.day),
+    },
+    tooltip: {
+      x: {
+        format: 'dd/MM/yy HH:mm',
+      },
+    },
+    legend: {
+      position: 'top',
+    },
+    colors: ['#4CAF50', '#FF9800'],
+  };
+
+  const salesChartSeries = [
     {
-      id: 'suppliers',
-      title: 'Total Suppliers',
-      value: '24',
-      change: '+2.5%',
-      changeType: 'positive',
-      icon: <UsersIcon size={24} />,
-      iconColor: '#0ea5e9',
+      name: 'Sales',
+      data: salesStats.dailySales.map((item: any) => item.sales),
     },
     {
-      id: 'purchases',
-      title: 'Total Purchases',
-      value: '$54,325',
-      change: '+15.3%',
-      changeType: 'positive',
-      icon: <ShoppingBagIcon size={24} />,
-      iconColor: '#22c55e',
-    },
-    {
-      id: 'expenses',
-      title: 'Total Expenses',
-      value: '$12,458',
-      change: '+2.1%',
-      changeType: 'positive',
-      icon: <BankIcon size={24} />,
-      iconColor: '#f59e0b',
-    },
-    {
-      id: 'payments',
-      title: 'Total Payments',
-      value: '$38,952',
-      change: '-4.2%',
-      changeType: 'negative',
-      icon: <CurrencyDollarIcon size={24} />,
-      iconColor: '#ef4444',
+      name: 'Purchases',
+      data: salesStats.dailySales.map((item: any) => item.purchases),
     },
   ];
 
-  return (
-    <Box component="main" sx={{ flexGrow: 1, py: 8 }}>
-      <Container maxWidth="xl">
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4">Stock Manager Dashboard</Typography>
+  const handlePeriodChange = (period: DashboardFilters['period']) => {
+    setSelectedPeriod(period);
+  };
+
+  const handleRetry = () => {
+    fetchDashboardData();
+  };
+
+  if (isLoading) {
+    return (
+      <Container>
+        <Box sx={{ my: 5, textAlign: 'center' }}>
+          <Typography variant="h5">Loading dashboard data...</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Please wait while we fetch the latest statistics...
+          </Typography>
         </Box>
-        
-        <Grid container spacing={3}>
-          {/* Dashboard Summary Cards */}
-          {dashboardStats.map((stat) => (
-            <Grid item xs={12} sm={6} md={3} key={stat.id}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Box
-                      sx={{
-                        alignItems: 'center',
-                        bgcolor: `${stat.iconColor}20`,
-                        borderRadius: '50%',
-                        color: stat.iconColor,
-                        display: 'flex',
-                        height: 40,
-                        justifyContent: 'center',
-                        width: 40,
-                      }}
-                    >
-                      {stat.icon}
-                    </Box>
-                    <Box sx={{ ml: 2 }}>
-                      <Typography color="text.secondary" variant="body2">
-                        {stat.title}
-                      </Typography>
-                      <Typography variant="h6">{stat.value}</Typography>
-                    </Box>
-                  </Box>
-                  <Box
-                    sx={{
-                      alignItems: 'center',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <Typography
-                      color={stat.changeType === 'positive' ? 'success.main' : 'error.main'}
-                      variant="body2"
-                    >
-                      {stat.change}
-                    </Typography>
-                    <Typography color="text.secondary" variant="caption">
-                      Since last month
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-          
-          {/* Additional content can be added here */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Recent Activity
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  As a Stock Manager, you can manage suppliers, purchases, expenses, and process payments. You can also access reports to monitor business performance.
-                </Typography>
-              </CardContent>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Box sx={{ my: 5, textAlign: 'center' }}>
+          <Typography variant="h5" color="error">{error}</Typography>
+          <Button 
+            variant="contained" 
+            sx={{ mt: 2 }}
+            onClick={handleRetry}
+          >
+            Retry
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth={false}>
+      <Box sx={{ py: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4">
+            Stock Manager Dashboard
+          </Typography>
+          <Box>
+            {lastUpdated && (
+              <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </Typography>
+            )}
+            <Button 
+              variant="outlined" 
+              size="small" 
+              onClick={handleRetry}
+              disabled={isLoading}
+              startIcon={isLoading ? null : <RefreshIcon />}
+            >
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Time period selector */}
+        <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+          <Button 
+            variant={selectedPeriod === 'today' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('today')}
+          >
+            Today
+          </Button>
+          <Button 
+            variant={selectedPeriod === 'week' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('week')}
+          >
+            This Week
+          </Button>
+          <Button 
+            variant={selectedPeriod === 'month' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('month')}
+          >
+            This Month
+          </Button>
+          <Button 
+            variant={selectedPeriod === 'year' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('year')}
+          >
+            This Year
+          </Button>
+        </Stack>
+
+        {/* Statistics summary cards */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'primary.lighter', 
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center' 
+                }}>
+                  <TrendingUpIcon color="primary" />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Total Purchases
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.totalSales.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'error.lighter', 
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center' 
+                }}>
+                  <TrendingDownIcon color="error" />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Total Expenses
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.totalExpenses.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'success.lighter', 
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center' 
+                }}>
+                  <ReceiptIcon color="success" />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Payment Received
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.paymentReceived.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'warning.lighter', 
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center' 
+                }}>
+                  <AccountBalanceIcon color="warning" />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Payment Sent
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.paymentSent.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Stack>
             </Card>
           </Grid>
         </Grid>
-      </Container>
-    </Box>
+
+        {/* Charts */}
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Card sx={{ p: 3 }}>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6">Sales & Purchases Overview</Typography>
+              </Box>
+              <Box sx={{ height: 375 }}>
+                <DynamicApexChart
+                  type="area"
+                  height={375}
+                  options={salesChartOptions}
+                  series={salesChartSeries}
+                />
+              </Box>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <StockAlerts alerts={stats.stockAlerts} />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TopSellingProducts products={stats.topSellingProducts} />
+          </Grid>
+          
+          <Grid item xs={12}>
+            <RecentSales sales={stats.recentSales} />
+          </Grid>
+        </Grid>
+      </Box>
+    </Container>
   );
 } 
