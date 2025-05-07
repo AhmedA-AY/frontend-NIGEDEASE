@@ -154,7 +154,7 @@ export const authApi = {
   // Refresh token
   refreshToken: async (refreshToken: string): Promise<{ access: string; refresh: string }> => {
     const response = await userManagementApiClient.post<{ access: string; refresh: string }>('/auth/refresh-token/', {
-      refresh: refreshToken
+      refresh_token: refreshToken
     });
     return response.data;
   },

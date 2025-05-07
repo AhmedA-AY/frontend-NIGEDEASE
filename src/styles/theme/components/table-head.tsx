@@ -6,11 +6,16 @@ import type { Theme } from '../types';
 export const MuiTableHead = {
   styleOverrides: {
     root: {
-      [`& .${tableCellClasses.root}`]: {
-        backgroundColor: 'var(--mui-palette-background-level1)',
-        color: 'var(--mui-palette-text-secondary)',
-        lineHeight: 1,
+      '> tr > th:first-of-type': {
+        paddingLeft: '24px',
+        borderTopLeftRadius: '8px',
       },
+      '> tr > th:last-child': {
+        paddingRight: '24px',
+        borderTopRightRadius: '8px',
+      },
+      borderBottom: '1px solid var(--mui-palette-divider)',
+      backgroundColor: 'var(--mui-palette-background-level1)',
     },
   },
 } satisfies Components<Theme>['MuiTableHead'];

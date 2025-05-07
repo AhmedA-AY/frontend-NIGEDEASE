@@ -33,11 +33,11 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
     <Drawer
       PaperProps={{
         sx: {
-          '--MobileNav-background': 'var(--mui-palette-neutral-950)',
+          '--MobileNav-background': 'linear-gradient(180deg, #0F172A 0%, #1E293B 100%)',
           '--MobileNav-color': 'var(--mui-palette-common-white)',
           '--NavItem-color': 'var(--mui-palette-neutral-300)',
-          '--NavItem-hover-background': 'rgba(255, 255, 255, 0.04)',
-          '--NavItem-active-background': 'var(--mui-palette-primary-main)',
+          '--NavItem-hover-background': 'rgba(255, 255, 255, 0.06)',
+          '--NavItem-active-background': 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
           '--NavItem-active-color': 'var(--mui-palette-primary-contrastText)',
           '--NavItem-disabled-color': 'var(--mui-palette-neutral-500)',
           '--NavItem-icon-color': 'var(--mui-palette-neutral-400)',
@@ -52,69 +52,104 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
           width: 'var(--MobileNav-width)',
           zIndex: 'var(--MobileNav-zIndex)',
           '&::-webkit-scrollbar': { display: 'none' },
+          boxShadow: '4px 0 24px rgba(0, 0, 0, 0.15)',
         },
       }}
       onClose={onClose}
       open={open}
     >
       <Stack spacing={2} sx={{ p: 3 }}>
-        <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-flex' }}>
-          <Logo color="light" height={32} width={122} />
+        <Box 
+          component={RouterLink} 
+          href={paths.dashboard.overview} 
+          sx={{ 
+            display: 'inline-flex',
+            transition: 'transform 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.05)',
+            }
+          }}
+        >
+          <Logo color="dark" height={40} width={150} />
         </Box>
         <Box
           sx={{
             alignItems: 'center',
-            backgroundColor: 'var(--mui-palette-neutral-950)',
-            border: '1px solid var(--mui-palette-neutral-700)',
+            backgroundImage: 'linear-gradient(to right, rgba(20, 184, 166, 0.1), rgba(99, 102, 241, 0.05))',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(20, 184, 166, 0.3)',
             borderRadius: '12px',
             cursor: 'pointer',
             display: 'flex',
-            p: '4px 12px',
+            p: '10px 16px',
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              borderColor: 'rgba(20, 184, 166, 0.5)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)',
+              transform: 'translateY(-2px)',
+            }
           }}
         >
           <Box sx={{ flex: '1 1 auto' }}>
-            <Typography color="var(--mui-palette-neutral-400)" variant="body2">
+            <Typography color="var(--mui-palette-neutral-400)" variant="body2" sx={{ fontWeight: 500 }}>
               Workspace
             </Typography>
-            <Typography color="inherit" variant="subtitle1">
-              Devias
+            <Typography color="inherit" variant="subtitle1" sx={{ fontWeight: 600 }}>
+              NIGED-EASE
             </Typography>
           </Box>
           <CaretUpDownIcon />
         </Box>
       </Stack>
-      <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
-      <Box component="nav" sx={{ flex: '1 1 auto', p: '12px' }}>
+      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
+      <Box component="nav" sx={{ flex: '1 1 auto', p: '16px' }}>
         {renderNavItems({ pathname, items: navItems })}
       </Box>
-      <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
-      <Stack spacing={2} sx={{ p: '12px' }}>
+      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
+      <Stack spacing={2} sx={{ p: '16px', mb: 2 }}>
         <div>
-          <Typography color="var(--mui-palette-neutral-100)" variant="subtitle2">
-            Need more features?
+          <Typography color="var(--mui-palette-neutral-100)" variant="subtitle2" sx={{ fontWeight: 600 }}>
+            Need help?
           </Typography>
           <Typography color="var(--mui-palette-neutral-400)" variant="body2">
-            Check out our Pro solution template.
+            Contact our support team.
           </Typography>
         </div>
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Box
-            component="img"
-            alt="Pro version"
-            src="/assets/devias-kit-pro.png"
-            sx={{ height: 'auto', width: '160px' }}
-          />
-        </Box>
         <Button
-          component="a"
+          component={RouterLink}
           endIcon={<ArrowSquareUpRightIcon fontSize="var(--icon-fontSize-md)" />}
           fullWidth
-          href="https://material-kit-pro-react.devias.io/"
-          sx={{ mt: 2 }}
-          target="_blank"
+          href="/contact"
+          sx={{ 
+            mt: 2,
+            borderRadius: '10px',
+            py: 1,
+            background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+            boxShadow: '0 6px 12px rgba(20, 184, 166, 0.2)',
+            transition: 'all 0.2s ease-in-out',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: '-100%',
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+              transition: 'all 0.6s ease',
+            },
+            '&:hover': {
+              boxShadow: '0 8px 16px rgba(99, 102, 241, 0.3)',
+              transform: 'translateY(-2px)',
+              '&::before': {
+                left: '100%',
+              }
+            }
+          }}
           variant="contained"
         >
-          Pro version
+          Contact Support
         </Button>
       </Stack>
     </Drawer>

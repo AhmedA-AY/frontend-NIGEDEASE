@@ -12,7 +12,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import { ShieldCheck } from '@phosphor-icons/react/dist/ssr';
+import { ShieldCheck, ArrowLeft, EnvelopeSimple } from '@phosphor-icons/react/dist/ssr';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 
@@ -102,26 +102,105 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
   }, [countdown, email, isResending, resendOtpMutation, setError]);
 
   return (
-    <Stack spacing={4}>
-      <Stack spacing={1} alignItems="center">
+    <Stack 
+      spacing={4}
+      sx={{ 
+        animation: 'fadeIn 0.5s ease-out',
+        '@keyframes fadeIn': {
+          from: { opacity: 0, transform: 'translateY(10px)' },
+          to: { opacity: 1, transform: 'translateY(0)' }
+        }
+      }}
+    >
+      <Stack spacing={2} alignItems="center">
         <Box 
-          component="img"
-          src="/assets/Neged.png"
-          alt="NIGED-EASE Logo"
           sx={{
-            mb: 2,
-            width: 80,
-            height: 80,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: 100,
+            height: 100,
             borderRadius: '50%',
-            objectFit: 'cover',
-            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)'
+            background: 'linear-gradient(45deg, rgba(20, 184, 166, 0.1), rgba(99, 102, 241, 0.1))',
+            mb: 2,
+            position: 'relative',
+            animation: 'pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite',
+            '@keyframes pulse-ring': {
+              '0%': {
+                transform: 'scale(0.95)',
+                boxShadow: '0 0 0 0 rgba(99, 102, 241, 0.4)'
+              },
+              '70%': {
+                transform: 'scale(1)',
+                boxShadow: '0 0 0 15px rgba(99, 102, 241, 0)'
+              },
+              '100%': {
+                transform: 'scale(0.95)',
+                boxShadow: '0 0 0 0 rgba(99, 102, 241, 0)'
+              }
+            }
           }}
-        />
-        <Typography variant="h4" sx={{ fontWeight: 700, textAlign: 'center' }}>
+        >
+          <ShieldCheck 
+            size={56} 
+            weight="duotone" 
+            color="var(--mui-palette-primary-main)" 
+          />
+        </Box>
+        <Typography 
+          variant="h4" 
+          sx={{ 
+            fontWeight: 700, 
+            textAlign: 'center',
+            background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
           Verify Your Account
         </Typography>
-        <Typography color="text.secondary" variant="body1" sx={{ textAlign: 'center' }}>
-          We've sent a 6-digit code to {email}
+        <Box 
+          sx={{ 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mb: 1,
+            animation: 'fadeIn 0.5s ease-out 0.2s both',
+          }}
+        >
+          <EnvelopeSimple 
+            size={20} 
+            weight="duotone" 
+            style={{ 
+              marginRight: 8,
+              color: 'var(--mui-palette-text-secondary)'
+            }}
+          />
+          <Typography 
+            color="text.secondary" 
+            variant="body1" 
+            sx={{ 
+              textAlign: 'center',
+              fontWeight: 500,
+            }}
+          >
+            {email}
+          </Typography>
+        </Box>
+        <Typography 
+          color="text.secondary" 
+          variant="body2" 
+          sx={{ 
+            textAlign: 'center',
+            opacity: 0.8,
+            animation: 'fadeIn 0.5s ease-out 0.3s both',
+            maxWidth: '90%',
+            mx: 'auto'
+          }}
+        >
+          We've sent a 6-digit verification code to your email.
+          Please enter it below to verify your account.
         </Typography>
       </Stack>
 
@@ -132,33 +211,96 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
             name="otp"
             render={({ field }) => (
               <FormControl error={Boolean(errors.otp)} variant="filled">
-                <InputLabel>6-digit OTP code</InputLabel>
+                <InputLabel 
+                  sx={{ 
+                    '&.Mui-focused': { 
+                      color: 'primary.main' 
+                    } 
+                  }}
+                >
+                  6-digit verification code
+                </InputLabel>
                 <OutlinedInput 
                   {...field} 
-                  label="6-digit OTP code" 
+                  label="6-digit verification code" 
                   type="text" 
                   inputMode="numeric"
+                  placeholder="• • • • • •"
                   startAdornment={
                     <ShieldCheck 
-                      style={{ marginRight: 8 }} 
-                      size={20} 
+                      style={{ marginRight: 12 }} 
+                      size={22} 
+                      weight="duotone"
                       color="var(--mui-palette-primary-main)" 
                     />
                   }
                   sx={{ 
-                    borderRadius: 2,
+                    borderRadius: 2.5,
                     backgroundColor: 'background.paper',
+                    transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
                     '&:hover': {
                       backgroundColor: 'background.paper',
+                      boxShadow: '0 0 0 1px rgba(99, 102, 241, 0.2)'
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.3)'
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main'
+                    },
+                    height: 56,
+                    fontSize: '1.1rem',
+                    letterSpacing: 2,
+                    textAlign: 'center',
+                    '& input': {
+                      textAlign: 'center'
+                    },
+                    animation: 'fadeInUp 0.6s ease-out both',
+                    '@keyframes fadeInUp': {
+                      from: { opacity: 0, transform: 'translateY(10px)' },
+                      to: { opacity: 1, transform: 'translateY(0)' }
                     }
                   }}
+                  inputProps={{
+                    maxLength: 6,
+                    style: { textAlign: 'center', letterSpacing: '0.5em' }
+                  }}
                 />
-                {errors.otp ? <FormHelperText>{errors.otp.message}</FormHelperText> : null}
+                {errors.otp ? 
+                  <FormHelperText 
+                    sx={{ 
+                      animation: 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
+                      '@keyframes shake': {
+                        '10%, 90%': { transform: 'translateX(-1px)' },
+                        '20%, 80%': { transform: 'translateX(2px)' },
+                        '30%, 50%, 70%': { transform: 'translateX(-4px)' },
+                        '40%, 60%': { transform: 'translateX(4px)' }
+                      }
+                    }}
+                  >
+                    {errors.otp.message}
+                  </FormHelperText> 
+                : null}
               </FormControl>
             )}
           />
           
-          {errors.root ? <Alert color="error" severity="error" variant="filled">{errors.root.message}</Alert> : null}
+          {errors.root ? 
+            <Alert 
+              color="error" 
+              severity="error" 
+              variant="filled"
+              sx={{ 
+                borderRadius: 2,
+                animation: 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
+              }}
+            >
+              {errors.root.message}
+            </Alert> 
+          : null}
           
           <Button 
             disabled={verifyOtpMutation.isPending} 
@@ -167,43 +309,100 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
             fullWidth
             size="large"
             sx={{ 
-              borderRadius: 2, 
+              borderRadius: 2.5, 
               py: 1.5,
               fontWeight: 600,
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+              background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+              boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)',
+              transition: 'all 0.3s ease',
+              animation: 'fadeInUp 0.6s ease-out 0.2s both',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: '-100%',
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                transition: 'all 0.6s ease',
+              },
+              '&:hover': {
+                boxShadow: '0 10px 20px rgba(99, 102, 241, 0.3)',
+                transform: 'translateY(-2px)',
+                '&::before': {
+                  left: '100%',
+                }
+              },
+              '&:active': {
+                transform: 'translateY(0)',
+                boxShadow: '0 5px 10px rgba(99, 102, 241, 0.2)',
+              }
             }}
           >
-            {verifyOtpMutation.isPending ? <CircularProgress size={24} color="inherit" /> : 'Verify'}
+            {verifyOtpMutation.isPending ? 
+              <CircularProgress size={24} color="inherit" /> : 
+              'Verify & Continue'
+            }
           </Button>
           
-          <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              animation: 'fadeIn 0.8s ease-out 0.3s both',
+            }}
+          >
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+              {countdown > 0 ? (
+                <>Didn't receive the code? You can resend in <b>{countdown}s</b></>
+              ) : (
+                "Didn't receive the code? Try resending it"
+              )}
+            </Typography>
+            
             <Button 
               onClick={handleResendOtp}
               disabled={countdown > 0 || isResending}
-              variant="text" 
+              variant="outlined" 
               color="primary"
+              startIcon={isResending && <CircularProgress size={16} color="inherit" />}
               sx={{ 
-                fontWeight: 600 
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 3,
+                borderColor: countdown > 0 ? 'rgba(0, 0, 0, 0.1)' : 'primary.main',
+                color: countdown > 0 ? 'text.disabled' : 'primary.main',
+                transition: 'all 0.3s ease',
+                '&:enabled:hover': {
+                  transform: 'translateY(-2px)',
+                  backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                  borderColor: 'primary.main',
+                  boxShadow: '0 4px 8px rgba(99, 102, 241, 0.2)'
+                }
               }}
             >
-              {isResending ? (
-                <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
-              ) : null}
-              Resend OTP
+              Resend Verification Code
             </Button>
-            {countdown > 0 && (
-              <Typography variant="body2" color="text.secondary">
-                ({countdown}s)
-              </Typography>
-            )}
-          </Stack>
+          </Box>
           
           <Button 
             onClick={onBack}
             variant="text" 
             color="inherit"
+            startIcon={<ArrowLeft weight="bold" />}
             sx={{ 
-              fontWeight: 500
+              fontWeight: 500,
+              mt: 2,
+              alignSelf: 'center',
+              transition: 'all 0.3s ease',
+              animation: 'fadeIn 0.8s ease-out 0.4s both',
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                transform: 'translateX(-3px)'
+              }
             }}
           >
             Back to Login

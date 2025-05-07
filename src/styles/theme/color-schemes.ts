@@ -1,24 +1,30 @@
 import type { ColorSystemOptions } from '@mui/material/styles';
 
-import { california, kepple, neonBlue, nevada, redOrange, shakespeare, stormGrey } from './colors';
+import { amber, deepPurple, kepple, nevada, primaryTeal, redOrange, roseShade, shakespeare, stormGrey, vividPurple } from './colors';
 import type { ColorScheme } from './types';
 
 export const colorSchemes = {
   dark: {
     palette: {
-      action: { disabledBackground: 'rgba(0, 0, 0, 0.12)' },
+      action: { 
+        disabledBackground: 'rgba(0, 0, 0, 0.12)',
+        hover: 'rgba(255, 255, 255, 0.08)',
+        focus: 'rgba(255, 255, 255, 0.12)',
+        selected: 'rgba(255, 255, 255, 0.16)',
+        active: 'rgba(255, 255, 255, 0.24)',
+      },
       background: {
         default: 'var(--mui-palette-neutral-950)',
-        defaultChannel: '9 10 11',
+        defaultChannel: '2 6 23',
         paper: 'var(--mui-palette-neutral-900)',
-        paperChannel: '19 78 72',
+        paperChannel: '15 23 42',
         level1: 'var(--mui-palette-neutral-800)',
         level2: 'var(--mui-palette-neutral-700)',
         level3: 'var(--mui-palette-neutral-600)',
       },
       common: { black: '#000000', white: '#ffffff' },
       divider: 'var(--mui-palette-neutral-700)',
-      dividerChannel: '50 56 62',
+      dividerChannel: '51 65 85',
       error: {
         ...redOrange,
         light: redOrange[300],
@@ -35,18 +41,18 @@ export const colorSchemes = {
       },
       neutral: { ...nevada },
       primary: {
-        ...neonBlue,
-        light: neonBlue[300],
-        main: neonBlue[400],
-        dark: neonBlue[500],
-        contrastText: 'var(--mui-palette-common-black)',
+        ...primaryTeal,
+        light: primaryTeal[300],
+        main: primaryTeal[500],
+        dark: primaryTeal[700],
+        contrastText: 'var(--mui-palette-common-white)',
       },
       secondary: {
-        ...nevada,
-        light: nevada[100],
-        main: nevada[200],
-        dark: nevada[300],
-        contrastText: 'var(--mui-palette-common-black)',
+        ...deepPurple,
+        light: deepPurple[300],
+        main: deepPurple[500],
+        dark: deepPurple[700],
+        contrastText: 'var(--mui-palette-common-white)',
       },
       success: {
         ...kepple,
@@ -57,23 +63,36 @@ export const colorSchemes = {
       },
       text: {
         primary: 'var(--mui-palette-neutral-100)',
-        primaryChannel: '240 244 248',
+        primaryChannel: '241 245 249',
         secondary: 'var(--mui-palette-neutral-400)',
-        secondaryChannel: '159 166 173',
+        secondaryChannel: '148 163 184',
         disabled: 'var(--mui-palette-neutral-600)',
       },
       warning: {
-        ...california,
-        light: california[300],
-        main: california[400],
-        dark: california[500],
+        ...amber,
+        light: amber[300],
+        main: amber[500],
+        dark: amber[700],
         contrastText: 'var(--mui-palette-common-black)',
+      },
+      accent: {
+        ...roseShade,
+        light: roseShade[300],
+        main: roseShade[500],
+        dark: roseShade[700],
+        contrastText: 'var(--mui-palette-common-white)',
       },
     },
   },
   light: {
     palette: {
-      action: { disabledBackground: 'rgba(0, 0, 0, 0.06)' },
+      action: { 
+        disabledBackground: 'rgba(0, 0, 0, 0.06)',
+        hover: 'rgba(0, 0, 0, 0.04)',
+        focus: 'rgba(0, 0, 0, 0.08)',
+        selected: 'rgba(0, 0, 0, 0.12)',
+        active: 'rgba(0, 0, 0, 0.16)',
+      },
       background: {
         default: 'var(--mui-palette-common-white)',
         defaultChannel: '255 255 255',
@@ -85,7 +104,7 @@ export const colorSchemes = {
       },
       common: { black: '#000000', white: '#ffffff' },
       divider: 'var(--mui-palette-neutral-200)',
-      dividerChannel: '220 223 228',
+      dividerChannel: '226 232 240',
       error: {
         ...redOrange,
         light: redOrange[400],
@@ -102,17 +121,17 @@ export const colorSchemes = {
       },
       neutral: { ...stormGrey },
       primary: {
-        ...neonBlue,
-        light: neonBlue[400],
-        main: neonBlue[500],
-        dark: neonBlue[600],
+        ...primaryTeal,
+        light: primaryTeal[400],
+        main: primaryTeal[500],
+        dark: primaryTeal[600],
         contrastText: 'var(--mui-palette-common-white)',
       },
       secondary: {
-        ...nevada,
-        light: nevada[600],
-        main: nevada[700],
-        dark: nevada[800],
+        ...deepPurple,
+        light: deepPurple[400],
+        main: deepPurple[500],
+        dark: deepPurple[600],
         contrastText: 'var(--mui-palette-common-white)',
       },
       success: {
@@ -124,16 +143,23 @@ export const colorSchemes = {
       },
       text: {
         primary: 'var(--mui-palette-neutral-900)',
-        primaryChannel: '33 38 54',
+        primaryChannel: '15 23 42',
         secondary: 'var(--mui-palette-neutral-500)',
-        secondaryChannel: '102 112 133',
+        secondaryChannel: '100 116 139',
         disabled: 'var(--mui-palette-neutral-400)',
       },
       warning: {
-        ...california,
-        light: california[400],
-        main: california[500],
-        dark: california[600],
+        ...amber,
+        light: amber[400],
+        main: amber[500],
+        dark: amber[600],
+        contrastText: 'var(--mui-palette-common-white)',
+      },
+      accent: {
+        ...roseShade,
+        light: roseShade[400],
+        main: roseShade[500], 
+        dark: roseShade[600],
         contrastText: 'var(--mui-palette-common-white)',
       },
     },

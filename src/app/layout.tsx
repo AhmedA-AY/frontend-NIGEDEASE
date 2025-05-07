@@ -10,6 +10,7 @@ import { UserProvider } from '@/contexts/user-context';
 import { LocalizationProvider } from '@/components/core/localization-provider';
 import { ThemeProvider } from '@/components/core/theme-provider/theme-provider';
 import { AuthProvider } from '@/providers/auth-provider';
+import { QueryProvider } from '@/providers/query-provider';
 
 export const viewport = { width: 'device-width', initialScale: 1 } satisfies Viewport;
 
@@ -22,18 +23,20 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
     <html lang="en">
       <head>
         <title>NIGED-EASE | Business Management</title>
-        <meta name="description" content="A comprehensive business solution designed specifically for Ethiopian businesses" />
+        <meta name="description" content="Modern business management solution for Ethiopian businesses" />
       </head>
       <body>
         <LocalizationProvider>
           <AuthProvider>
-            <UserProvider>
-              <ThemeProvider>
-                <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
-                  {children}
-                </SnackbarProvider>
-              </ThemeProvider>
-            </UserProvider>
+            <QueryProvider>
+              <UserProvider>
+                <ThemeProvider>
+                  <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
+                    {children}
+                  </SnackbarProvider>
+                </ThemeProvider>
+              </UserProvider>
+            </QueryProvider>
           </AuthProvider>
         </LocalizationProvider>
       </body>

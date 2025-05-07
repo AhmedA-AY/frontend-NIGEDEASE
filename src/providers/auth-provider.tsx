@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { tokenStorage } from '@/utils/token-storage';
 import { paths } from '@/paths';
+import { authApi } from '@/services/api/auth';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -23,6 +24,7 @@ interface AuthContextType {
   login: (accessToken: string, refreshToken: string, role: string, email?: string) => void;
   logout: () => void;
   saveEmail: (email: string) => void;
+  refreshTokenIfNeeded: () => Promise<string | null>;
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
@@ -82,23 +84,82 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     [router]
   );
 
-  const logout = React.useCallback(() => {
-    tokenStorage.clearTokens();
-    setIsAuthenticated(false);
-    setUserEmail(null);
-    setUserRole(null);
-    
-    // Clear React Query cache
-    queryClient.clear();
-    
-    // Redirect to login page
-    router.push(paths.auth.signIn);
+  const logout = React.useCallback(async () => {
+    try {
+      // Call logout API
+      await authApi.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Regardless of API success, clear tokens and state
+      tokenStorage.clearTokens();
+      setIsAuthenticated(false);
+      setUserEmail(null);
+      setUserRole(null);
+      
+      // Clear React Query cache
+      queryClient.clear();
+      
+      // Redirect to login page
+      router.push(paths.auth.signIn);
+    }
   }, [router]);
 
   const saveEmail = React.useCallback((email: string) => {
     tokenStorage.saveEmail(email);
     setUserEmail(email);
   }, []);
+
+  // New function to refresh token if needed
+  const refreshTokenIfNeeded = React.useCallback(async (): Promise<string | null> => {
+    try {
+      // Check if access token exists
+      const accessToken = tokenStorage.getAccessToken();
+      
+      if (!accessToken) {
+        return null;
+      }
+      
+      // Verify if the token is valid
+      const isValid = await authApi.verifyToken(accessToken);
+      
+      if (isValid) {
+        return accessToken;
+      }
+      
+      // If not valid, try to refresh
+      const refreshToken = tokenStorage.getRefreshToken();
+      
+      if (!refreshToken) {
+        // No refresh token available
+        tokenStorage.clearTokens();
+        setIsAuthenticated(false);
+        router.push(paths.auth.signIn);
+        return null;
+      }
+      
+      // Refresh token
+      const tokenResponse = await authApi.refreshToken(refreshToken);
+      
+      // Save new tokens
+      tokenStorage.saveTokens(
+        tokenResponse.access,
+        tokenResponse.refresh,
+        tokenStorage.getUserRole() || '',
+        tokenStorage.getUserEmail() || undefined
+      );
+      
+      return tokenResponse.access;
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      
+      // Clear auth state on failure
+      tokenStorage.clearTokens();
+      setIsAuthenticated(false);
+      router.push(paths.auth.signIn);
+      return null;
+    }
+  }, [router]);
 
   const contextValue = React.useMemo(
     () => ({
@@ -108,8 +169,9 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       login,
       logout,
       saveEmail,
+      refreshTokenIfNeeded,
     }),
-    [isAuthenticated, userEmail, userRole, login, logout, saveEmail]
+    [isAuthenticated, userEmail, userRole, login, logout, saveEmail, refreshTokenIfNeeded]
   );
 
   return (

@@ -27,42 +27,114 @@ export function MainNav(): React.JSX.Element {
       <Box
         component="header"
         sx={{
-          borderBottom: '1px solid var(--mui-palette-divider)',
-          backgroundColor: 'var(--mui-palette-background-paper)',
+          borderBottom: '1px solid rgba(203, 213, 225, 0.1)',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(8px)',
           position: 'sticky',
           top: 0,
           zIndex: 'var(--mui-zIndex-appBar)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
         }}
       >
         <Stack
           direction="row"
           spacing={2}
-          sx={{ alignItems: 'center', justifyContent: 'space-between', minHeight: '64px', px: 2 }}
+          sx={{ 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            minHeight: '70px', 
+            px: { xs: 2, md: 3 },
+          }}
         >
           <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
             <IconButton
               onClick={(): void => {
                 setOpenNav(true);
               }}
-              sx={{ display: { lg: 'none' } }}
+              sx={{ 
+                display: { lg: 'none' },
+                borderRadius: '10px',
+                width: '40px',
+                height: '40px',
+                color: '#14B8A6',
+                border: '1px solid rgba(20, 184, 166, 0.2)',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  backgroundColor: 'rgba(20, 184, 166, 0.05)',
+                  transform: 'translateY(-2px)',
+                  borderColor: 'rgba(20, 184, 166, 0.4)',
+                }
+              }}
             >
               <ListIcon />
             </IconButton>
             <Tooltip title="Search">
-              <IconButton>
+              <IconButton
+                sx={{
+                  borderRadius: '12px',
+                  width: '40px',
+                  height: '40px',
+                  color: '#14B8A6',
+                  transition: 'all 0.2s',
+                  border: '1px solid rgba(20, 184, 166, 0.2)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(20, 184, 166, 0.05)',
+                    transform: 'translateY(-2px)',
+                    borderColor: 'rgba(20, 184, 166, 0.4)',
+                  }
+                }}
+              >
                 <MagnifyingGlassIcon />
               </IconButton>
             </Tooltip>
           </Stack>
-          <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
+          <Stack sx={{ alignItems: 'center' }} direction="row" spacing={3}>
             <Tooltip title="Contacts">
-              <IconButton>
+              <IconButton
+                sx={{
+                  borderRadius: '12px',
+                  width: '40px',
+                  height: '40px',
+                  color: '#6366F1',
+                  transition: 'all 0.2s',
+                  border: '1px solid rgba(99, 102, 241, 0.2)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                    transform: 'translateY(-2px)',
+                    borderColor: 'rgba(99, 102, 241, 0.4)',
+                  }
+                }}
+              >
                 <UsersIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Notifications">
-              <Badge badgeContent={4} color="success" variant="dot">
-                <IconButton>
+              <Badge 
+                badgeContent={4} 
+                color="error" 
+                sx={{
+                  '& .MuiBadge-badge': {
+                    boxShadow: '0 0 0 2px #FFF',
+                    top: 8,
+                    right: 8,
+                  }
+                }}
+              >
+                <IconButton
+                  sx={{
+                    borderRadius: '12px',
+                    width: '40px',
+                    height: '40px',
+                    color: '#6366F1',
+                    transition: 'all 0.2s',
+                    border: '1px solid rgba(99, 102, 241, 0.2)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                      transform: 'translateY(-2px)',
+                      borderColor: 'rgba(99, 102, 241, 0.4)',
+                    }
+                  }}
+                >
                   <BellIcon />
                 </IconButton>
               </Badge>
@@ -73,8 +145,16 @@ export function MainNav(): React.JSX.Element {
               src="/assets/profile.jpeg"
               sx={{
                 cursor: 'pointer',
-                height: 40,
-                width: 40
+                height: 42,
+                width: 42,
+                border: '2px solid rgba(20, 184, 166, 0.3)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                  boxShadow: '0 4px 12px rgba(20, 184, 166, 0.2)',
+                  border: '2px solid rgba(20, 184, 166, 0.5)',
+                }
               }}
             />
           </Stack>

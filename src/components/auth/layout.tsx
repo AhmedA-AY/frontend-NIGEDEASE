@@ -6,7 +6,6 @@ import Typography from '@mui/material/Typography';
 import { Building, ChartBar, ShieldCheck } from '@phosphor-icons/react/dist/ssr';
 
 import { paths } from '@/paths';
-import { DynamicLogo } from '@/components/core/logo';
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -19,24 +18,66 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
         display: { xs: 'flex', lg: 'grid' },
         flexDirection: 'column',
         gridTemplateColumns: '1fr 1fr',
-        minHeight: '100%',
+        minHeight: '100vh',
+        position: 'relative',
         bgcolor: 'background.default',
+        overflow: 'hidden',
       }}
     >
+      {/* Background Gradient Elements for Visual Interest */}
+      <Box 
+        sx={{
+          position: 'absolute',
+          top: '-20%',
+          left: '-10%',
+          width: '40%',
+          height: '40%',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, rgba(20, 184, 166, 0) 70%)',
+          filter: 'blur(50px)',
+          zIndex: 0,
+        }}
+      />
+      <Box 
+        sx={{
+          position: 'absolute',
+          bottom: '-20%',
+          right: '-10%',
+          width: '40%',
+          height: '40%',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, rgba(79, 70, 229, 0) 70%)',
+          filter: 'blur(50px)',
+          zIndex: 0,
+        }}
+      />
+
       <Box 
         sx={{ 
           display: 'flex', 
           flex: '1 1 auto', 
           flexDirection: 'column',
           position: 'relative',
+          zIndex: 1,
         }}
       >
-        {/* Logo Area */}
+        {/* Logo Area with Animation */}
         <Box 
           sx={{ 
-            p: 4, 
+            p: { xs: 2, sm: 4 }, 
             display: 'flex', 
             alignItems: 'center',
+            animation: 'fadeInDown 0.6s ease-out',
+            '@keyframes fadeInDown': {
+              from: {
+                opacity: 0,
+                transform: 'translateY(-20px)'
+              },
+              to: {
+                opacity: 1,
+                transform: 'translateY(0)'
+              }
+            }
           }}
         >
           <Box 
@@ -46,6 +87,10 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
               display: 'flex',
               alignItems: 'center',
               textDecoration: 'none',
+              transition: 'transform 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'scale(1.05)',
+              },
             }}
           >
             <Box 
@@ -53,9 +98,16 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
               src="/assets/Neged.png"
               alt="NIGED-EASE Logo"
               sx={{
-                width: 40,
-                height: 40,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 },
                 mr: 1.5,
+                borderRadius: '12px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+                  transform: 'translateY(-2px)'
+                }
               }}
             />
             <Typography 
@@ -65,6 +117,11 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
               sx={{ 
                 fontWeight: 700, 
                 letterSpacing: 0.5,
+                background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                backgroundClip: 'text',
+                textFillColor: 'transparent',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
               }}
             >
               NIGED-EASE
@@ -72,14 +129,23 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
           </Box>
         </Box>
 
-        {/* Form Container */}
+        {/* Form Container with Animation */}
         <Box 
           sx={{ 
             alignItems: 'center', 
             display: 'flex', 
             flex: '1 1 auto', 
             justifyContent: 'center', 
-            p: 4,
+            p: { xs: 2, sm: 4 },
+            animation: 'fadeIn 0.8s ease-out',
+            '@keyframes fadeIn': {
+              from: {
+                opacity: 0
+              },
+              to: {
+                opacity: 1
+              }
+            }
           }}
         >
           <Box 
@@ -88,8 +154,26 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
               width: '100%',
               p: { xs: 3, sm: 4 },
               bgcolor: 'background.paper',
-              borderRadius: 3,
-              boxShadow: { xs: 'none', sm: '0 8px 40px rgba(0, 0, 0, 0.1)' },
+              borderRadius: '16px',
+              boxShadow: '0 10px 50px rgba(0, 0, 0, 0.08)',
+              backdropFilter: 'blur(10px)',
+              position: 'relative',
+              zIndex: 2,
+              overflow: 'hidden',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.12)',
+                transform: 'translateY(-4px)'
+              },
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '4px',
+                background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+              }
             }}
           >
             {children}
@@ -97,19 +181,63 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
         </Box>
       </Box>
 
-      {/* Right Side Illustration */}
+      {/* Right Side Illustration with Modern Design and Animation */}
       <Box
         sx={{
           alignItems: 'center',
-          background: 'linear-gradient(135deg, #0c2461 0%, #1e3799 100%)',
+          background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
           color: 'var(--mui-palette-common-white)',
           display: { xs: 'none', lg: 'flex' },
           justifyContent: 'center',
           p: 8,
           position: 'relative',
           overflow: 'hidden',
+          animation: 'fadeInRight 1s ease-out',
+          '@keyframes fadeInRight': {
+            from: {
+              opacity: 0,
+              transform: 'translateX(40px)'
+            },
+            to: {
+              opacity: 1,
+              transform: 'translateX(0)'
+            }
+          }
         }}
       >
+        {/* Animated Background Elements */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '10%',
+            right: '10%',
+            width: '300px',
+            height: '300px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(20, 184, 166, 0.3) 0%, rgba(20, 184, 166, 0) 70%)',
+            filter: 'blur(40px)',
+            animation: 'pulse 8s infinite alternate ease-in-out',
+            '@keyframes pulse': {
+              '0%': { transform: 'scale(1)', opacity: 0.7 },
+              '100%': { transform: 'scale(1.2)', opacity: 0.5 }
+            }
+          }}
+        />
+        
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '10%',
+            left: '10%',
+            width: '250px',
+            height: '250px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0) 70%)',
+            filter: 'blur(40px)',
+            animation: 'pulse 8s infinite alternate-reverse ease-in-out',
+          }}
+        />
+
         {/* Background Pattern */}
         <Box
           sx={{
@@ -118,21 +246,27 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
             left: 0,
             right: 0,
             bottom: 0,
-            opacity: 0.1,
+            opacity: 0.05,
             background: 'url("/assets/grid-pattern.svg")',
             zIndex: 0,
+            animation: 'pan 60s infinite linear',
+            '@keyframes pan': {
+              '0%': { backgroundPosition: '0% 0%' },
+              '100%': { backgroundPosition: '100% 100%' }
+            }
           }}
         />
 
-        <Stack spacing={6} sx={{ position: 'relative', zIndex: 1, maxWidth: '600px' }}>
-          <Stack spacing={2}>
+        <Stack spacing={8} sx={{ position: 'relative', zIndex: 1, maxWidth: '600px' }}>
+          <Stack spacing={3}>
             <Typography 
               color="inherit" 
               sx={{ 
-                fontSize: '36px', 
+                fontSize: { lg: '36px', xl: '40px' }, 
                 lineHeight: 1.2, 
-                fontWeight: 700,
+                fontWeight: 800,
                 textAlign: 'center',
+                animation: 'fadeIn 1s ease-out 0.3s both',
               }} 
               variant="h1"
             >
@@ -141,17 +275,32 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
                 src="/assets/Neged.png"
                 alt="NIGED-EASE Logo"
                 sx={{
-                  width: 80,
-                  height: 80,
+                  width: 100,
+                  height: 100,
                   objectFit: 'cover',
-                  borderRadius: '50%',
+                  borderRadius: '20%',
+                  border: '4px solid rgba(255, 255, 255, 0.1)',
+                  padding: 1,
                   display: 'block',
                   mx: 'auto',
-                  mb: 2
+                  mb: 3,
+                  backgroundColor: 'white',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+                  animation: 'float 6s infinite ease-in-out',
+                  '@keyframes float': {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-10px)' }
+                  }
                 }}
               />
               Manage Your Business with{' '}
-              <Box component="span" sx={{ color: '#4cd3c2' }}>
+              <Box component="span" sx={{ 
+                background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0 10px 30px rgba(99, 102, 241, 0.3)',
+              }}>
                 NIGED-EASE
               </Box>
             </Typography>
@@ -161,6 +310,10 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
               sx={{ 
                 opacity: 0.9,
                 fontWeight: 400,
+                maxWidth: '90%',
+                mx: 'auto',
+                lineHeight: 1.6,
+                animation: 'fadeIn 1s ease-out 0.6s both',
               }}
             >
               The ultimate business management solution built for Ethiopian businesses
@@ -170,17 +323,17 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
           <Stack spacing={4}>
             {[
               {
-                icon: <Building size={32} weight="fill" />,
+                icon: <Building size={36} weight="fill" />,
                 title: 'Business-Focused',
                 description: 'Tailored specifically for the Ethiopian business environment and its unique challenges.'
               },
               {
-                icon: <ShieldCheck size={32} weight="fill" />,
+                icon: <ShieldCheck size={36} weight="fill" />,
                 title: 'Secure & Reliable',
                 description: 'Enterprise-level security with 99.9% uptime to keep your business running smoothly.'
               },
               {
-                icon: <ChartBar size={32} weight="fill" />,
+                icon: <ChartBar size={36} weight="fill" />,
                 title: 'Comprehensive Analytics',
                 description: 'Make data-driven decisions with powerful reporting and visualization tools.'
               }
@@ -189,28 +342,52 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
                 key={index}
                 sx={{
                   display: 'flex',
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: 'rgba(255, 255, 255, 0.05)',
+                  p: 3,
+                  borderRadius: '12px',
+                  background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
                   backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  transition: 'all 0.3s ease',
+                  animation: `fadeInUp 0.8s ease-out ${0.3 + index * 0.2}s both`,
+                  '@keyframes fadeInUp': {
+                    from: {
+                      opacity: 0,
+                      transform: 'translateY(20px)'
+                    },
+                    to: {
+                      opacity: 1,
+                      transform: 'translateY(0)'
+                    }
+                  },
+                  '&:hover': {
+                    transform: 'translateY(-5px)',
+                    boxShadow: '0 15px 30px rgba(0, 0, 0, 0.1)',
+                    background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)',
+                  }
                 }}
               >
                 <Box 
                   sx={{ 
-                    mr: 2,
-                    color: '#4cd3c2',
+                    mr: 3,
+                    color: index === 0 ? '#14B8A6' : index === 1 ? '#6366F1' : '#8B5CF6',
                     display: 'flex',
                     alignItems: 'flex-start',
                     pt: 0.5,
+                    filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2))',
+                    transition: 'all 0.3s ease',
+                    transform: 'scale(1)',
+                    '&:hover': {
+                      transform: 'scale(1.1)',
+                    }
                   }}
                 >
                   {feature.icon}
                 </Box>
                 <Box>
-                  <Typography variant="h6" sx={{ mb: 0.5, fontWeight: 600 }}>
+                  <Typography variant="h6" sx={{ mb: 0.5, fontWeight: 600, letterSpacing: 0.5 }}>
                     {feature.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.8, lineHeight: 1.6 }}>
                     {feature.description}
                   </Typography>
                 </Box>

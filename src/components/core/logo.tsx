@@ -18,7 +18,7 @@ export interface LogoProps {
   width?: number;
 }
 
-export function Logo({ height = HEIGHT, width = WIDTH }: LogoProps): React.JSX.Element {
+export function Logo({ color = 'dark', height = HEIGHT, width = WIDTH }: LogoProps): React.JSX.Element {
   return (
     <Box 
       alt="logo" 
@@ -26,7 +26,16 @@ export function Logo({ height = HEIGHT, width = WIDTH }: LogoProps): React.JSX.E
       height={height} 
       src="/assets/Neged.png" 
       width="auto"
-      sx={{ objectFit: 'contain' }}
+      sx={{ 
+        objectFit: 'contain',
+        display: 'block',
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        padding: '6px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        maxWidth: '100%',
+        border: '1px solid rgba(203, 213, 225, 0.3)',
+      }}
     />
   );
 }
