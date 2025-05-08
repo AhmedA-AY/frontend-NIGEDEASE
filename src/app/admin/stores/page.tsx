@@ -1,13 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -35,14 +33,18 @@ import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as EditIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 
-import { inventoryApi, InventoryStore, InventoryStoreCreateData } from '@/services/api/inventory';
-import { Company, companiesApi } from '@/services/api/companies';
+import { useStores, useCreateStore, useUpdateStore, useDeleteStore, useToggleStoreStatus } from '@/hooks/admin/use-stores';
+import { useCompanies } from '@/hooks/admin/use-companies';
+import { InventoryStoreCreateData } from '@/services/api/inventory';
 
 export default function StoresPage(): React.JSX.Element {
-  const [stores, setStores] = useState<InventoryStore[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Query hooks
+  const { data: storesData, isLoading: isLoadingStores } = useStores();
+  const { data: companies } = useCompanies();
+  const createStoreMutation = useCreateStore();
+  const updateStoreMutation = useUpdateStore('');
+  const deleteStoreMutation = useDeleteStore();
+  const toggleStoreStatusMutation = useToggleStoreStatus('');
   
   // Form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -65,73 +67,18 @@ export default function StoresPage(): React.JSX.Element {
     severity: 'success' as 'success' | 'error',
   });
 
-  // Fetch stores and companies data
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Fetch stores with detailed debugging
-      console.log('Fetching stores...');
-      const storesResponse = await inventoryApi.getStores();
-      console.log('Stores API call completed with data:', storesResponse);
-      
-      // Process stores data to ensure consistent structure
-      const processedStores = storesResponse.map(store => {
-        // Create a normalized store object with fallbacks for missing fields
-        // Convert is_active string values to boolean for UI display
-        const isActiveValue = 
-          typeof store.is_active === 'string' 
-            ? store.is_active === 'active' 
-            : !!store.is_active;
-        
-        return {
-          id: store.id,
-          name: store.name || 'Unnamed Store',
-          address: store.address || '',
-          phone_number: store.phone_number || '',
-          email: store.email || '',
-          is_active: isActiveValue,
-          company: store.company || null,
-          location: store.location || '',
-          created_at: store.created_at || '',
-          updated_at: store.updated_at || ''
-        };
-      });
-      
-      console.log('Normalized stores data:', processedStores);
-      
-      const companiesData = await companiesApi.getCompanies();
-      console.log('Companies data:', companiesData);
-      
-      setStores(processedStores);
-      setCompanies(companiesData);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load data. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
   // Handle form submission
   const handleSubmit = async () => {
     try {
-      console.log('Submitting form data:', formData); // Add logging to debug
-      
       if (isEditMode && currentStoreId) {
-        await inventoryApi.updateStore(currentStoreId, formData);
+        await updateStoreMutation.mutateAsync(formData);
         setNotification({
           open: true,
           message: 'Store updated successfully',
           severity: 'success',
         });
       } else {
-        await inventoryApi.createStore(formData);
+        await createStoreMutation.mutateAsync(formData);
         setNotification({
           open: true,
           message: 'Store created successfully',
@@ -139,19 +86,13 @@ export default function StoresPage(): React.JSX.Element {
         });
       }
       
-      // Reset form and refresh data
       handleCloseDialog();
-      fetchData();
     } catch (err: any) {
       console.error('Error saving store:', err);
       
-      // Handle API error messages more explicitly
       let errorMessage = 'Failed to save store. Please try again.';
       
-      if (err.response && err.response.data) {
-        console.error('API error details:', err.response.data);
-        
-        // Extract field error messages
+      if (err.response?.data) {
         const fieldErrors = err.response.data;
         const errorDetails = Object.entries(fieldErrors)
           .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
@@ -171,8 +112,7 @@ export default function StoresPage(): React.JSX.Element {
   };
 
   // Handle edit store
-  const handleEditStore = (store: InventoryStore) => {
-    console.log('Editing store:', store);
+  const handleEditStore = (store: any) => {
     setFormData({
       name: store.name || '',
       address: store.address || '',
@@ -193,13 +133,12 @@ export default function StoresPage(): React.JSX.Element {
   const handleDeleteStore = async (storeId: string) => {
     if (window.confirm('Are you sure you want to delete this store?')) {
       try {
-        await inventoryApi.deleteStore(storeId);
+        await deleteStoreMutation.mutateAsync(storeId);
         setNotification({
           open: true,
           message: 'Store deleted successfully',
           severity: 'success',
         });
-        fetchData();
       } catch (err) {
         console.error('Error deleting store:', err);
         setNotification({
@@ -212,16 +151,16 @@ export default function StoresPage(): React.JSX.Element {
   };
 
   // Handle toggle store status
-  const handleToggleStatus = async (storeId: string, currentStatus: boolean) => {
+  const handleToggleStatus = async (storeId: string, currentStatus: "active" | "inactive") => {
     try {
-      console.log(`Toggling store ${storeId} from ${currentStatus} to ${!currentStatus}`);
-      await inventoryApi.toggleStoreStatus(storeId, !currentStatus);
+      await toggleStoreStatusMutation.mutateAsync({ 
+        is_active: currentStatus === "active" ? "inactive" : "active" 
+      });
       setNotification({
         open: true,
-        message: `Store ${!currentStatus ? 'activated' : 'deactivated'} successfully`,
+        message: `Store ${currentStatus === "active" ? 'deactivated' : 'activated'} successfully`,
         severity: 'success',
       });
-      fetchData();
     } catch (err) {
       console.error('Error toggling store status:', err);
       setNotification({
@@ -239,7 +178,7 @@ export default function StoresPage(): React.JSX.Element {
       address: '',
       phone_number: '',
       email: '',
-      company_id: companies.length > 0 ? companies[0].id : '',
+      company_id: companies?.data?.[0]?.id || '',
       is_active: "active",
       location: '',
     });
@@ -281,18 +220,10 @@ export default function StoresPage(): React.JSX.Element {
     setNotification((prev) => ({ ...prev, open: false }));
   };
 
-  if (isLoading) {
+  if (isLoadingStores) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
@@ -305,93 +236,64 @@ export default function StoresPage(): React.JSX.Element {
           variant="contained"
           startIcon={<PlusIcon />}
           onClick={handleOpenCreateDialog}
-          disabled={isLoading}
+          disabled={isLoadingStores}
         >
           Add Store
         </Button>
       </Stack>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Address</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Company</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {stores.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    No stores found. Create your first store.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                stores.map((store) => (
-                  <TableRow key={store.id}>
-                    <TableCell>{store.name || 'N/A'}</TableCell>
-                    <TableCell>{store.address || 'N/A'}</TableCell>
-                    <TableCell>{store.phone_number || 'N/A'}</TableCell>
-                    <TableCell>{store.email || 'N/A'}</TableCell>
-                    <TableCell>{store.company?.name || 'No company'}</TableCell>
-                    <TableCell>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={typeof store.is_active === 'boolean' 
-                              ? store.is_active 
-                              : store.is_active === 'active'}
-                            onChange={() => handleToggleStatus(
-                              store.id, 
-                              typeof store.is_active === 'boolean' 
-                                ? store.is_active 
-                                : store.is_active === 'active'
-                            )}
-                            color="primary"
-                          />
-                        }
-                        label={typeof store.is_active === 'boolean' 
-                          ? (store.is_active ? 'Active' : 'Inactive')
-                          : (store.is_active === 'active' ? 'Active' : 'Inactive')}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Address</TableCell>
+              <TableCell>Phone</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Company</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {storesData?.data.map((store) => (
+              <TableRow key={store.id}>
+                <TableCell>{store.name}</TableCell>
+                <TableCell>{store.address}</TableCell>
+                <TableCell>{store.phone_number}</TableCell>
+                <TableCell>{store.email}</TableCell>
+                <TableCell>{store.company?.name}</TableCell>
+                <TableCell>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={store.is_active === "active"}
+                        onChange={() => handleToggleStatus(store.id, store.is_active)}
                         color="primary"
-                        onClick={() => handleEditStore(store)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        color="error"
-                        onClick={() => handleDeleteStore(store.id)}
-                      >
-                        <TrashIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+                      />
+                    }
+                    label={store.is_active === "active" ? 'Active' : 'Inactive'}
+                  />
+                </TableCell>
+                <TableCell align="right">
+                  <IconButton
+                    color="primary"
+                    onClick={() => handleEditStore(store)}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDeleteStore(store.id)}
+                  >
+                    <TrashIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Store Form Dialog */}
       <Dialog open={isDialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
@@ -452,7 +354,7 @@ export default function StoresPage(): React.JSX.Element {
                 onChange={handleSelectChange}
                 required
               >
-                {companies.map((company) => (
+                {companies?.data.map((company) => (
                   <MenuItem key={company.id} value={company.id}>
                     {company.name}
                   </MenuItem>
@@ -462,7 +364,7 @@ export default function StoresPage(): React.JSX.Element {
             <FormControlLabel
               control={
                 <Switch
-                  checked={formData.is_active === true || formData.is_active === "active"}
+                  checked={formData.is_active === "active"}
                   onChange={(e) => 
                     setFormData({ ...formData, is_active: e.target.checked ? "active" : "inactive" })
                   }
@@ -470,7 +372,7 @@ export default function StoresPage(): React.JSX.Element {
                   color="primary"
                 />
               }
-              label={formData.is_active === true || formData.is_active === "active" ? 'Active' : 'Inactive'}
+              label={formData.is_active === "active" ? 'Active' : 'Inactive'}
             />
           </Stack>
         </DialogContent>

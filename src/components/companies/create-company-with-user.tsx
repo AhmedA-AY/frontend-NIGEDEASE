@@ -24,6 +24,7 @@ import {
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 
 import { useCreateCompany, useCurrencies, useSubscriptionPlans } from '@/hooks/use-companies';
+import { inventoryApi } from '@/services/api/inventory';
 import { paths } from '@/paths';
 import { CreateCompanyUserForm } from './create-company-user-form';
 
@@ -107,8 +108,23 @@ export const CreateCompanyWithUser: React.FC = () => {
     }
     
     try {
-      const response = await createCompanyMutation.mutateAsync(formData);
-      setCreatedCompany(response);
+      // Create company
+      const companyResponse = await createCompanyMutation.mutateAsync(formData);
+      
+      // Create default store for the company
+      const storeData = {
+        name: `${formData.name} - Main Store`,
+        address: formData.address,
+        phone_number: '', // These can be updated later
+        email: '', // These can be updated later
+        company_id: companyResponse.id,
+        is_active: "active",
+        location: 'Main Location'
+      };
+      
+      await inventoryApi.createStore(storeData);
+      
+      setCreatedCompany(companyResponse);
       setActiveStep(1); // Move to user creation step
     } catch (error) {
       console.error('Error creating company:', error);

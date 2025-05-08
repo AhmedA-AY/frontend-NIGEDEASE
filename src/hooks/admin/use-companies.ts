@@ -1,21 +1,6 @@
 import { useApiQuery, useApiMutation } from '@/utils/api';
 import { useQueryClient } from '@tanstack/react-query';
-
-export interface Company {
-  id: string;
-  name: string;
-  tradeLicenseNumber: string;
-  taxId: string;
-  address: string;
-  city: string;
-  phone: string;
-  email: string;
-  website?: string;
-  logo?: string;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-}
+import { Company, CompanyCreateData, CompanyUpdateData } from '@/services/api/companies';
 
 export interface CompaniesResponse {
   data: Company[];
@@ -24,7 +9,7 @@ export interface CompaniesResponse {
   limit: number;
 }
 
-export interface CompanyParams {
+export interface CompaniesParams {
   page?: number;
   limit?: number;
   search?: string;
@@ -33,20 +18,8 @@ export interface CompanyParams {
   sortDirection?: 'asc' | 'desc';
 }
 
-export interface CompanyInput {
-  name: string;
-  tradeLicenseNumber: string;
-  taxId: string;
-  address: string;
-  city: string;
-  phone: string;
-  email: string;
-  website?: string;
-  logo?: string;
-}
-
 // Get all companies with pagination and filters
-export function useCompanies(params: CompanyParams = {}) {
+export function useCompanies(params: CompaniesParams = {}) {
   const queryParams = new URLSearchParams();
   
   if (params.page) queryParams.append('page', params.page.toString());
@@ -70,7 +43,7 @@ export function useCompany(id: string) {
     ['company', id], 
     `/companies/${id}`,
     {
-      enabled: !!id, // Only run query if id is provided
+      enabled: !!id,
     }
   );
 }
@@ -79,7 +52,7 @@ export function useCompany(id: string) {
 export function useCreateCompany() {
   const queryClient = useQueryClient();
   
-  return useApiMutation<Company, CompanyInput>(
+  return useApiMutation<Company, CompanyCreateData>(
     '/companies',
     'POST',
     {
@@ -90,11 +63,11 @@ export function useCreateCompany() {
   );
 }
 
-// Update an existing company
+// Update a company
 export function useUpdateCompany(id: string) {
   const queryClient = useQueryClient();
   
-  return useApiMutation<Company, Partial<CompanyInput>>(
+  return useApiMutation<Company, CompanyUpdateData>(
     `/companies/${id}`,
     'PATCH',
     {
@@ -110,30 +83,35 @@ export function useUpdateCompany(id: string) {
 export function useDeleteCompany() {
   const queryClient = useQueryClient();
   
-  return useApiMutation<void, string>(
+  return useApiMutation<void, { id: string }>(
     '/companies',
     'DELETE',
     {
-      onSuccess: (_, companyId) => {
+      onSuccess: (_, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['company', variables.id] });
         queryClient.invalidateQueries({ queryKey: ['companies'] });
-        queryClient.invalidateQueries({ queryKey: ['company', companyId] });
       },
     }
   );
 }
 
-// Toggle company status (activate/deactivate)
-export function useToggleCompanyStatus(id: string) {
-  const queryClient = useQueryClient();
-  
-  return useApiMutation<Company, { status: 'active' | 'inactive' }>(
-    `/companies/${id}/status`,
-    'PATCH',
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['company', id] });
-        queryClient.invalidateQueries({ queryKey: ['companies'] });
-      },
-    }
+// Get company statistics
+export function useCompanyStats() {
+  return useApiQuery<{
+    total_companies: number;
+    active_companies: number;
+    inactive_companies: number;
+    companies_by_subscription: { plan: string; count: number }[];
+    companies_by_status: { status: string; count: number }[];
+    recent_activities: {
+      id: string;
+      company_id: string;
+      company_name: string;
+      action: string;
+      created_at: string;
+    }[];
+  }>(
+    ['company-stats'], 
+    '/companies/stats'
   );
 } 

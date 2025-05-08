@@ -1,5 +1,6 @@
 import { useApiQuery, useApiMutation } from '@/utils/api';
 import { useQueryClient } from '@tanstack/react-query';
+import { Sale, SaleCreateData } from '@/services/api/transactions';
 
 export interface Customer {
   id: string;
@@ -70,6 +71,25 @@ export interface OrderInput {
   discount?: number;
   paymentMethod: 'cash' | 'credit-card' | 'bank-transfer' | 'mobile-money';
   notes?: string;
+}
+
+export interface SalesResponse {
+  data: Sale[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface SalesParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  store_id?: string;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
 // Get all orders with pagination and filters
@@ -207,14 +227,78 @@ export function useCreateCustomer() {
   );
 }
 
+// Get all sales with pagination and filters
+export function useSales(params: SalesParams = {}) {
+  const queryParams = new URLSearchParams();
+  
+  if (params.page) queryParams.append('page', params.page.toString());
+  if (params.limit) queryParams.append('limit', params.limit.toString());
+  if (params.search) queryParams.append('search', params.search);
+  if (params.store_id) queryParams.append('store_id', params.store_id);
+  if (params.status) queryParams.append('status', params.status);
+  if (params.start_date) queryParams.append('start_date', params.start_date);
+  if (params.end_date) queryParams.append('end_date', params.end_date);
+  if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+  if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+
+  const endpoint = `/sales?${queryParams.toString()}`;
+  
+  return useApiQuery<SalesResponse>(
+    ['sales', JSON.stringify(params)], 
+    endpoint
+  );
+}
+
+// Get a single sale by ID
+export function useSale(id: string) {
+  return useApiQuery<Sale>(
+    ['sale', id], 
+    `/sales/${id}`,
+    {
+      enabled: !!id,
+    }
+  );
+}
+
+// Create a new sale
+export function useCreateSale() {
+  const queryClient = useQueryClient();
+  
+  return useApiMutation<Sale, SaleCreateData>(
+    '/sales',
+    'POST',
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['sales'] });
+      },
+    }
+  );
+}
+
+// Update a sale's status
+export function useUpdateSaleStatus(id: string) {
+  const queryClient = useQueryClient();
+  
+  return useApiMutation<Sale, { status: string }>(
+    `/sales/${id}/status`,
+    'PATCH',
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['sale', id] });
+        queryClient.invalidateQueries({ queryKey: ['sales'] });
+      },
+    }
+  );
+}
+
 // Get sales statistics
 export function useSalesStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'monthly') {
   return useApiQuery<{
-    totalSales: number;
-    totalOrders: number;
-    averageOrderValue: number;
-    topProducts: { productName: string; sold: number }[];
-    salesByPeriod: { period: string; amount: number }[];
+    total_sales: number;
+    total_orders: number;
+    average_order_value: number;
+    top_products: { product_name: string; sold: number }[];
+    sales_by_period: { period: string; amount: number }[];
   }>(
     ['sales-stats', period], 
     `/sales/stats?period=${period}`

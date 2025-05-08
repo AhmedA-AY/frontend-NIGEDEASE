@@ -74,7 +74,7 @@ export interface InventoryStore {
   address: string;
   phone_number: string;
   email: string;
-  is_active: boolean;
+  is_active: "active" | "inactive";
   location: string;
   created_at: string;
   updated_at: string;
@@ -86,7 +86,7 @@ export interface InventoryStoreCreateData {
   address: string;
   phone_number: string;
   email: string;
-  is_active: boolean | string;
+  is_active: "active" | "inactive";
   location: string;
 }
 
