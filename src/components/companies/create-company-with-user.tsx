@@ -36,6 +36,15 @@ interface CompanyFormData {
   currency_id: string;
 }
 
+interface StoreFormData {
+  name: string;
+  address: string;
+  phone_number: string;
+  email: string;
+  location: string;
+  is_active: "active" | "inactive";
+}
+
 export const CreateCompanyWithUser: React.FC = () => {
   const router = useRouter();
   const createCompanyMutation = useCreateCompany();
@@ -45,21 +54,30 @@ export const CreateCompanyWithUser: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [createdCompany, setCreatedCompany] = useState<any>(null);
   
-  const [formData, setFormData] = useState<CompanyFormData>({
+  const [companyFormData, setCompanyFormData] = useState<CompanyFormData>({
     name: '',
     short_name: '',
     address: '',
     subscription_plan_id: '',
     currency_id: ''
   });
+
+  const [storeFormData, setStoreFormData] = useState<StoreFormData>({
+    name: '',
+    address: '',
+    phone_number: '',
+    email: '',
+    location: '',
+    is_active: "active"
+  });
   
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleCompanyFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
     const { name, value } = e.target;
     if (name) {
-      setFormData({
-        ...formData,
+      setCompanyFormData({
+        ...companyFormData,
         [name]: value
       });
       
@@ -73,27 +91,74 @@ export const CreateCompanyWithUser: React.FC = () => {
     }
   };
 
-  const validateForm = (): boolean => {
+  const handleStoreFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const { name, value } = e.target;
+    if (name) {
+      setStoreFormData({
+        ...storeFormData,
+        [name]: value
+      });
+      
+      // Clear error when field is edited
+      if (formErrors[name]) {
+        setFormErrors({
+          ...formErrors,
+          [name]: ''
+        });
+      }
+    }
+  };
+
+  const validateCompanyForm = (): boolean => {
     const errors: Record<string, string> = {};
     
-    if (!formData.name.trim()) {
+    if (!companyFormData.name.trim()) {
       errors.name = 'Company name is required';
     }
     
-    if (!formData.short_name.trim()) {
+    if (!companyFormData.short_name.trim()) {
       errors.short_name = 'Short name is required';
     }
     
-    if (!formData.address.trim()) {
+    if (!companyFormData.address.trim()) {
       errors.address = 'Address is required';
     }
     
-    if (!formData.subscription_plan_id) {
+    if (!companyFormData.subscription_plan_id) {
       errors.subscription_plan_id = 'Subscription plan is required';
     }
     
-    if (!formData.currency_id) {
+    if (!companyFormData.currency_id) {
       errors.currency_id = 'Currency is required';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateStoreForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!storeFormData.name.trim()) {
+      errors.name = 'Store name is required';
+    }
+    
+    if (!storeFormData.address.trim()) {
+      errors.address = 'Address is required';
+    }
+    
+    if (!storeFormData.phone_number.trim()) {
+      errors.phone_number = 'Phone number is required';
+    }
+    
+    if (!storeFormData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(storeFormData.email)) {
+      errors.email = 'Invalid email format';
+    }
+    
+    if (!storeFormData.location.trim()) {
+      errors.location = 'Location is required';
     }
     
     setFormErrors(errors);
@@ -103,31 +168,37 @@ export const CreateCompanyWithUser: React.FC = () => {
   const handleCreateCompany = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateCompanyForm()) {
       return;
     }
     
     try {
-      // Create company
-      const companyResponse = await createCompanyMutation.mutateAsync(formData);
-      
-      // Create default store for the company
+      const companyResponse = await createCompanyMutation.mutateAsync(companyFormData);
+      setCreatedCompany(companyResponse);
+      setActiveStep(1); // Move to store creation step
+    } catch (error) {
+      console.error('Error creating company:', error);
+    }
+  };
+
+  const handleCreateStore = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!validateStoreForm()) {
+      return;
+    }
+    
+    try {
       const storeData = {
-        name: `${formData.name} - Main Store`,
-        address: formData.address,
-        phone_number: '', // These can be updated later
-        email: '', // These can be updated later
-        company_id: companyResponse.id,
-        is_active: "active",
-        location: 'Main Location'
+        ...storeFormData,
+        company_id: createdCompany.id,
+        is_active: storeFormData.is_active as "active" | "inactive"
       };
       
       await inventoryApi.createStore(storeData);
-      
-      setCreatedCompany(companyResponse);
-      setActiveStep(1); // Move to user creation step
+      setActiveStep(2); // Move to user creation step
     } catch (error) {
-      console.error('Error creating company:', error);
+      console.error('Error creating store:', error);
     }
   };
 
@@ -160,6 +231,9 @@ export const CreateCompanyWithUser: React.FC = () => {
               <StepLabel>Company Information</StepLabel>
             </Step>
             <Step>
+              <StepLabel>Create Store</StepLabel>
+            </Step>
+            <Step>
               <StepLabel>Create Admin User</StepLabel>
             </Step>
           </Stepper>
@@ -175,9 +249,9 @@ export const CreateCompanyWithUser: React.FC = () => {
                         fullWidth
                         label="Company Name"
                         name="name"
-                        onChange={handleChange}
+                        onChange={handleCompanyFormChange}
                         required
-                        value={formData.name}
+                        value={companyFormData.name}
                         error={!!formErrors.name}
                         helperText={formErrors.name}
                         disabled={isLoading}
@@ -189,9 +263,9 @@ export const CreateCompanyWithUser: React.FC = () => {
                         fullWidth
                         label="Short Name"
                         name="short_name"
-                        onChange={handleChange}
+                        onChange={handleCompanyFormChange}
                         required
-                        value={formData.short_name}
+                        value={companyFormData.short_name}
                         error={!!formErrors.short_name}
                         helperText={formErrors.short_name}
                         disabled={isLoading}
@@ -203,9 +277,9 @@ export const CreateCompanyWithUser: React.FC = () => {
                         fullWidth
                         label="Address"
                         name="address"
-                        onChange={handleChange}
+                        onChange={handleCompanyFormChange}
                         required
-                        value={formData.address}
+                        value={companyFormData.address}
                         error={!!formErrors.address}
                         helperText={formErrors.address}
                         disabled={isLoading}
@@ -217,10 +291,10 @@ export const CreateCompanyWithUser: React.FC = () => {
                         fullWidth
                         label="Subscription Plan"
                         name="subscription_plan_id"
-                        onChange={handleChange}
+                        onChange={handleCompanyFormChange}
                         required
                         select
-                        value={formData.subscription_plan_id}
+                        value={companyFormData.subscription_plan_id}
                         error={!!formErrors.subscription_plan_id}
                         helperText={formErrors.subscription_plan_id || 'Select a subscription plan'}
                         disabled={isLoading || isLoadingSubscriptionPlans}
@@ -242,10 +316,10 @@ export const CreateCompanyWithUser: React.FC = () => {
                         fullWidth
                         label="Currency"
                         name="currency_id"
-                        onChange={handleChange}
+                        onChange={handleCompanyFormChange}
                         required
                         select
-                        value={formData.currency_id}
+                        value={companyFormData.currency_id}
                         error={!!formErrors.currency_id}
                         helperText={formErrors.currency_id || 'Select a currency'}
                         disabled={isLoading || isLoadingCurrencies}
@@ -285,21 +359,109 @@ export const CreateCompanyWithUser: React.FC = () => {
                 </CardContent>
               </Card>
             </form>
+          ) : activeStep === 1 ? (
+            <form onSubmit={handleCreateStore}>
+              <Card>
+                <CardHeader title="Create Store" />
+                <CardContent>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Store Name"
+                        name="name"
+                        onChange={handleStoreFormChange}
+                        required
+                        value={storeFormData.name}
+                        error={!!formErrors.name}
+                        helperText={formErrors.name}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Address"
+                        name="address"
+                        onChange={handleStoreFormChange}
+                        required
+                        value={storeFormData.address}
+                        error={!!formErrors.address}
+                        helperText={formErrors.address}
+                        multiline
+                        rows={2}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Location"
+                        name="location"
+                        onChange={handleStoreFormChange}
+                        required
+                        value={storeFormData.location}
+                        error={!!formErrors.location}
+                        helperText={formErrors.location}
+                        placeholder="City, State, Country"
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Phone Number"
+                        name="phone_number"
+                        onChange={handleStoreFormChange}
+                        required
+                        value={storeFormData.phone_number}
+                        error={!!formErrors.phone_number}
+                        helperText={formErrors.phone_number}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Email"
+                        name="email"
+                        type="email"
+                        onChange={handleStoreFormChange}
+                        required
+                        value={storeFormData.email}
+                        error={!!formErrors.email}
+                        helperText={formErrors.email}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Button
+                        size="large"
+                        type="submit"
+                        variant="contained"
+                      >
+                        Create Store & Continue
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </form>
           ) : (
             <Box>
               <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Company Created Successfully
+                  Company and Store Created Successfully
                 </Typography>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body1">
-                    <strong>Name:</strong> {createdCompany?.name}
+                    <strong>Company Name:</strong> {createdCompany?.name}
                   </Typography>
                   <Typography variant="body1">
-                    <strong>Short Name:</strong> {createdCompany?.short_name}
+                    <strong>Company ID:</strong> {createdCompany?.id}
                   </Typography>
                   <Typography variant="body1">
-                    <strong>ID:</strong> {createdCompany?.id}
+                    <strong>Store Name:</strong> {storeFormData.name}
                   </Typography>
                 </Box>
                 <Alert severity="info" sx={{ mb: 3 }}>

@@ -1,212 +1,235 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z as zod } from 'zod';
 import {
-  Button,
-  TextField,
-  FormControl,
-  FormLabel,
-  FormHelperText,
   Box,
-  Typography,
-  Alert,
+  Card,
+  CardContent,
+  CardHeader,
+  Grid,
+  TextField,
+  Button,
   CircularProgress,
-  Stack,
-  MenuItem,
-  Select,
-  Paper
+  Alert
 } from '@mui/material';
-import { useCreateUser } from '@/hooks/use-auth-queries';
-
-const schema = zod.object({
-  email: zod.string().email('Valid email is required'),
-  password: zod.string().min(8, 'Password must be at least 8 characters'),
-  first_name: zod.string().min(1, 'First name is required'),
-  last_name: zod.string().min(1, 'Last name is required'),
-  role: zod.enum(['admin', 'salesman', 'stock_manager'], { 
-    required_error: 'Role is required' 
-  }),
-});
-
-type FormValues = zod.infer<typeof schema>;
+import { useCreateUser } from '@/hooks/use-users';
 
 interface CreateCompanyUserFormProps {
   companyId: string;
-  onSuccess?: (userData: any) => void;
+  onSuccess?: () => void;
 }
 
-export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ 
-  companyId,
-  onSuccess 
-}) => {
-  const [success, setSuccess] = useState<string | null>(null);
-  
+export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ companyId, onSuccess }) => {
   const createUserMutation = useCreateUser();
-  
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      email: '',
-      password: '',
-      first_name: '',
-      last_name: '',
-      role: 'admin'
-    }
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    confirm_password: '',
+    phone: '',
+    role: 'admin' as const
   });
   
-  const onSubmit = async (data: FormValues) => {
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+    
+    // Clear error when field is edited
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: ''
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.first_name.trim()) {
+      errors.first_name = 'First name is required';
+    }
+    
+    if (!formData.last_name.trim()) {
+      errors.last_name = 'Last name is required';
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Invalid email format';
+    }
+    
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters long';
+    }
+    
+    if (!formData.confirm_password) {
+      errors.confirm_password = 'Please confirm your password';
+    } else if (formData.password !== formData.confirm_password) {
+      errors.confirm_password = 'Passwords do not match';
+    }
+    
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
-      const response = await createUserMutation.mutateAsync({
-        company_id: companyId,
-        ...data
+      await createUserMutation.mutateAsync({
+        ...formData,
+        company_id: companyId
       });
       
-      setSuccess('User created successfully');
-      reset();
-      
       if (onSuccess) {
-        onSuccess(response);
+        onSuccess();
       }
     } catch (error) {
       console.error('Error creating user:', error);
     }
   };
-  
+
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Create Company Admin User
-      </Typography>
-      
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={3}>
-          <Controller
-            name="email"
-            control={control}
-            render={({ field }) => (
-              <FormControl error={!!errors.email}>
-                <FormLabel>Email</FormLabel>
-                <TextField
-                  {...field}
-                  type="email"
-                  placeholder="admin@example.com"
-                  fullWidth
-                  error={!!errors.email}
-                />
-                {errors.email && (
-                  <FormHelperText error>{errors.email.message}</FormHelperText>
-                )}
-              </FormControl>
-            )}
-          />
-          
-          <Controller
-            name="password"
-            control={control}
-            render={({ field }) => (
-              <FormControl error={!!errors.password}>
-                <FormLabel>Password</FormLabel>
-                <TextField
-                  {...field}
-                  type="password"
-                  placeholder="••••••••"
-                  fullWidth
-                  error={!!errors.password}
-                />
-                {errors.password && (
-                  <FormHelperText error>{errors.password.message}</FormHelperText>
-                )}
-              </FormControl>
-            )}
-          />
-          
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Controller
-              name="first_name"
-              control={control}
-              render={({ field }) => (
-                <FormControl error={!!errors.first_name} sx={{ flex: 1 }}>
-                  <FormLabel>First Name</FormLabel>
-                  <TextField
-                    {...field}
-                    fullWidth
-                    error={!!errors.first_name}
-                  />
-                  {errors.first_name && (
-                    <FormHelperText error>{errors.first_name.message}</FormHelperText>
-                  )}
-                </FormControl>
-              )}
-            />
+    <form onSubmit={handleSubmit}>
+      <Card>
+        <CardHeader title="Create Admin User" />
+        <CardContent>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="First Name"
+                name="first_name"
+                onChange={handleChange}
+                required
+                value={formData.first_name}
+                error={!!formErrors.first_name}
+                helperText={formErrors.first_name}
+                disabled={createUserMutation.isPending}
+              />
+            </Grid>
             
-            <Controller
-              name="last_name"
-              control={control}
-              render={({ field }) => (
-                <FormControl error={!!errors.last_name} sx={{ flex: 1 }}>
-                  <FormLabel>Last Name</FormLabel>
-                  <TextField
-                    {...field}
-                    fullWidth
-                    error={!!errors.last_name}
-                  />
-                  {errors.last_name && (
-                    <FormHelperText error>{errors.last_name.message}</FormHelperText>
-                  )}
-                </FormControl>
-              )}
-            />
-          </Box>
-          
-          <Controller
-            name="role"
-            control={control}
-            render={({ field }) => (
-              <FormControl error={!!errors.role}>
-                <FormLabel>Role</FormLabel>
-                <Select {...field} fullWidth>
-                  <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="salesman">Salesman</MenuItem>
-                  <MenuItem value="stock_manager">Stock Manager</MenuItem>
-                </Select>
-                {errors.role && (
-                  <FormHelperText error>{errors.role.message}</FormHelperText>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Last Name"
+                name="last_name"
+                onChange={handleChange}
+                required
+                value={formData.last_name}
+                error={!!formErrors.last_name}
+                helperText={formErrors.last_name}
+                disabled={createUserMutation.isPending}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Email"
+                name="email"
+                type="email"
+                onChange={handleChange}
+                required
+                value={formData.email}
+                error={!!formErrors.email}
+                helperText={formErrors.email}
+                disabled={createUserMutation.isPending}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Phone"
+                name="phone"
+                onChange={handleChange}
+                required
+                value={formData.phone}
+                error={!!formErrors.phone}
+                helperText={formErrors.phone}
+                disabled={createUserMutation.isPending}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Password"
+                name="password"
+                type="password"
+                onChange={handleChange}
+                required
+                value={formData.password}
+                error={!!formErrors.password}
+                helperText={formErrors.password}
+                disabled={createUserMutation.isPending}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                name="confirm_password"
+                type="password"
+                onChange={handleChange}
+                required
+                value={formData.confirm_password}
+                error={!!formErrors.confirm_password}
+                helperText={formErrors.confirm_password}
+                disabled={createUserMutation.isPending}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Button
+                  size="large"
+                  type="submit"
+                  variant="contained"
+                  disabled={createUserMutation.isPending}
+                  startIcon={createUserMutation.isPending ? <CircularProgress size={20} color="inherit" /> : null}
+                >
+                  {createUserMutation.isPending ? 'Creating...' : 'Create Admin User'}
+                </Button>
+                
+                {createUserMutation.isSuccess && (
+                  <Alert severity="success" sx={{ flex: 1 }}>
+                    Admin user created successfully!
+                  </Alert>
                 )}
-              </FormControl>
+              </Box>
+            </Grid>
+            
+            {createUserMutation.isError && (
+              <Grid item xs={12}>
+                <Alert severity="error">
+                  Error creating user: {(createUserMutation.error as any)?.error || 'An error occurred'}
+                </Alert>
+              </Grid>
             )}
-          />
-          
-          {success && (
-            <Alert severity="success" onClose={() => setSuccess(null)}>
-              {success}
-            </Alert>
-          )}
-          
-          {createUserMutation.isError && (
-            <Alert severity="error">
-              {createUserMutation.error?.error || 'Failed to create user. Please try again.'}
-            </Alert>
-          )}
-          
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={createUserMutation.isPending}
-            startIcon={createUserMutation.isPending ? <CircularProgress size={20} color="inherit" /> : null}
-          >
-            Create User
-          </Button>
-        </Stack>
-      </form>
-    </Paper>
+          </Grid>
+        </CardContent>
+      </Card>
+    </form>
   );
 }; 
