@@ -185,7 +185,14 @@ export const authApi = {
   
   // Get current user profile
   getProfile: async (): Promise<any> => {
-    const response = await userManagementApiClient.get('/auth/profile/');
+    // First get the user's info from the token
+    const userInfoFromToken = tokenStorage.getUserInfo();
+    if (!userInfoFromToken || !userInfoFromToken.id) {
+      throw new Error('No user ID available in token');
+    }
+    
+    // Then fetch the full user details using the correct endpoint
+    const response = await userManagementApiClient.get(`/users/${userInfoFromToken.id}/`);
     return response.data;
   },
   
