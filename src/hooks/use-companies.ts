@@ -78,12 +78,12 @@ export function useUpdateCompany() {
 export function useDeleteCompany() {
   const queryClient = useQueryClient();
   
-  return useMutation<void, Error, string>({
-    mutationFn: (id) => companiesApi.deleteCompany(id),
+  return useMutation({
+    mutationFn: (id: string) => companiesApi.deleteCompanyWithRelatedData(id),
     onSuccess: () => {
-      // Invalidate the companies list query to refetch
-      queryClient.invalidateQueries({ queryKey: companiesKeys.lists() });
-    },
+      // Invalidate and refetch companies list
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+    }
   });
 }
 

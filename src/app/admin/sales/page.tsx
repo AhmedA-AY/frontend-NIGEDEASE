@@ -36,6 +36,7 @@ import { companiesApi, Company, Currency } from '@/services/api/companies';
 import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import { SelectChangeEvent } from '@mui/material/Select';
+import { useCurrentUser } from '@/hooks/use-auth';
 
 export default function SalesPage(): React.JSX.Element {
   const [tabValue, setTabValue] = React.useState(0);
@@ -50,10 +51,14 @@ export default function SalesPage(): React.JSX.Element {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [stores, setStores] = useState<InventoryStore[]>([]);
+  const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
   const [selectedSaleDetails, setSelectedSaleDetails] = useState<Sale | null>(null);
+  
+  // Get current user's company
+  const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
   
   // Fetch sales and customers
   const fetchData = useCallback(async () => {
@@ -75,6 +80,14 @@ export default function SalesPage(): React.JSX.Element {
       setCurrencies(currenciesData);
       setPaymentModes(paymentModesData);
       
+      // Filter stores based on user's company
+      if (userInfo?.company_id) {
+        const storesForCompany = storesData.filter(store => 
+          store.company && store.company.id === userInfo.company_id
+        );
+        setFilteredStores(storesForCompany);
+      }
+      
       console.log('Fetched data:', {
         companies: companiesData,
         stores: storesData,
@@ -86,19 +99,36 @@ export default function SalesPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [userInfo]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!isLoadingUser) {
+      fetchData();
+    }
+  }, [fetchData, isLoadingUser]);
+
+  // Filter stores when userInfo changes
+  useEffect(() => {
+    if (userInfo?.company_id && stores.length > 0) {
+      const storesForCompany = stores.filter(store => 
+        store.company && store.company.id === userInfo.company_id
+      );
+      setFilteredStores(storesForCompany);
+    }
+  }, [userInfo, stores]);
 
   // Filter sales by selected customer
   const filteredSales = selectedCustomer
     ? sales.filter(sale => sale.customer.id === selectedCustomer)
     : sales;
+    
+  // Further filter sales by user's company if available
+  const companySales = userInfo?.company_id
+    ? filteredSales.filter(sale => sale.company.id === userInfo.company_id)
+    : filteredSales;
 
   // Calculate total amounts
-  const totalAmount = filteredSales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
+  const totalAmount = companySales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
   const totalPaid = 0; // Not available in the API directly
   const totalDue = totalAmount - totalPaid;
 
@@ -109,7 +139,7 @@ export default function SalesPage(): React.JSX.Element {
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      setSelectedSales(filteredSales.map(sale => sale.id));
+      setSelectedSales(companySales.map(sale => sale.id));
     } else {
       setSelectedSales([]);
     }
@@ -141,9 +171,10 @@ export default function SalesPage(): React.JSX.Element {
   };
 
   const handleAddNewSale = () => {
-    // Get default IDs for required fields
-    const defaultCompanyId = companies.length > 0 ? companies[0].id : '';
-    const defaultStoreId = stores.length > 0 ? stores[0].id : '';
+    // Use the current user's company ID instead of the first company
+    const userCompanyId = userInfo?.company_id || '';
+    // Only get stores from user's company
+    const defaultStoreId = filteredStores.length > 0 ? filteredStores[0].id : '';
     const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
     const defaultPaymentModeId = paymentModes.length > 0 ? paymentModes[0].id : '';
     
@@ -151,7 +182,7 @@ export default function SalesPage(): React.JSX.Element {
       customer: '',
       totalAmount: 0,
       is_credit: false,
-      company_id: defaultCompanyId,
+      company_id: userCompanyId,
       store_id: defaultStoreId,
       currency_id: defaultCurrencyId,
       payment_mode_id: defaultPaymentModeId
@@ -242,9 +273,10 @@ export default function SalesPage(): React.JSX.Element {
       // Log data before creating/updating
       console.log('Sale data to save:', saleData);
       
-      // Get default IDs if not provided
-      const company_id = saleData.company_id || (companies.length > 0 ? companies[0].id : '');
-      const store_id = saleData.store_id || (stores.length > 0 ? stores[0].id : '');
+      // Use the user's company ID
+      const company_id = userInfo?.company_id || '';
+      // For other fields, use the form values or defaults
+      const store_id = saleData.store_id || (filteredStores.length > 0 ? filteredStores[0].id : '');
       const currency_id = saleData.currency_id || (currencies.length > 0 ? currencies[0].id : '');
       const payment_mode_id = saleData.payment_mode_id || (paymentModes.length > 0 ? paymentModes[0].id : '');
       
@@ -531,8 +563,8 @@ export default function SalesPage(): React.JSX.Element {
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={filteredSales.length > 0 && selectedSales.length === filteredSales.length}
-                    indeterminate={selectedSales.length > 0 && selectedSales.length < filteredSales.length}
+                    checked={companySales.length > 0 && selectedSales.length === companySales.length}
+                    indeterminate={selectedSales.length > 0 && selectedSales.length < companySales.length}
                     onChange={handleSelectAll}
                   />
                 </TableCell>
@@ -555,14 +587,14 @@ export default function SalesPage(): React.JSX.Element {
                     <Typography sx={{ ml: 2 }}>Loading sales...</Typography>
                   </TableCell>
                 </TableRow>
-              ) : filteredSales.length === 0 ? (
+              ) : companySales.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
                     <Typography>No sales found</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredSales.map(sale => {
+                companySales.map(sale => {
                   const isSelected = selectedSales.includes(sale.id);
                   const isMenuOpen = Boolean(anchorElMap[sale.id]);
                   const formattedDate = new Date(sale.created_at).toLocaleDateString('en-US', {

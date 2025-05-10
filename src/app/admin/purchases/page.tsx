@@ -36,6 +36,7 @@ import { companiesApi, Company, Currency } from '@/services/api/companies';
 import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import { SelectChangeEvent } from '@mui/material/Select';
+import { useCurrentUser } from '@/hooks/use-auth';
 
 export default function PurchasesPage(): React.JSX.Element {
   const [tabValue, setTabValue] = React.useState(0);
@@ -50,10 +51,14 @@ export default function PurchasesPage(): React.JSX.Element {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [stores, setStores] = useState<InventoryStore[]>([]);
+  const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState<string>('');
   const [selectedPurchaseDetails, setSelectedPurchaseDetails] = useState<Purchase | null>(null);
+  
+  // Get current user's company
+  const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
   
   // Fetch purchases and suppliers
   const fetchData = useCallback(async () => {
@@ -82,6 +87,14 @@ export default function PurchasesPage(): React.JSX.Element {
       setCurrencies(currenciesData);
       setPaymentModes(paymentModesData);
       
+      // Filter stores based on user's company
+      if (userInfo?.company_id) {
+        const storesForCompany = storesData.filter(store => 
+          store.company && store.company.id === userInfo.company_id
+        );
+        setFilteredStores(storesForCompany);
+      }
+      
       console.log('Fetched data:', {
         companies: companiesData,
         stores: storesData,
@@ -93,19 +106,36 @@ export default function PurchasesPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [userInfo]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!isLoadingUser) {
+      fetchData();
+    }
+  }, [fetchData, isLoadingUser]);
+
+  // Filter stores when userInfo changes
+  useEffect(() => {
+    if (userInfo?.company_id && stores.length > 0) {
+      const storesForCompany = stores.filter(store => 
+        store.company && store.company.id === userInfo.company_id
+      );
+      setFilteredStores(storesForCompany);
+    }
+  }, [userInfo, stores]);
 
   // Filter purchases by selected supplier
   const filteredPurchases = selectedSupplier
     ? purchases.filter(purchase => purchase.supplier.id === selectedSupplier)
     : purchases;
+    
+  // Further filter purchases by user's company if available
+  const companyPurchases = userInfo?.company_id
+    ? filteredPurchases.filter(purchase => purchase.company.id === userInfo.company_id)
+    : filteredPurchases;
 
   // Calculate total amounts
-  const totalAmount = filteredPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.total_amount), 0);
+  const totalAmount = companyPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.total_amount), 0);
   const totalPaid = 0; // Not available in the API directly
   const totalDue = totalAmount - totalPaid;
 
@@ -116,7 +146,7 @@ export default function PurchasesPage(): React.JSX.Element {
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      setSelectedPurchases(filteredPurchases.map(purchase => purchase.id));
+      setSelectedPurchases(companyPurchases.map(purchase => purchase.id));
     } else {
       setSelectedPurchases([]);
     }
@@ -148,9 +178,10 @@ export default function PurchasesPage(): React.JSX.Element {
   };
 
   const handleAddNewPurchase = () => {
-    // Get default IDs for required fields
-    const defaultCompanyId = companies.length > 0 ? companies[0].id : '';
-    const defaultStoreId = stores.length > 0 ? stores[0].id : '';
+    // Use the current user's company ID instead of the first company
+    const userCompanyId = userInfo?.company_id || '';
+    // Only get stores from user's company
+    const defaultStoreId = filteredStores.length > 0 ? filteredStores[0].id : '';
     const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
     const defaultPaymentModeId = paymentModes.length > 0 ? paymentModes[0].id : '';
     
@@ -163,7 +194,7 @@ export default function PurchasesPage(): React.JSX.Element {
       paidAmount: 0,
       dueAmount: 0,
       paymentStatus: 'Unpaid',
-      company_id: defaultCompanyId,
+      company_id: userCompanyId,
       store_id: defaultStoreId,
       currency_id: defaultCurrencyId,
       payment_mode_id: defaultPaymentModeId,
@@ -261,9 +292,10 @@ export default function PurchasesPage(): React.JSX.Element {
       // Log data before creating/updating
       console.log('Purchase data to save:', purchaseData);
       
-      // Get default IDs if not provided
-      const company_id = purchaseData.company_id || (companies.length > 0 ? companies[0].id : '');
-      const store_id = purchaseData.store_id || (stores.length > 0 ? stores[0].id : '');
+      // Use the user's company ID
+      const company_id = userInfo?.company_id || '';
+      // For other fields, use the form values or defaults
+      const store_id = purchaseData.store_id || (filteredStores.length > 0 ? filteredStores[0].id : '');
       const currency_id = purchaseData.currency_id || (currencies.length > 0 ? currencies[0].id : '');
       const payment_mode_id = purchaseData.payment_mode_id || (paymentModes.length > 0 ? paymentModes[0].id : '');
       
@@ -550,8 +582,8 @@ export default function PurchasesPage(): React.JSX.Element {
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={filteredPurchases.length > 0 && selectedPurchases.length === filteredPurchases.length}
-                    indeterminate={selectedPurchases.length > 0 && selectedPurchases.length < filteredPurchases.length}
+                    checked={companyPurchases.length > 0 && selectedPurchases.length === companyPurchases.length}
+                    indeterminate={selectedPurchases.length > 0 && selectedPurchases.length < companyPurchases.length}
                     onChange={handleSelectAll}
                   />
                 </TableCell>
@@ -574,14 +606,14 @@ export default function PurchasesPage(): React.JSX.Element {
                     <Typography sx={{ ml: 2 }}>Loading purchases...</Typography>
                   </TableCell>
                 </TableRow>
-              ) : filteredPurchases.length === 0 ? (
+              ) : companyPurchases.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
                     <Typography>No purchases found</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPurchases.map(purchase => {
+                companyPurchases.map(purchase => {
                   const isSelected = selectedPurchases.includes(purchase.id);
                   const isMenuOpen = Boolean(anchorElMap[purchase.id]);
                   const formattedDate = new Date(purchase.created_at).toLocaleDateString('en-US', {

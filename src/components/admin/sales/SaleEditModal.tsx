@@ -26,6 +26,7 @@ import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { transactionsApi, Customer, TransactionPaymentMode } from '@/services/api/transactions';
 import { inventoryApi, Product, InventoryStore } from '@/services/api/inventory';
 import { companiesApi, Company, Currency } from '@/services/api/companies';
+import { useCurrentUser } from '@/hooks/use-auth';
 
 interface ProductItem {
   id: string;
@@ -108,9 +109,14 @@ export default function SaleEditModal({
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [stores, setStores] = useState<InventoryStore[]>([]);
+  const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  
+  // Get current user's company
+  const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
   
   // Fetch data when modal opens
   useEffect(() => {
@@ -141,15 +147,43 @@ export default function SaleEditModal({
           setCurrencies(currenciesData);
           setPaymentModes(paymentModesData);
           
+          // Filter stores by user's company
+          if (userInfo?.company_id) {
+            const companyStores = storesData.filter(store => 
+              store.company && store.company.id === userInfo.company_id
+            );
+            setFilteredStores(companyStores);
+            
+            // Filter products by user's company
+            const companyProducts = productsData.filter(product => 
+              product.company && product.company.id === userInfo.company_id
+            );
+            setFilteredProducts(companyProducts);
+          } else {
+            setFilteredProducts(productsData);
+          }
+          
           // If formData doesn't have IDs, set defaults
           setFormData(prev => {
             const updated = { ...prev };
-            if (!updated.company_id && companiesData.length > 0) {
+            // Always use the user's company
+            if (userInfo?.company_id) {
+              updated.company_id = userInfo.company_id;
+            } else if (!updated.company_id && companiesData.length > 0) {
               updated.company_id = companiesData[0].id;
             }
-            if (!updated.store_id && storesData.length > 0) {
-              updated.store_id = storesData[0].id;
+            
+            // Set default store from filtered stores
+            if (!updated.store_id) {
+              const availableStores = userInfo?.company_id 
+                ? storesData.filter(store => store.company && store.company.id === userInfo.company_id)
+                : storesData;
+                
+              if (availableStores.length > 0) {
+                updated.store_id = availableStores[0].id;
+              }
             }
+            
             if (!updated.currency_id && currenciesData.length > 0) {
               updated.currency_id = currenciesData[0].id;
             }
@@ -168,7 +202,28 @@ export default function SaleEditModal({
       
       fetchData();
     }
-  }, [open]);
+  }, [open, userInfo]);
+  
+  // Filter stores whenever user company changes
+  useEffect(() => {
+    if (userInfo?.company_id) {
+      // Filter stores by company
+      if (stores.length > 0) {
+        const companyStores = stores.filter(store => 
+          store.company && store.company.id === userInfo.company_id
+        );
+        setFilteredStores(companyStores);
+      }
+      
+      // Filter products by company
+      if (products.length > 0) {
+        const companyProducts = products.filter(product => 
+          product.company && product.company.id === userInfo.company_id
+        );
+        setFilteredProducts(companyProducts);
+      }
+    }
+  }, [userInfo, stores, products]);
   
   // Reset form data when modal opens with new sale data
   React.useEffect(() => {
@@ -178,11 +233,18 @@ export default function SaleEditModal({
         ...sale,
         products: sale.products || []
       };
+      
+      // If editing, use the provided company_id
+      // If creating new, use the current user's company_id
+      if (!saleWithProducts.id && userInfo?.company_id) {
+        saleWithProducts.company_id = userInfo.company_id;
+      }
+      
       setFormData(saleWithProducts);
       setErrors({});
       calculateTotals(saleWithProducts.products);
     }
-  }, [sale, open]);
+  }, [sale, open, userInfo]);
   
   const calculateTotals = (productItems: ProductItem[]) => {
     let total = 0;
@@ -415,7 +477,7 @@ export default function SaleEditModal({
             </Grid>
             
             <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.company_id}>
+              <FormControl fullWidth error={!!errors.company_id} disabled>
                 <InputLabel id="company-select-label">Company</InputLabel>
                 <Select
                   labelId="company-select-label"
@@ -424,9 +486,16 @@ export default function SaleEditModal({
                   value={formData.company_id}
                   label="Company"
                   onChange={handleSelectChange}
+                  disabled={!!userInfo?.company_id} // Disable when we have a user company
                 >
                   {companies.map(company => (
-                    <MenuItem key={company.id} value={company.id}>{company.name}</MenuItem>
+                    <MenuItem 
+                      key={company.id} 
+                      value={company.id}
+                      disabled={Boolean(userInfo?.company_id && company.id !== userInfo.company_id)}
+                    >
+                      {company.name}
+                    </MenuItem>
                   ))}
                 </Select>
                 {errors.company_id && <Typography color="error" variant="caption">{errors.company_id}</Typography>}
@@ -444,9 +513,21 @@ export default function SaleEditModal({
                   label="Store"
                   onChange={handleSelectChange}
                 >
-                  {stores.map(store => (
-                    <MenuItem key={store.id} value={store.id}>{store.name}</MenuItem>
-                  ))}
+                  {filteredStores.length > 0 ? (
+                    filteredStores.map(store => (
+                      <MenuItem key={store.id} value={store.id}>{store.name}</MenuItem>
+                    ))
+                  ) : (
+                    stores.map(store => (
+                      <MenuItem 
+                        key={store.id} 
+                        value={store.id}
+                        disabled={Boolean(userInfo?.company_id && store.company && store.company.id !== userInfo.company_id)}
+                      >
+                        {store.name}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
                 {errors.store_id && <Typography color="error" variant="caption">{errors.store_id}</Typography>}
               </FormControl>
@@ -505,7 +586,7 @@ export default function SaleEditModal({
                       onChange={(e) => setSelectedProduct(e.target.value as string)}
                       size="small"
                     >
-                      {products.map(product => (
+                      {(filteredProducts.length > 0 ? filteredProducts : products).map(product => (
                         <MenuItem key={product.id} value={product.id}>{product.name}</MenuItem>
                       ))}
                     </Select>

@@ -1,4 +1,6 @@
 import { coreApiClient } from './client';
+import { usersApi } from './users';
+import { inventoryApi } from './inventory';
 
 export interface Currency {
   id: string;
@@ -148,5 +150,30 @@ export const companiesApi = {
   // Delete a subscription plan
   deleteSubscriptionPlan: async (id: string): Promise<void> => {
     await coreApiClient.delete(`/companies/subscription-plans/${id}/`);
+  },
+
+  // Delete a company and all related data
+  deleteCompanyWithRelatedData: async (id: string): Promise<void> => {
+    try {
+      // 1. Get all users for this company
+      const users = await usersApi.getUsers();
+      const companyUsers = users.filter(user => user.company_id === id);
+      
+      // 2. Delete all users associated with the company
+      await Promise.all(companyUsers.map(user => usersApi.deleteUser(user.id)));
+      
+      // 3. Get all stores for this company
+      const stores = await inventoryApi.getStores();
+      const companyStores = stores.filter(store => store.company_id === id);
+      
+      // 4. Delete all stores associated with the company
+      await Promise.all(companyStores.map(store => inventoryApi.deleteStore(store.id)));
+      
+      // 5. Finally delete the company
+      await coreApiClient.delete(`/companies/companies/${id}/`);
+    } catch (error) {
+      console.error('Error in cascade deletion:', error);
+      throw error;
+    }
   },
 }; 

@@ -26,6 +26,7 @@ import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { transactionsApi, Supplier, TransactionPaymentMode } from '@/services/api/transactions';
 import { inventoryApi, Product, InventoryStore } from '@/services/api/inventory';
 import { companiesApi, Company, Currency } from '@/services/api/companies';
+import { useCurrentUser } from '@/hooks/use-auth';
 
 interface ProductItem {
   id: string;
@@ -104,9 +105,14 @@ export default function PurchaseEditModal({
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [stores, setStores] = useState<InventoryStore[]>([]);
+  const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  
+  // Get current user's company
+  const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
   
   // Fetch data when modal opens
   useEffect(() => {
@@ -137,15 +143,43 @@ export default function PurchaseEditModal({
           setCurrencies(currenciesData);
           setPaymentModes(paymentModesData);
           
+          // Filter stores by user's company
+          if (userInfo?.company_id) {
+            const companyStores = storesData.filter(store => 
+              store.company && store.company.id === userInfo.company_id
+            );
+            setFilteredStores(companyStores);
+            
+            // Filter products by user's company
+            const companyProducts = productsData.filter(product => 
+              product.company && product.company.id === userInfo.company_id
+            );
+            setFilteredProducts(companyProducts);
+          } else {
+            setFilteredProducts(productsData);
+          }
+          
           // If formData doesn't have IDs, set defaults
           setFormData(prev => {
             const updated = { ...prev };
-            if (!updated.company_id && companiesData.length > 0) {
+            // Always use the user's company
+            if (userInfo?.company_id) {
+              updated.company_id = userInfo.company_id;
+            } else if (!updated.company_id && companiesData.length > 0) {
               updated.company_id = companiesData[0].id;
             }
-            if (!updated.store_id && storesData.length > 0) {
-              updated.store_id = storesData[0].id;
+            
+            // Set default store from filtered stores
+            if (!updated.store_id) {
+              const availableStores = userInfo?.company_id 
+                ? storesData.filter(store => store.company && store.company.id === userInfo.company_id)
+                : storesData;
+                
+              if (availableStores.length > 0) {
+                updated.store_id = availableStores[0].id;
+              }
             }
+            
             if (!updated.currency_id && currenciesData.length > 0) {
               updated.currency_id = currenciesData[0].id;
             }
@@ -163,16 +197,45 @@ export default function PurchaseEditModal({
       
       fetchData();
     }
-  }, [open]);
+  }, [open, userInfo]);
+  
+  // Filter stores whenever user company changes
+  useEffect(() => {
+    if (userInfo?.company_id) {
+      // Filter stores by company
+      if (stores.length > 0) {
+        const companyStores = stores.filter(store => 
+          store.company && store.company.id === userInfo.company_id
+        );
+        setFilteredStores(companyStores);
+      }
+      
+      // Filter products by company
+      if (products.length > 0) {
+        const companyProducts = products.filter(product => 
+          product.company && product.company.id === userInfo.company_id
+        );
+        setFilteredProducts(companyProducts);
+      }
+    }
+  }, [userInfo, stores, products]);
   
   // Reset form data when modal opens with new purchase data
   React.useEffect(() => {
     if (open) {
-      setFormData(purchase);
+      // Update purchase data with user's company if creating new
+      const updatedPurchase = { ...purchase };
+      
+      // If creating new, use the current user's company_id
+      if (!updatedPurchase.id && userInfo?.company_id) {
+        updatedPurchase.company_id = userInfo.company_id;
+      }
+      
+      setFormData(updatedPurchase);
       setErrors({});
-      calculateTotals(purchase.products);
+      calculateTotals(updatedPurchase.products);
     }
-  }, [purchase, open]);
+  }, [purchase, open, userInfo]);
   
   const calculateTotals = (productItems: ProductItem[]) => {
     let total = 0;
@@ -406,9 +469,16 @@ export default function PurchaseEditModal({
                   value={formData.company_id}
                   label="Company"
                   onChange={handleSelectChange}
+                  disabled={!!userInfo?.company_id} // Disable when we have a user company
                 >
                   {companies.map(company => (
-                    <MenuItem key={company.id} value={company.id}>{company.name}</MenuItem>
+                    <MenuItem 
+                      key={company.id} 
+                      value={company.id}
+                      disabled={Boolean(userInfo?.company_id && company.id !== userInfo.company_id)}
+                    >
+                      {company.name}
+                    </MenuItem>
                   ))}
                 </Select>
                 {errors.company_id && <Typography color="error" variant="caption">{errors.company_id}</Typography>}
@@ -426,9 +496,21 @@ export default function PurchaseEditModal({
                   label="Store"
                   onChange={handleSelectChange}
                 >
-                  {stores.map(store => (
-                    <MenuItem key={store.id} value={store.id}>{store.name}</MenuItem>
-                  ))}
+                  {filteredStores.length > 0 ? (
+                    filteredStores.map(store => (
+                      <MenuItem key={store.id} value={store.id}>{store.name}</MenuItem>
+                    ))
+                  ) : (
+                    stores.map(store => (
+                      <MenuItem 
+                        key={store.id} 
+                        value={store.id}
+                        disabled={Boolean(userInfo?.company_id && store.company && store.company.id !== userInfo.company_id)}
+                      >
+                        {store.name}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
                 {errors.store_id && <Typography color="error" variant="caption">{errors.store_id}</Typography>}
               </FormControl>
@@ -487,7 +569,7 @@ export default function PurchaseEditModal({
                       onChange={(e) => setSelectedProduct(e.target.value as string)}
                       size="small"
                     >
-                      {products.map(product => (
+                      {(filteredProducts.length > 0 ? filteredProducts : products).map(product => (
                         <MenuItem key={product.id} value={product.id}>{product.name}</MenuItem>
                       ))}
                     </Select>
