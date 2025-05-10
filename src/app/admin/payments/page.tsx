@@ -14,20 +14,20 @@ export default function PaymentsPage(): React.JSX.Element {
   // Payment section cards
   const sections = [
     {
-      id: 'payment-in',
+      id: 'payments-in',
       title: 'Payment In',
       description: 'Manage all incoming payments from customers',
       icon: <ArrowDownIcon size={52} weight="bold" />,
       color: '#0ea5e9',
-      link: '/admin/payments/payment-in',
+      link: '/admin/payments/payments-in',
     },
     {
-      id: 'payment-out',
+      id: 'payments-out',
       title: 'Payment Out',
       description: 'Manage all outgoing payments to suppliers',
       icon: <ArrowUpIcon size={52} weight="bold" />,
       color: '#0ea5e9',
-      link: '/admin/payments/payment-out',
+      link: '/admin/payments/payments-out',
     },
   ];
 

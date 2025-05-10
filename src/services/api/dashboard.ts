@@ -100,8 +100,8 @@ export const dashboardApi = {
         const [salesResponse, expensesResponse, paymentsInResponse, paymentsOutResponse] = await Promise.all([
           coreApiClient.get<ApiResponse<Sale[]> | Sale[]>('/transactions/sales'),
           coreApiClient.get<ApiResponse<Expense[]> | Expense[]>('/financials/expenses'),
-          coreApiClient.get<ApiResponse<Payment[]> | Payment[]>('/financials/payment-in'),
-          coreApiClient.get<ApiResponse<Payment[]> | Payment[]>('/financials/payment-out')
+          coreApiClient.get<ApiResponse<Payment[]> | Payment[]>('/financials/payments-in/'),
+          coreApiClient.get<ApiResponse<Payment[]> | Payment[]>('/financials/payments-out/')
         ]);
         
         console.log('API responses received');

@@ -37,6 +37,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { useCurrentUser } from '@/hooks/use-auth';
+import { financialsApi } from '@/services/api/financials';
 
 export default function PurchasesPage(): React.JSX.Element {
   const [tabValue, setTabValue] = React.useState(0);
@@ -333,14 +334,36 @@ export default function PurchasesPage(): React.JSX.Element {
       // Show final payload
       console.log('Final purchase payload:', purchasePayload);
 
+      let responseData;
+      
       if (purchaseData.id) {
         // Update existing purchase
-        await transactionsApi.updatePurchase(purchaseData.id, purchasePayload);
+        responseData = await transactionsApi.updatePurchase(purchaseData.id, purchasePayload);
         console.log(`Updated purchase: ${JSON.stringify(purchasePayload)}`);
       } else {
         // Add new purchase
-        await transactionsApi.createPurchase(purchasePayload);
+        responseData = await transactionsApi.createPurchase(purchasePayload);
         console.log(`Added new purchase: ${JSON.stringify(purchasePayload)}`);
+      }
+      
+      // Create payable automatically
+      if (responseData) {
+        try {
+          console.log('Creating payable for purchase:', responseData.id);
+          
+          const payablePayload = {
+            company: company_id,
+            purchase: responseData.id,
+            amount: purchaseData.totalAmount.toString(),
+            currency: currency_id
+          };
+          
+          await financialsApi.createPayable(payablePayload);
+          console.log('Payable created successfully');
+        } catch (payableError) {
+          console.error('Error creating payable:', payableError);
+          alert("Purchase was saved, but there was an error creating the payable. Please create it manually.");
+        }
       }
       
       // Refresh the data

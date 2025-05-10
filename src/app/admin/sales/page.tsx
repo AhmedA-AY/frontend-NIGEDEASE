@@ -37,6 +37,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { useCurrentUser } from '@/hooks/use-auth';
+import { financialsApi } from '@/services/api/financials';
 
 export default function SalesPage(): React.JSX.Element {
   const [tabValue, setTabValue] = React.useState(0);
@@ -321,14 +322,36 @@ export default function SalesPage(): React.JSX.Element {
       // Show final payload
       console.log('Final sale payload:', salePayload);
 
+      let responseData;
+      
       if (saleData.id) {
         // Update existing sale
-        await transactionsApi.updateSale(saleData.id, salePayload);
+        responseData = await transactionsApi.updateSale(saleData.id, salePayload);
         console.log(`Updated sale: ${JSON.stringify(salePayload)}`);
       } else {
         // Add new sale
-        await transactionsApi.createSale(salePayload);
+        responseData = await transactionsApi.createSale(salePayload);
         console.log(`Added new sale: ${JSON.stringify(salePayload)}`);
+      }
+      
+      // Create receivable automatically
+      if (responseData) {
+        try {
+          console.log('Creating receivable for sale:', responseData.id);
+          
+          const receivablePayload = {
+            company: company_id,
+            sale: responseData.id,
+            amount: saleData.totalAmount.toString(),
+            currency: currency_id
+          };
+          
+          await financialsApi.createReceivable(receivablePayload);
+          console.log('Receivable created successfully');
+        } catch (receivableError) {
+          console.error('Error creating receivable:', receivableError);
+          alert("Sale was saved, but there was an error creating the receivable. Please create it manually.");
+        }
       }
       
       // Refresh the data
