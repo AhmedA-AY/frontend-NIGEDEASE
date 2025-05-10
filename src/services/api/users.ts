@@ -4,8 +4,12 @@ import { CreateUserData, UserResponse } from './auth';
 // User API
 export const usersApi = {
   // Get all users
-  getUsers: async (): Promise<UserResponse[]> => {
-    const response = await userManagementApiClient.get<UserResponse[]>('/users/');
+  getUsers: async (company_id?: string | null): Promise<UserResponse[]> => {
+    let url = '/users/';
+    if (company_id) {
+      url += `?company_id=${company_id}`;
+    }
+    const response = await userManagementApiClient.get<UserResponse[]>(url);
     return response.data;
   },
 

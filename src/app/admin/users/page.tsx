@@ -332,23 +332,22 @@ export default function UsersPage() {
     
     setIsLoading(true);
     try {
-      const allUsers = await usersApi.getUsers();
+      // Use the updated API to fetch only users from the current company
+      const companyUsers = await usersApi.getUsers(userInfo.company_id);
       
-      // Filter users by the admin's company_id
-      const companyUsers = allUsers.filter(user => 
-        user.company_id === userInfo.company_id && 
-        (user.role === 'stock_manager' || user.role === 'salesman')
+      // Filter to only include stock managers and salesmen
+      const filteredByRole = companyUsers.filter(user => 
+        user.role === 'stock_manager' || user.role === 'salesman'
       );
       
-      setUsers(companyUsers);
-      filterUsers(companyUsers, searchQuery, roleFilter);
+      setUsers(filteredByRole);
     } catch (error) {
       console.error('Error fetching users:', error);
       enqueueSnackbar('Failed to load users. Please check your network connection and try again.', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo, isLoading, enqueueSnackbar, searchQuery, roleFilter]);
+  }, [userInfo, isLoading, enqueueSnackbar]);
   
   useEffect(() => {
     fetchUsers();
@@ -428,9 +427,21 @@ export default function UsersPage() {
   
   const handleSaveUser = async (userData: UserFormData) => {
     try {
+      // Ensure company_id is set
+      if (!userInfo || !userInfo.company_id) {
+        enqueueSnackbar('Company information not available. Cannot create or update user.', { variant: 'error' });
+        return;
+      }
+      
+      // Always use the current admin's company_id
+      const userDataWithCompany = {
+        ...userData,
+        company_id: userInfo.company_id
+      };
+      
       if (userData.id) {
         // Update user
-        const { id, ...updateData } = userData;
+        const { id, ...updateData } = userDataWithCompany;
         // Create a new object without the password if it's empty
         const dataToUpdate = { ...updateData };
         if (!dataToUpdate.password) {
@@ -442,7 +453,7 @@ export default function UsersPage() {
         enqueueSnackbar('User updated successfully', { variant: 'success' });
       } else {
         // Create user
-        await authApi.createUser(userData as CreateUserData);
+        await authApi.createUser(userDataWithCompany as CreateUserData);
         enqueueSnackbar('User created successfully', { variant: 'success' });
       }
       fetchUsers();

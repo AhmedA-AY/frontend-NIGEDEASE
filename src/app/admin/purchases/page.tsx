@@ -290,11 +290,17 @@ export default function PurchasesPage(): React.JSX.Element {
 
   const handleSavePurchase = async (purchaseData: any) => {
     try {
+      // Check if company_id is available
+      if (!userInfo || !userInfo.company_id) {
+        alert("Company information is not available. Please refresh the page or log in again.");
+        return;
+      }
+      
       // Log data before creating/updating
       console.log('Purchase data to save:', purchaseData);
       
       // Use the user's company ID
-      const company_id = userInfo?.company_id || '';
+      const company_id = userInfo.company_id;
       // For other fields, use the form values or defaults
       const store_id = purchaseData.store_id || (filteredStores.length > 0 ? filteredStores[0].id : '');
       const currency_id = purchaseData.currency_id || (currencies.length > 0 ? currencies[0].id : '');
@@ -307,6 +313,12 @@ export default function PurchasesPage(): React.JSX.Element {
         currency_id,
         payment_mode_id
       });
+      
+      // Verify required IDs are present
+      if (!store_id || !currency_id || !payment_mode_id || !purchaseData.supplier) {
+        alert("Missing required information. Please ensure all fields are filled.");
+        return;
+      }
       
       // Convert product items to the format expected by the API
       const items = (purchaseData.products || []).map((product: {id: string; quantity: number}) => ({
@@ -347,7 +359,7 @@ export default function PurchasesPage(): React.JSX.Element {
       }
       
       // Create payable automatically
-      if (responseData) {
+      if (responseData && responseData.id) {
         try {
           console.log('Creating payable for purchase:', responseData.id);
           
@@ -358,12 +370,18 @@ export default function PurchasesPage(): React.JSX.Element {
             currency: currency_id
           };
           
+          console.log('Payable payload:', payablePayload);
+          
           await financialsApi.createPayable(payablePayload);
           console.log('Payable created successfully');
         } catch (payableError) {
           console.error('Error creating payable:', payableError);
+          // Still consider the purchase successful, just show an error about the payable
           alert("Purchase was saved, but there was an error creating the payable. Please create it manually.");
         }
+      } else {
+        console.error('Purchase response missing ID:', responseData);
+        alert("Purchase was saved but there was an issue with the response. Payable was not created.");
       }
       
       // Refresh the data

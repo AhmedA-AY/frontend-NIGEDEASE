@@ -106,15 +106,99 @@ export default function PurchasesPage(): React.JSX.Element {
     }
   };
 
-  const handleSavePurchase = (purchaseData: any) => {
-    if (purchaseData.id) {
-      // Update existing purchase
-      console.log(`Updated purchase: ${JSON.stringify(purchaseData)}`);
-    } else {
-      // Add new purchase
-      console.log(`Added new purchase: ${JSON.stringify(purchaseData)}`);
+  const handleSavePurchase = async (purchaseData: any) => {
+    try {
+      // Check if user info is available
+      if (!userInfo || !userInfo.company_id) {
+        alert("Company information is not available. Please refresh the page or log in again.");
+        return;
+      }
+      
+      // Log data before creating/updating
+      console.log('Purchase data to save:', purchaseData);
+      
+      // Use the user's company ID
+      const company_id = userInfo.company_id;
+      // For store, currency, and payment mode, use form values or defaults
+      const store_id = purchaseData.store_id || (filteredStores.length > 0 ? filteredStores[0].id : '');
+      const currency_id = purchaseData.currency_id || (currencies.length > 0 ? currencies[0].id : '');
+      const payment_mode_id = purchaseData.payment_mode_id || (paymentModes.length > 0 ? paymentModes[0].id : '');
+      
+      // Validate required fields
+      if (!store_id || !currency_id || !payment_mode_id || !purchaseData.supplier) {
+        alert("Missing required information. Please ensure all fields are filled.");
+        return;
+      }
+      
+      // Convert product items to the format expected by the API
+      const items = (purchaseData.products || []).map((product: {id: string; quantity: number}) => ({
+        product_id: product.id,
+        quantity: String(product.quantity) // Ensure quantity is a string
+      }));
+      
+      // Make sure we have at least one item
+      if (items.length === 0) {
+        alert("You must add at least one product to create a purchase.");
+        return;
+      }
+      
+      const purchasePayload = {
+        company_id: company_id,
+        store_id: store_id,
+        supplier_id: purchaseData.supplier,
+        total_amount: purchaseData.totalAmount.toString(),
+        currency_id: currency_id,
+        payment_mode_id: payment_mode_id,
+        is_credit: purchaseData.status === 'Credit',
+        items: items
+      };
+
+      console.log('Final purchase payload:', purchasePayload);
+      
+      let responseData;
+      if (purchaseData.id) {
+        // Update existing purchase
+        responseData = await transactionsApi.updatePurchase(purchaseData.id, purchasePayload);
+        console.log(`Updated purchase: ${JSON.stringify(purchasePayload)}`);
+        alert("Purchase updated successfully");
+      } else {
+        // Add new purchase
+        responseData = await transactionsApi.createPurchase(purchasePayload);
+        console.log(`Added new purchase: ${JSON.stringify(purchasePayload)}`);
+        
+        // Create payable automatically if purchase creation was successful
+        if (responseData && responseData.id) {
+          try {
+            const payablePayload = {
+              company: company_id,
+              purchase: responseData.id,
+              amount: purchaseData.totalAmount.toString(),
+              currency: currency_id
+            };
+            
+            await financialsApi.createPayable(payablePayload);
+            console.log('Payable created successfully');
+          } catch (payableError) {
+            console.error('Error creating payable:', payableError);
+            alert("Purchase was saved, but there was an error creating the payable. Please create it manually.");
+          }
+        }
+        
+        alert("Purchase added successfully");
+      }
+      
+      // Refresh purchases
+      fetchPurchases();
+      setIsPurchaseModalOpen(false);
+    } catch (error: any) {
+      console.error('Error saving purchase:', error);
+      if (error.response && error.response.data) {
+        console.error('API error details:', error.response.data);
+        alert(`Error: ${JSON.stringify(error.response.data)}`);
+      } else {
+        alert("An error occurred while saving the purchase.");
+      }
     }
-    setIsPurchaseModalOpen(false);
   };
 
   // Generate breadcrumb path links
