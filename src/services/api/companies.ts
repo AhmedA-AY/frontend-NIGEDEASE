@@ -164,7 +164,7 @@ export const companiesApi = {
       
       // 3. Get all stores for this company
       const stores = await inventoryApi.getStores();
-      const companyStores = stores.filter(store => store.company_id === id);
+      const companyStores = stores.filter(store => store.company && store.company.id === id);
       
       // 4. Delete all stores associated with the company
       await Promise.all(companyStores.map(store => inventoryApi.deleteStore(store.id)));
