@@ -185,11 +185,8 @@ export const authApi = {
   
   // Get current user profile
   getProfile: async (): Promise<any> => {
-    const response = await coreApiClient.get('/companies/companies/');
-    // Return the first company as the user's profile
-    return Array.isArray(response.data) && response.data.length > 0 
-      ? { ...response.data[0], company_id: response.data[0].id } 
-      : {};
+    const response = await userManagementApiClient.get('/auth/profile/');
+    return response.data;
   },
   
   // Update user profile

@@ -318,8 +318,15 @@ export default function UsersPage() {
   
   // Fetch users data
   const fetchUsers = useCallback(async () => {
-    if (!userInfo || !userInfo.company_id) {
-      enqueueSnackbar('Company information not available', { variant: 'error' });
+    if (!userInfo) {
+      if (!isLoading) {
+        enqueueSnackbar('User profile not available. You may need to log in again.', { variant: 'error' });
+      }
+      return;
+    }
+
+    if (!userInfo.company_id) {
+      enqueueSnackbar('Company information not available. Your user account may not be associated with a company.', { variant: 'error' });
       return;
     }
     
@@ -337,11 +344,11 @@ export default function UsersPage() {
       filterUsers(companyUsers, searchQuery, roleFilter);
     } catch (error) {
       console.error('Error fetching users:', error);
-      enqueueSnackbar('Failed to load users', { variant: 'error' });
+      enqueueSnackbar('Failed to load users. Please check your network connection and try again.', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo, enqueueSnackbar, searchQuery, roleFilter]);
+  }, [userInfo, isLoading, enqueueSnackbar, searchQuery, roleFilter]);
   
   useEffect(() => {
     fetchUsers();
