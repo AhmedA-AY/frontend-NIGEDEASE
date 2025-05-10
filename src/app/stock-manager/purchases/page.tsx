@@ -28,6 +28,9 @@ import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/di
 import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
 import { paths } from '@/paths';
 import PurchaseEditModal from '@/components/admin/purchases/PurchaseEditModal';
+import { useCurrentUser } from '@/hooks/use-auth';
+import { transactionsApi } from '@/services/api/transactions';
+import { financialsApi } from '@/services/api/financials';
 
 export default function PurchasesPage(): React.JSX.Element {
   const [tabValue, setTabValue] = React.useState(0);
@@ -35,6 +38,12 @@ export default function PurchasesPage(): React.JSX.Element {
   const [anchorElMap, setAnchorElMap] = React.useState<{ [key: string]: HTMLElement | null }>({});
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = React.useState(false);
   const [currentPurchase, setCurrentPurchase] = React.useState<any>(null);
+  const { userInfo } = useCurrentUser();
+  
+  // Mock data for stores, currencies, and payment modes
+  const filteredStores = React.useMemo(() => [{ id: 'store1', name: 'Main Store' }], []);
+  const currencies = React.useMemo(() => [{ id: 'curr1', name: 'USD' }], []);
+  const paymentModes = React.useMemo(() => [{ id: 'pm1', name: 'Cash' }], []);
   
   // Mock purchases data
   const purchases = [
@@ -49,6 +58,12 @@ export default function PurchasesPage(): React.JSX.Element {
     { id: 'PUR-24', date: '21-04-2025', supplier: 'Miller, Marks and Kub', status: 'Pending', totalAmount: 43.00, paidAmount: 43.00, dueAmount: 0.00, paymentStatus: 'Paid' },
     { id: 'PUR-23', date: '23-04-2025', supplier: 'Rutherford-Harvey', status: 'Received', totalAmount: 412.00, paidAmount: 0.00, dueAmount: 412.00, paymentStatus: 'Unpaid' },
   ];
+  
+  const fetchPurchases = React.useCallback(() => {
+    // Placeholder for actual API call
+    console.log('Fetching purchases...');
+    // In a real app, this would make an API call to get the purchases
+  }, []);
 
   // Calculate total amounts
   const totalAmount = purchases.reduce((sum, purchase) => sum + purchase.totalAmount, 0);

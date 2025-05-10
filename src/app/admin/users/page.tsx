@@ -442,29 +442,24 @@ export default function UsersPage() {
   
   const handleSaveUser = async (userData: UserFormData) => {
     try {
-      // Ensure company_id is set
-      if (!userInfo || !userInfo.company_id) {
-        enqueueSnackbar('Company information not available. Cannot create or update user.', { variant: 'error' });
-        return;
-      }
+      // Create a new object without the password if it's empty
+      const { password, ...userDataWithoutPassword } = userData;
       
-      // Always use the current admin's company_id
-      // Use non-null assertion since we've already checked above
+      // Add company_id to the user data
       const userDataWithCompany = {
-        ...userData,
-        company_id: userInfo.company_id!  // Non-null assertion
+        ...(password ? { password } : {}),
+        ...userDataWithoutPassword,
+        company_id: userInfo?.company_id || '',
       };
-      
+
       if (userData.id) {
-        // Update user
         const { id, ...updateData } = userDataWithCompany;
         // Create a new object without the password if it's empty
         const dataToUpdate = { ...updateData };
-        if (!dataToUpdate.password) {
-          const { password, ...rest } = dataToUpdate;
-          await usersApi.updateUser(id, rest);
+        if (!password) {
+          await usersApi.updateUser(id as string, dataToUpdate);
         } else {
-          await usersApi.updateUser(id, dataToUpdate);
+          await usersApi.updateUser(id as string, dataToUpdate);
         }
         enqueueSnackbar('User updated successfully', { variant: 'success' });
       } else {
