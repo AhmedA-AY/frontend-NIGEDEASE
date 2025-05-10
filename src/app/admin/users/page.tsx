@@ -319,42 +319,50 @@ export default function UsersPage() {
   // Fetch users data
   const fetchUsers = useCallback(async () => {
     if (!userInfo) {
-      if (!isLoading) {
-        enqueueSnackbar('User profile not available. You may need to log in again.', { variant: 'error' });
-      }
+      enqueueSnackbar('User profile not available. Please log in again.', { variant: 'error' });
+      setIsLoading(false);
       return;
     }
 
     if (!userInfo.company_id) {
-      enqueueSnackbar('Company information not available. Your user account may not be associated with a company.', { variant: 'error' });
+      enqueueSnackbar('Company information not available. Please log in again.', { variant: 'error' });
+      setIsLoading(false);
       return;
     }
     
     setIsLoading(true);
     try {
-      // Use the updated API to fetch only users from the current company
-      const companyUsers = await usersApi.getUsers(userInfo.company_id);
+      console.log('Fetching users for company:', userInfo.company_id);
       
-      // Filter to only include stock managers and salesmen
-      const filteredByRole = companyUsers.filter(user => 
+      // Use the company_id parameter to get users filtered by company on the backend
+      const allUsers = await usersApi.getUsers(userInfo.company_id);
+      console.log('Users retrieved:', allUsers.length);
+      
+      // Additional filter for stock_manager and salesman roles on the client side
+      const filteredByRole = allUsers.filter(user => 
         user.role === 'stock_manager' || user.role === 'salesman'
       );
+      console.log('Users after role filtering:', filteredByRole.length);
       
       setUsers(filteredByRole);
+      
+      // The filter effect will run after this to update filteredUsers
     } catch (error) {
       console.error('Error fetching users:', error);
-      enqueueSnackbar('Failed to load users. Please check your network connection and try again.', { variant: 'error' });
+      enqueueSnackbar('Failed to load users. Please try again.', { variant: 'error' });
+      setUsers([]);
+      setFilteredUsers([]);
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo, isLoading, enqueueSnackbar]);
-  
+  }, [userInfo, enqueueSnackbar]);
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
   
   // Filter users based on search query and role filter
-  const filterUsers = (userList: UserResponse[], query: string, role: string) => {
+  const filterUsers = useCallback((userList: UserResponse[], query: string, role: string) => {
     let filtered = [...userList];
     
     // Apply search filter
@@ -373,11 +381,18 @@ export default function UsersPage() {
     }
     
     setFilteredUsers(filtered);
-  };
+  }, []);
   
   useEffect(() => {
     filterUsers(users, searchQuery, roleFilter);
-  }, [users, searchQuery, roleFilter]);
+    // Add debug logging to help troubleshoot the filter functionality
+    console.log('Filter applied:', {
+      totalUsers: users.length,
+      filteredUsersCount: filteredUsers.length,
+      searchQuery,
+      roleFilter
+    });
+  }, [users, searchQuery, roleFilter, filterUsers]);
   
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
@@ -434,9 +449,10 @@ export default function UsersPage() {
       }
       
       // Always use the current admin's company_id
+      // Use non-null assertion since we've already checked above
       const userDataWithCompany = {
         ...userData,
-        company_id: userInfo.company_id
+        company_id: userInfo.company_id!  // Non-null assertion
       };
       
       if (userData.id) {
