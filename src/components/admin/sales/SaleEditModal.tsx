@@ -234,9 +234,8 @@ export default function SaleEditModal({
         products: sale.products || []
       };
       
-      // If editing, use the provided company_id
-      // If creating new, use the current user's company_id
-      if (!saleWithProducts.id && userInfo?.company_id) {
+      // Always set the company_id to the current user's company_id if available
+      if (userInfo?.company_id) {
         saleWithProducts.company_id = userInfo.company_id;
       }
       
@@ -374,7 +373,7 @@ export default function SaleEditModal({
     }
     
     if (!formData.company_id) {
-      newErrors.company_id = 'Company is required';
+      newErrors.company_id = 'Company is required. Please refresh the page to get your company information.';
     }
     
     if (!formData.store_id) {
@@ -398,6 +397,19 @@ export default function SaleEditModal({
   };
 
   const handleSubmit = () => {
+    // Log the form data to see what's being submitted
+    console.log('Form data before validation:', formData);
+    
+    // Check company_id specifically
+    if (!formData.company_id) {
+      console.error('Company ID is missing!');
+      setErrors(prev => ({
+        ...prev,
+        company_id: 'Company is required. Please refresh the page to get your company information.'
+      }));
+      return;
+    }
+    
     if (validateForm()) {
       onSave(formData);
     }

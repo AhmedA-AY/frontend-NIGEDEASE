@@ -273,8 +273,15 @@ export default function SalesPage(): React.JSX.Element {
       // Log data before creating/updating
       console.log('Sale data to save:', saleData);
       
-      // Use the user's company ID
+      // Ensure company_id is set from userInfo
       const company_id = userInfo?.company_id || '';
+      
+      // Verify company_id is available
+      if (!company_id) {
+        alert("Company information is not available. Please refresh the page or log in again.");
+        return;
+      }
+      
       // For other fields, use the form values or defaults
       const store_id = saleData.store_id || (filteredStores.length > 0 ? filteredStores[0].id : '');
       const currency_id = saleData.currency_id || (currencies.length > 0 ? currencies[0].id : '');
