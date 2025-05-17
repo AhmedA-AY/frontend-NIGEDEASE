@@ -205,19 +205,41 @@ export const authApi = {
   
   // Upload and update profile image
   updateProfileImage: async (file: File): Promise<AuthResponse['user']> => {
-    const formData = new FormData();
-    formData.append('profile_image', file);
+    // First get the user ID
+    const userInfo = tokenStorage.getUserInfo();
+    if (!userInfo || !userInfo.id) {
+      throw new Error('No user ID available in token');
+    }
     
-    const response = await userManagementApiClient.put<AuthResponse['user']>(
-      '/auth/profile/image/',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
-    return response.data;
+    // Create a FileReader to convert the file to a base64 string
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = async (event) => {
+        try {
+          const base64String = event.target?.result as string;
+          
+          // Send the update with the base64 image string
+          const response = await userManagementApiClient.put<UserResponse>(
+            `/users/${userInfo.id}/`,
+            {
+              profile_image: base64String
+            }
+          );
+          
+          return resolve(response.data);
+        } catch (error) {
+          return reject(error);
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error('Failed to read file'));
+      };
+      
+      // Read the file as a data URL (base64)
+      reader.readAsDataURL(file);
+    });
   },
   
   // Check if authenticated (verifies token)

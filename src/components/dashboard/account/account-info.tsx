@@ -92,9 +92,33 @@ export function AccountInfo({ user, onProfileUpdate }: AccountInfoProps): React.
       setTimeout(() => {
         setUploadSuccess(false);
       }, 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading profile image:', error);
-      setUploadError('Failed to upload image. Please try again.');
+      
+      // Display more specific error messages
+      let errorMessage = 'Failed to upload image. Please try again.';
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        if (error.response.status === 404) {
+          errorMessage = 'Upload endpoint not found. Please contact support.';
+        } else if (error.response.status === 400) {
+          errorMessage = 'Invalid image format or data. Please try a different image.';
+        } else if (error.response.status === 413) {
+          errorMessage = 'Image file is too large. Please use a smaller image.';
+        } else if (error.response.data && error.response.data.error) {
+          errorMessage = `Error: ${error.response.data.error}`;
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else {
+        // Something happened in setting up the request that triggered an error
+        errorMessage = `Error: ${error.message || 'Unknown error occurred'}`;
+      }
+      
+      setUploadError(errorMessage);
     } finally {
       setIsUploading(false);
     }

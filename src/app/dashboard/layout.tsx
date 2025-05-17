@@ -5,7 +5,7 @@ import GlobalStyles from '@mui/material/GlobalStyles';
 
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { MainNav } from '@/components/dashboard/layout/main-nav';
-import { SideNav } from '@/components/dashboard/layout/side-nav';
+import { RoleSideNav } from '@/components/dashboard/layout/role-side-nav';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -36,7 +36,7 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
           background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
         }}
       >
-        <SideNav />
+        <RoleSideNav />
         <Box 
           sx={{ 
             display: 'flex', 
