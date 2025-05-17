@@ -181,12 +181,6 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
           </ListItemIcon>
           <Typography variant="body2" sx={{ fontWeight: 500 }}>My Profile</Typography>
         </MenuItem>
-        <MenuItem component={RouterLink} href={paths.dashboard.settings} onClick={onClose}>
-          <ListItemIcon>
-            <GearSixIcon fontSize="var(--icon-fontSize-md)" />
-          </ListItemIcon>
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Settings</Typography>
-        </MenuItem>
         <MenuItem 
           onClick={handleSignOut}
           sx={{ 
