@@ -30,6 +30,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import Avatar from '@mui/material/Avatar';
 
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
@@ -158,6 +159,20 @@ function UserFormDialog({
       <DialogTitle>{user?.id ? 'Edit User' : 'Add New User'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Avatar 
+              src={formData.profile_image || undefined} 
+              alt={`${formData.first_name} ${formData.last_name}`}
+              sx={{ 
+                width: 100, 
+                height: 100,
+                border: '2px solid var(--mui-palette-primary-main)'
+              }}
+            >
+              {formData.first_name?.[0]}{formData.last_name?.[0]}
+            </Avatar>
+          </Box>
+          
           <TextField
             label="Email"
             name="email"
@@ -607,7 +622,24 @@ export default function UsersPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      {user.first_name} {user.last_name}
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar 
+                          src={user.profile_image || undefined} 
+                          alt={`${user.first_name} ${user.last_name}`}
+                          sx={{ 
+                            width: 40, 
+                            height: 40,
+                            mr: 2,
+                          }}
+                        >
+                          {user.first_name?.[0]}{user.last_name?.[0]}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body1">
+                            {user.first_name} {user.last_name}
+                          </Typography>
+                        </Box>
+                      </Box>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{getRoleDisplay(user.role)}</TableCell>

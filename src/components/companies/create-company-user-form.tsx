@@ -10,7 +10,8 @@ import {
   TextField,
   Button,
   CircularProgress,
-  Alert
+  Alert,
+  Avatar
 } from '@mui/material';
 import { useCreateUser } from '@/hooks/use-users';
 
@@ -28,7 +29,8 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
     password: '',
     confirm_password: '',
     phone: '',
-    role: 'admin' as const
+    role: 'admin' as const,
+    profile_image: ''
   });
   
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -96,7 +98,8 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
     try {
       await createUserMutation.mutateAsync({
         ...formData,
-        company_id: companyId
+        company_id: companyId,
+        profile_image: formData.profile_image
       });
       
       if (onSuccess) {
@@ -113,6 +116,18 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
         <CardHeader title="Create Admin User" />
         <CardContent>
           <Grid container spacing={3}>
+            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <Avatar 
+                src={formData.profile_image || undefined} 
+                alt={`${formData.first_name} ${formData.last_name}`}
+                sx={{ 
+                  width: 100, 
+                  height: 100,
+                  border: '2px solid var(--mui-palette-primary-main)'
+                }}
+              />
+            </Grid>
+
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -159,7 +174,7 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Phone"
+                label="Phone Number"
                 name="phone"
                 onChange={handleChange}
                 required
@@ -196,6 +211,19 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
                 value={formData.confirm_password}
                 error={!!formErrors.confirm_password}
                 helperText={formErrors.confirm_password}
+                disabled={createUserMutation.isPending}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Profile Image URL"
+                name="profile_image"
+                onChange={handleChange}
+                value={formData.profile_image}
+                placeholder="https://example.com/profile.jpg"
+                helperText="Enter a URL for the user's profile picture"
                 disabled={createUserMutation.isPending}
               />
             </Grid>

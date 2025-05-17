@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useAuth as useBaseAuth } from '@/providers/auth-provider';
 import { authApi } from '@/services/api/auth';
 
-interface UserInfo {
+export interface UserInfo {
   id: string;
   email: string;
   first_name?: string;
   last_name?: string;
   company_id: string;
   role: string;
+  profile_image?: string;
 }
 
 export function useAuth() {
