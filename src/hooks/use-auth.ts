@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth as useBaseAuth } from '@/providers/auth-provider';
 import { authApi } from '@/services/api/auth';
 
@@ -22,52 +22,60 @@ export function useCurrentUser() {
   const [error, setError] = useState<Error | null>(null);
   const { isAuthenticated } = useBaseAuth();
 
+  const fetchUserInfo = useCallback(async () => {
+    if (!isAuthenticated) {
+      console.log("User is not authenticated, skipping profile fetch");
+      setIsLoading(false);
+      return null;
+    }
+
+    try {
+      console.log("Fetching user profile...");
+      setIsLoading(true);
+      const userData = await authApi.getProfile();
+      console.log("User profile received:", userData);
+      
+      // Force cast to UserInfo to avoid TS errors
+      const typedUserData = userData as unknown as UserInfo;
+      setUserInfo(typedUserData);
+      console.log("UserInfo set:", userData);
+      return typedUserData;
+    } catch (err: any) {
+      console.error("Error fetching user profile:", err);
+      
+      if (err.response) {
+        console.error("API response error:", err.response.status, err.response.data);
+      }
+      
+      setError(err as Error);
+      console.log("Error set in useCurrentUser");
+      return null;
+    } finally {
+      setIsLoading(false);
+      console.log("Loading finished in useCurrentUser");
+    }
+  }, [isAuthenticated]);
+
+  // Function to refresh user data and return the updated data
+  const refreshUserData = useCallback(async (): Promise<UserInfo | null> => {
+    return await fetchUserInfo();
+  }, [fetchUserInfo]);
+
   useEffect(() => {
     let isMounted = true;
 
-    const fetchUserInfo = async () => {
-      if (!isAuthenticated) {
-        console.log("User is not authenticated, skipping profile fetch");
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        console.log("Fetching user profile...");
-        setIsLoading(true);
-        const userData = await authApi.getProfile();
-        console.log("User profile received:", userData);
-        
-        if (isMounted) {
-          // Force cast to UserInfo to avoid TS errors
-          setUserInfo(userData as unknown as UserInfo);
-          console.log("UserInfo set:", userData);
-        }
-      } catch (err: any) {
-        console.error("Error fetching user profile:", err);
-        
-        if (err.response) {
-          console.error("API response error:", err.response.status, err.response.data);
-        }
-        
-        if (isMounted) {
-          setError(err as Error);
-          console.log("Error set in useCurrentUser");
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          console.log("Loading finished in useCurrentUser");
-        }
+    const initFetch = async () => {
+      if (isMounted) {
+        await fetchUserInfo();
       }
     };
 
-    fetchUserInfo();
+    initFetch();
 
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated]);
+  }, [fetchUserInfo]);
 
-  return { userInfo, isLoading, error };
+  return { userInfo, isLoading, error, refreshUserData };
 } 

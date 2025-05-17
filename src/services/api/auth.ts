@@ -47,6 +47,7 @@ export interface ProfileUpdateData {
   first_name?: string;
   last_name?: string;
   email?: string;
+  profile_image?: string;
 }
 
 export type ApiError = {
@@ -199,6 +200,23 @@ export const authApi = {
   // Update user profile
   updateProfile: async (data: ProfileUpdateData): Promise<AuthResponse['user']> => {
     const response = await userManagementApiClient.put<AuthResponse['user']>('/auth/profile/', data);
+    return response.data;
+  },
+  
+  // Upload and update profile image
+  updateProfileImage: async (file: File): Promise<AuthResponse['user']> => {
+    const formData = new FormData();
+    formData.append('profile_image', file);
+    
+    const response = await userManagementApiClient.put<AuthResponse['user']>(
+      '/auth/profile/image/',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   },
   

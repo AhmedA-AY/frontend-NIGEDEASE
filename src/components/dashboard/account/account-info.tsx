@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useState, useRef } from 'react';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -10,13 +11,25 @@ import CardHeader from '@mui/material/CardHeader';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
 import { UserInfo } from '@/hooks/use-auth';
+import { authApi } from '@/services/api/auth';
 
 interface AccountInfoProps {
   user: UserInfo | null;
+  onProfileUpdate?: () => Promise<void>;
 }
 
-export function AccountInfo({ user }: AccountInfoProps): React.JSX.Element {
+export function AccountInfo({ user, onProfileUpdate }: AccountInfoProps): React.JSX.Element {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(user?.profile_image);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  
   const displayName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Loading...';
   const email = user?.email || '';
   const role = user?.role || '';
@@ -31,6 +44,65 @@ export function AccountInfo({ user }: AccountInfoProps): React.JSX.Element {
       default: return role;
     }
   };
+  
+  // Update preview URL when user prop changes
+  React.useEffect(() => {
+    if (user?.profile_image) {
+      setPreviewUrl(user.profile_image);
+    }
+  }, [user]);
+  
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    
+    if (file) {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+  
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    
+    try {
+      setIsUploading(true);
+      setUploadSuccess(false);
+      setUploadError(null);
+      
+      await authApi.updateProfileImage(selectedFile);
+      
+      // Refresh user data to get updated profile image
+      if (onProfileUpdate) {
+        await onProfileUpdate();
+      }
+      
+      setUploadSuccess(true);
+      setSelectedFile(null);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setUploadSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+      setUploadError('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
+  const handleCloseError = () => {
+    setUploadError(null);
+  };
 
   return (
     <Card>
@@ -39,13 +111,45 @@ export function AccountInfo({ user }: AccountInfoProps): React.JSX.Element {
       <CardContent>
         <Grid container spacing={3}>
           <Grid item xs={12} md={3}>
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
               <Avatar 
-                src={user?.profile_image || undefined} 
-                sx={{ height: '80px', width: '80px' }}
+                src={selectedFile ? previewUrl : user?.profile_image} 
+                sx={{ height: '80px', width: '80px', mb: 1 }}
               >
                 {user?.first_name?.[0]}{user?.last_name?.[0]}
               </Avatar>
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                style={{ display: 'none' }}
+                aria-label="Upload profile picture"
+              />
+              
+              <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={handleButtonClick}
+                  disabled={isUploading}
+                >
+                  Change Photo
+                </Button>
+                
+                {selectedFile && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleUpload}
+                    disabled={isUploading}
+                    startIcon={isUploading ? <CircularProgress size={16} /> : null}
+                  >
+                    {isUploading ? 'Uploading...' : 'Upload'}
+                  </Button>
+                )}
+              </Box>
             </Box>
           </Grid>
           <Grid item xs={12} md={9}>
@@ -58,14 +162,21 @@ export function AccountInfo({ user }: AccountInfoProps): React.JSX.Element {
             <Typography color="primary" variant="body2" sx={{ mb: 1 }}>
               {getRoleDisplay(role)}
             </Typography>
-            <Box sx={{ mt: 2 }}>
-              <Button variant="outlined" size="small">
-                Update Profile Photo
-              </Button>
-            </Box>
+            
+            {uploadSuccess && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                Profile image updated successfully!
+              </Alert>
+            )}
           </Grid>
         </Grid>
       </CardContent>
+      
+      <Snackbar open={!!uploadError} autoHideDuration={6000} onClose={handleCloseError}>
+        <Alert onClose={handleCloseError} severity="error">
+          {uploadError}
+        </Alert>
+      </Snackbar>
     </Card>
   );
 }
