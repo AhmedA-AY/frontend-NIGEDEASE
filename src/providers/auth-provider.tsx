@@ -138,18 +138,36 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         return null;
       }
       
-      // Refresh token
-      const tokenResponse = await authApi.refreshToken(refreshToken);
-      
-      // Save new tokens
-      tokenStorage.saveTokens(
-        tokenResponse.access,
-        tokenResponse.refresh,
-        tokenStorage.getUserRole() || '',
-        tokenStorage.getUserEmail() || undefined
-      );
-      
-      return tokenResponse.access;
+      try {
+        // Refresh token
+        const tokenResponse = await authApi.refreshToken(refreshToken);
+        
+        // Save new tokens
+        tokenStorage.saveTokens(
+          tokenResponse.access,
+          tokenResponse.refresh,
+          tokenStorage.getUserRole() || '',
+          tokenStorage.getUserEmail() || undefined
+        );
+        
+        return tokenResponse.access;
+      } catch (refreshError: any) {
+        // Specifically handle invalid or expired refresh token errors
+        if (refreshError.response && 
+            (refreshError.response.status === 401 || refreshError.response.status === 400) &&
+            (refreshError.response.data?.detail === "Invalid or expired token" || 
+             refreshError.response.data?.error === "Invalid token" ||
+             refreshError.response.data?.error?.includes("expired"))) {
+          console.error('Refresh token expired or invalid. Logging out.');
+          // Force logout and redirect to login
+          await logout();
+        } else {
+          // For other errors, also logout but with different logging
+          console.error('Error during token refresh:', refreshError);
+          await logout();
+        }
+        return null;
+      }
     } catch (error) {
       console.error('Token refresh error:', error);
       
@@ -159,7 +177,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       router.push(paths.auth.signIn);
       return null;
     }
-  }, [router]);
+  }, [router, logout]);
 
   const contextValue = React.useMemo(
     () => ({

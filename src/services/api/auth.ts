@@ -154,10 +154,30 @@ export const authApi = {
   
   // Refresh token
   refreshToken: async (refreshToken: string): Promise<{ access: string; refresh: string }> => {
-    const response = await userManagementApiClient.post<{ access: string; refresh: string }>('/auth/refresh-token/', {
-      refresh_token: refreshToken
-    });
-    return response.data;
+    try {
+      const response = await userManagementApiClient.post<{ access: string; refresh: string }>('/auth/refresh-token/', {
+        refresh_token: refreshToken
+      });
+      return response.data;
+    } catch (error: any) {
+      // Enhance error with more context to improve debugging and error handling
+      if (error.response && 
+          (error.response.status === 401 || error.response.status === 400) &&
+          (error.response.data?.detail === "Invalid or expired token" || 
+           error.response.data?.error === "Invalid token" ||
+           error.response.data?.error?.includes("expired"))) {
+        console.error('Refresh token is invalid or expired');
+        // Create a more specific error to help with error handling
+        const enhancedError = new Error('Refresh token expired');
+        enhancedError.name = 'ExpiredRefreshTokenError';
+        // Pass along the original response
+        (enhancedError as any).response = error.response;
+        throw enhancedError;
+      }
+      
+      // For other errors, just rethrow
+      throw error;
+    }
   },
   
   // Request password reset

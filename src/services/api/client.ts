@@ -111,12 +111,24 @@ const refreshAuthToken = async () => {
     } else {
       throw new Error('Failed to refresh token');
     }
-  } catch (error) {
-    // If refresh token is invalid or expired, redirect to login
+  } catch (error: any) {
+    // Handle specific error for invalid/expired refresh token
+    if (error.response && 
+        (error.response.status === 401 || error.response.status === 400) && 
+        (error.response.data?.detail === "Invalid or expired token" || 
+         error.response.data?.error === "Invalid token" ||
+         error.response.data?.error?.includes("expired"))) {
+      console.error('Refresh token expired or invalid. Logging out.');
+    } else {
+      console.error('Error refreshing token:', error);
+    }
+    
+    // Clear tokens in any error case
     tokenStorage.clearTokens();
     
     // Handle client-side navigation
     if (typeof window !== 'undefined') {
+      // Perform a full page redirect to ensure proper cleanup
       window.location.href = paths.auth.signIn;
     }
     
