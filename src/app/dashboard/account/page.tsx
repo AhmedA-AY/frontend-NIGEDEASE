@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import type { Metadata } from 'next';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -9,16 +8,18 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 
-import { config } from '@/config';
 import { AccountDetailsForm } from '@/components/dashboard/account/account-details-form';
 import { AccountInfo } from '@/components/dashboard/account/account-info';
 import { UpdatePasswordForm } from '@/components/dashboard/settings/update-password-form';
 import { useCurrentUser } from '@/hooks/use-auth';
 
-export const metadata = { title: `My Profile | Dashboard | ${config.site.name}` } satisfies Metadata;
-
 export default function Page(): React.JSX.Element {
   const { userInfo, isLoading, error } = useCurrentUser();
+
+  React.useEffect(() => {
+    // Update document title dynamically since we can't use static metadata
+    document.title = "My Profile | Dashboard";
+  }, []);
 
   if (isLoading) {
     return (
