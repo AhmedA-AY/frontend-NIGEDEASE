@@ -204,42 +204,46 @@ export const authApi = {
   },
   
   // Upload and update profile image
-  updateProfileImage: async (file: File): Promise<AuthResponse['user']> => {
+  updateProfileImage: async (imageUrl: string): Promise<AuthResponse['user']> => {
     // First get the user ID
     const userInfo = tokenStorage.getUserInfo();
     if (!userInfo || !userInfo.id) {
       throw new Error('No user ID available in token');
     }
     
-    // Create a FileReader to convert the file to a base64 string
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+    try {
+      // First get the current user data so we have all required fields
+      const currentUserData = await authApi.getProfile();
       
-      reader.onload = async (event) => {
-        try {
-          const base64String = event.target?.result as string;
-          
-          // Send the update with the base64 image string
-          const response = await userManagementApiClient.put<UserResponse>(
-            `/users/${userInfo.id}/`,
-            {
-              profile_image: base64String
-            }
-          );
-          
-          return resolve(response.data);
-        } catch (error) {
-          return reject(error);
+      // Validate URL format and length
+      if (imageUrl.length > 255) {
+        throw new Error('Image URL must be less than 255 characters');
+      }
+      
+      try {
+        new URL(imageUrl); // This will throw if the URL is invalid
+      } catch (e) {
+        throw new Error('Please enter a valid URL');
+      }
+      
+      // Now update the user profile with all required fields plus the new image URL
+      const response = await userManagementApiClient.put<UserResponse>(
+        `/users/${userInfo.id}/`,
+        {
+          company_id: currentUserData.company_id,
+          email: currentUserData.email,
+          first_name: currentUserData.first_name || '',
+          last_name: currentUserData.last_name || '',
+          role: currentUserData.role,
+          profile_image: imageUrl
         }
-      };
+      );
       
-      reader.onerror = () => {
-        reject(new Error('Failed to read file'));
-      };
-      
-      // Read the file as a data URL (base64)
-      reader.readAsDataURL(file);
-    });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+      throw error;
+    }
   },
   
   // Check if authenticated (verifies token)
