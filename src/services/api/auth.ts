@@ -70,7 +70,6 @@ export interface CreateUserData {
   last_name?: string;
   role: string;
   profile_image?: string;
-  assigned_store?: string;
 }
 
 export interface UserResponse {
@@ -81,23 +80,6 @@ export interface UserResponse {
   last_name?: string;
   role: string;
   profile_image?: string;
-  created_at: string;
-  updated_at: string;
-  assigned_store?: string;
-}
-
-export interface ActivityLogData {
-  user: string;
-  action: string;
-  description: string;
-}
-
-export interface ActivityLogResponse {
-  id: string;
-  user: string;
-  user_email: string;
-  action: string;
-  description: string;
   created_at: string;
   updated_at: string;
 }
@@ -114,24 +96,12 @@ export const authApi = {
   },
   
   // Verify OTP after login
-  verifyOtp: async (email: string, otp: string): Promise<{ access: string; refresh: string; role: string }> => {
-    const response = await userManagementApiClient.post<{ access: string; refresh: string }>('/auth/verify-otp/', {
+  verifyOtp: async (email: string, otp: string): Promise<{ access: string; refresh: string; role: string; assigned_store?: any }> => {
+    const response = await userManagementApiClient.post<{ access: string; refresh: string; role: string; assigned_store?: any }>('/auth/verify-otp/', {
       email,
       otp
     });
-    
-    // Extract user role from token if available
-    let role = '';
-    if (response.data.access) {
-      try {
-        const tokenData = JSON.parse(atob(response.data.access.split('.')[1]));
-        role = tokenData.role || '';
-      } catch (e) {
-        console.error('Error extracting role from token:', e);
-      }
-    }
-    
-    return { ...response.data, role };
+    return response.data;
   },
   
   // Resend OTP
@@ -145,30 +115,8 @@ export const authApi = {
   // Verify token validity
   verifyToken: async (token: string): Promise<boolean> => {
     try {
-      const response = await userManagementApiClient.post<{ 
-        is_valid: boolean;
-        user_id?: string;
-        email?: string;
-      }>('/auth/verify-token/', { token });
-      
-      // If the token is valid and includes user information, we can update the stored user info
-      if (response.data.is_valid && response.data.user_id && response.data.email) {
-        // Extract user role from token if available
-        let role = '';
-        try {
-          const tokenData = JSON.parse(atob(token.split('.')[1]));
-          role = tokenData.role || '';
-        } catch (e) {
-          console.error('Error extracting role from token:', e);
-        }
-        
-        // Update stored user info if role was extracted
-        if (role) {
-          tokenStorage.saveUserInfo(response.data.user_id, response.data.email, role);
-        }
-      }
-      
-      return response.data.is_valid;
+      await userManagementApiClient.post('/auth/verify-token/', { token });
+      return true;
     } catch (error) {
       return false;
     }
@@ -276,7 +224,7 @@ export const authApi = {
   },
   
   // Upload and update profile image
-  updateProfileImage: async (imageUrl: string): Promise<UserResponse> => {
+  updateProfileImage: async (imageUrl: string): Promise<AuthResponse['user']> => {
     // First get the user ID
     const userInfo = tokenStorage.getUserInfo();
     if (!userInfo || !userInfo.id) {
@@ -307,8 +255,7 @@ export const authApi = {
           first_name: currentUserData.first_name || '',
           last_name: currentUserData.last_name || '',
           role: currentUserData.role,
-          profile_image: imageUrl,
-          assigned_store: currentUserData.assigned_store
+          profile_image: imageUrl
         }
       );
       
@@ -327,17 +274,5 @@ export const authApi = {
     } catch (error) {
       return false;
     }
-  },
-  
-  // Create activity log
-  createActivityLog: async (data: ActivityLogData): Promise<ActivityLogResponse> => {
-    const response = await userManagementApiClient.post<ActivityLogResponse>('/activity-logs/', data);
-    return response.data;
-  },
-  
-  // Get activity logs
-  getActivityLogs: async (): Promise<ActivityLogResponse[]> => {
-    const response = await userManagementApiClient.get<ActivityLogResponse[]>('/activity-logs/');
-    return response.data;
   }
 }; 

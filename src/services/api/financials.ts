@@ -3,7 +3,7 @@ import { coreApiClient } from './client';
 // Interfaces
 export interface ExpenseCategory {
   id: string;
-  store_id: string;
+  company: string;
   name: string;
   description: string;
   created_at: string;
@@ -11,7 +11,7 @@ export interface ExpenseCategory {
 }
 
 export interface ExpenseCategoryCreateData {
-  store_id: string;
+  company: string;
   name: string;
   description: string;
 }
@@ -20,7 +20,7 @@ export interface ExpenseCategoryUpdateData extends ExpenseCategoryCreateData {}
 
 export interface Expense {
   id: string;
-  store_id: string;
+  company: string;
   expense_category: string;
   amount: string;
   description: string;
@@ -31,7 +31,7 @@ export interface Expense {
 }
 
 export interface ExpenseCreateData {
-  store_id: string;
+  company: string;
   expense_category: string;
   amount: string;
   description: string;
@@ -43,7 +43,7 @@ export interface ExpenseUpdateData extends ExpenseCreateData {}
 
 export interface Payable {
   id: string;
-  store_id: string;
+  company: string;
   purchase: string;
   amount: string;
   currency: string;
@@ -52,7 +52,7 @@ export interface Payable {
 }
 
 export interface PayableCreateData {
-  store_id: string;
+  company: string;
   purchase: string;
   amount: string;
   currency: string;
@@ -62,7 +62,6 @@ export interface PayableUpdateData extends PayableCreateData {}
 
 export interface PaymentMode {
   id: string;
-  store_id: string;
   name: string;
   description: string;
   created_at: string;
@@ -71,7 +70,7 @@ export interface PaymentMode {
 
 export interface PaymentIn {
   id: string;
-  store_id: string;
+  company: string;
   receivable: string;
   sale: string;
   amount: string;
@@ -82,7 +81,7 @@ export interface PaymentIn {
 }
 
 export interface PaymentInCreateData {
-  store_id: string;
+  company: string;
   receivable: string;
   sale: string;
   amount: string;
@@ -94,7 +93,7 @@ export interface PaymentInUpdateData extends PaymentInCreateData {}
 
 export interface PaymentOut {
   id: string;
-  store_id: string;
+  company: string;
   payable: string;
   purchase: string;
   amount: string;
@@ -105,7 +104,7 @@ export interface PaymentOut {
 }
 
 export interface PaymentOutCreateData {
-  store_id: string;
+  company: string;
   payable: string;
   purchase: string;
   amount: string;
@@ -117,7 +116,7 @@ export interface PaymentOutUpdateData extends PaymentOutCreateData {}
 
 export interface Receivable {
   id: string;
-  store_id: string;
+  company: string;
   sale: string;
   amount: string;
   currency: string;
@@ -126,7 +125,7 @@ export interface Receivable {
 }
 
 export interface ReceivableCreateData {
-  store_id: string;
+  company: string;
   sale: string;
   amount: string;
   currency: string;
@@ -134,155 +133,155 @@ export interface ReceivableCreateData {
 
 export interface ReceivableUpdateData extends ReceivableCreateData {}
 
-// Financials API
+// API client
 export const financialsApi = {
   // Expense Categories
-  getExpenseCategories: async (storeId: string): Promise<ExpenseCategory[]> => {
-    const response = await coreApiClient.get<ExpenseCategory[]>(`/financials/stores/${storeId}/expense-categories/`);
+  getExpenseCategories: async (): Promise<ExpenseCategory[]> => {
+    const response = await coreApiClient.get<ExpenseCategory[]>('/financials/expense-categories/');
     return response.data;
   },
   
-  getExpenseCategory: async (storeId: string, id: string): Promise<ExpenseCategory> => {
-    const response = await coreApiClient.get<ExpenseCategory>(`/financials/stores/${storeId}/expense-categories/${id}/`);
+  getExpenseCategory: async (id: string): Promise<ExpenseCategory> => {
+    const response = await coreApiClient.get<ExpenseCategory>(`/financials/expense-categories/${id}/`);
     return response.data;
   },
   
   createExpenseCategory: async (data: ExpenseCategoryCreateData): Promise<ExpenseCategory> => {
-    const response = await coreApiClient.post<ExpenseCategory>(`/financials/stores/${data.store_id}/expense-categories/`, data);
+    const response = await coreApiClient.post<ExpenseCategory>('/financials/expense-categories/', data);
     return response.data;
   },
   
-  updateExpenseCategory: async (storeId: string, id: string, data: ExpenseCategoryUpdateData): Promise<ExpenseCategory> => {
-    const response = await coreApiClient.put<ExpenseCategory>(`/financials/stores/${storeId}/expense-categories/${id}/`, data);
+  updateExpenseCategory: async (id: string, data: ExpenseCategoryUpdateData): Promise<ExpenseCategory> => {
+    const response = await coreApiClient.put<ExpenseCategory>(`/financials/expense-categories/${id}/`, data);
     return response.data;
   },
   
-  deleteExpenseCategory: async (storeId: string, id: string): Promise<void> => {
-    await coreApiClient.delete(`/financials/stores/${storeId}/expense-categories/${id}/`);
+  deleteExpenseCategory: async (id: string): Promise<void> => {
+    await coreApiClient.delete(`/financials/expense-categories/${id}/`);
   },
 
   // Expenses
-  getExpenses: async (storeId: string): Promise<Expense[]> => {
-    const response = await coreApiClient.get<Expense[]>(`/financials/stores/${storeId}/expenses/`);
+  getExpenses: async (): Promise<Expense[]> => {
+    const response = await coreApiClient.get<Expense[]>('/financials/expenses/');
     return response.data;
   },
   
-  getExpense: async (storeId: string, id: string): Promise<Expense> => {
-    const response = await coreApiClient.get<Expense>(`/financials/stores/${storeId}/expenses/${id}/`);
+  getExpense: async (id: string): Promise<Expense> => {
+    const response = await coreApiClient.get<Expense>(`/financials/expenses/${id}/`);
     return response.data;
   },
   
   createExpense: async (data: ExpenseCreateData): Promise<Expense> => {
-    const response = await coreApiClient.post<Expense>(`/financials/stores/${data.store_id}/expenses/`, data);
+    const response = await coreApiClient.post<Expense>('/financials/expenses/', data);
     return response.data;
   },
   
-  updateExpense: async (storeId: string, id: string, data: ExpenseUpdateData): Promise<Expense> => {
-    const response = await coreApiClient.put<Expense>(`/financials/stores/${storeId}/expenses/${id}/`, data);
+  updateExpense: async (id: string, data: ExpenseUpdateData): Promise<Expense> => {
+    const response = await coreApiClient.put<Expense>(`/financials/expenses/${id}/`, data);
     return response.data;
   },
   
-  deleteExpense: async (storeId: string, id: string): Promise<void> => {
-    await coreApiClient.delete(`/financials/stores/${storeId}/expenses/${id}/`);
+  deleteExpense: async (id: string): Promise<void> => {
+    await coreApiClient.delete(`/financials/expenses/${id}/`);
   },
 
   // Payables
-  getPayables: async (storeId: string): Promise<Payable[]> => {
-    const response = await coreApiClient.get<Payable[]>(`/financials/stores/${storeId}/payables/`);
+  getPayables: async (): Promise<Payable[]> => {
+    const response = await coreApiClient.get<Payable[]>('/financials/payables/');
     return response.data;
   },
   
-  getPayable: async (storeId: string, id: string): Promise<Payable> => {
-    const response = await coreApiClient.get<Payable>(`/financials/stores/${storeId}/payables/${id}/`);
+  getPayable: async (id: string): Promise<Payable> => {
+    const response = await coreApiClient.get<Payable>(`/financials/payables/${id}/`);
     return response.data;
   },
   
   createPayable: async (data: PayableCreateData): Promise<Payable> => {
-    const response = await coreApiClient.post<Payable>(`/financials/stores/${data.store_id}/payables/`, data);
+    const response = await coreApiClient.post<Payable>('/financials/payables/', data);
     return response.data;
   },
   
-  updatePayable: async (storeId: string, id: string, data: PayableUpdateData): Promise<Payable> => {
-    const response = await coreApiClient.put<Payable>(`/financials/stores/${storeId}/payables/${id}/`, data);
+  updatePayable: async (id: string, data: PayableUpdateData): Promise<Payable> => {
+    const response = await coreApiClient.put<Payable>(`/financials/payables/${id}/`, data);
     return response.data;
   },
   
-  deletePayable: async (storeId: string, id: string): Promise<void> => {
-    await coreApiClient.delete(`/financials/stores/${storeId}/payables/${id}/`);
+  deletePayable: async (id: string): Promise<void> => {
+    await coreApiClient.delete(`/financials/payables/${id}/`);
   },
 
   // Payments In
-  getPaymentsIn: async (storeId: string): Promise<PaymentIn[]> => {
-    const response = await coreApiClient.get<PaymentIn[]>(`/financials/stores/${storeId}/payments-in/`);
+  getPaymentsIn: async (): Promise<PaymentIn[]> => {
+    const response = await coreApiClient.get<PaymentIn[]>('/financials/payments-in/');
     return response.data;
   },
   
-  getPaymentIn: async (storeId: string, id: string): Promise<PaymentIn> => {
-    const response = await coreApiClient.get<PaymentIn>(`/financials/stores/${storeId}/payments-in/${id}/`);
+  getPaymentIn: async (id: string): Promise<PaymentIn> => {
+    const response = await coreApiClient.get<PaymentIn>(`/financials/payments-in/${id}/`);
     return response.data;
   },
   
   createPaymentIn: async (data: PaymentInCreateData): Promise<PaymentIn> => {
-    const response = await coreApiClient.post<PaymentIn>(`/financials/stores/${data.store_id}/payments-in/`, data);
+    const response = await coreApiClient.post<PaymentIn>('/financials/payments-in/', data);
     return response.data;
   },
   
-  updatePaymentIn: async (storeId: string, id: string, data: PaymentInUpdateData): Promise<PaymentIn> => {
-    const response = await coreApiClient.put<PaymentIn>(`/financials/stores/${storeId}/payments-in/${id}/`, data);
+  updatePaymentIn: async (id: string, data: PaymentInUpdateData): Promise<PaymentIn> => {
+    const response = await coreApiClient.put<PaymentIn>(`/financials/payments-in/${id}/`, data);
     return response.data;
   },
   
-  deletePaymentIn: async (storeId: string, id: string): Promise<void> => {
-    await coreApiClient.delete(`/financials/stores/${storeId}/payments-in/${id}/`);
+  deletePaymentIn: async (id: string): Promise<void> => {
+    await coreApiClient.delete(`/financials/payments-in/${id}/`);
   },
 
   // Payments Out
-  getPaymentsOut: async (storeId: string): Promise<PaymentOut[]> => {
-    const response = await coreApiClient.get<PaymentOut[]>(`/financials/stores/${storeId}/payments-out/`);
+  getPaymentsOut: async (): Promise<PaymentOut[]> => {
+    const response = await coreApiClient.get<PaymentOut[]>('/financials/payments-out/');
     return response.data;
   },
   
-  getPaymentOut: async (storeId: string, id: string): Promise<PaymentOut> => {
-    const response = await coreApiClient.get<PaymentOut>(`/financials/stores/${storeId}/payments-out/${id}/`);
+  getPaymentOut: async (id: string): Promise<PaymentOut> => {
+    const response = await coreApiClient.get<PaymentOut>(`/financials/payments-out/${id}/`);
     return response.data;
   },
   
   createPaymentOut: async (data: PaymentOutCreateData): Promise<PaymentOut> => {
-    const response = await coreApiClient.post<PaymentOut>(`/financials/stores/${data.store_id}/payments-out/`, data);
+    const response = await coreApiClient.post<PaymentOut>('/financials/payments-out/', data);
     return response.data;
   },
   
-  updatePaymentOut: async (storeId: string, id: string, data: PaymentOutUpdateData): Promise<PaymentOut> => {
-    const response = await coreApiClient.put<PaymentOut>(`/financials/stores/${storeId}/payments-out/${id}/`, data);
+  updatePaymentOut: async (id: string, data: PaymentOutUpdateData): Promise<PaymentOut> => {
+    const response = await coreApiClient.put<PaymentOut>(`/financials/payments-out/${id}/`, data);
     return response.data;
   },
   
-  deletePaymentOut: async (storeId: string, id: string): Promise<void> => {
-    await coreApiClient.delete(`/financials/stores/${storeId}/payments-out/${id}/`);
+  deletePaymentOut: async (id: string): Promise<void> => {
+    await coreApiClient.delete(`/financials/payments-out/${id}/`);
   },
 
   // Receivables
-  getReceivables: async (storeId: string): Promise<Receivable[]> => {
-    const response = await coreApiClient.get<Receivable[]>(`/financials/stores/${storeId}/receivables/`);
+  getReceivables: async (): Promise<Receivable[]> => {
+    const response = await coreApiClient.get<Receivable[]>('/financials/receivables/');
     return response.data;
   },
   
-  getReceivable: async (storeId: string, id: string): Promise<Receivable> => {
-    const response = await coreApiClient.get<Receivable>(`/financials/stores/${storeId}/receivables/${id}/`);
+  getReceivable: async (id: string): Promise<Receivable> => {
+    const response = await coreApiClient.get<Receivable>(`/financials/receivables/${id}/`);
     return response.data;
   },
   
   createReceivable: async (data: ReceivableCreateData): Promise<Receivable> => {
-    const response = await coreApiClient.post<Receivable>(`/financials/stores/${data.store_id}/receivables/`, data);
+    const response = await coreApiClient.post<Receivable>('/financials/receivables/', data);
     return response.data;
   },
   
-  updateReceivable: async (storeId: string, id: string, data: ReceivableUpdateData): Promise<Receivable> => {
-    const response = await coreApiClient.put<Receivable>(`/financials/stores/${storeId}/receivables/${id}/`, data);
+  updateReceivable: async (id: string, data: ReceivableUpdateData): Promise<Receivable> => {
+    const response = await coreApiClient.put<Receivable>(`/financials/receivables/${id}/`, data);
     return response.data;
   },
   
-  deleteReceivable: async (storeId: string, id: string): Promise<void> => {
-    await coreApiClient.delete(`/financials/stores/${storeId}/receivables/${id}/`);
+  deleteReceivable: async (id: string): Promise<void> => {
+    await coreApiClient.delete(`/financials/receivables/${id}/`);
   },
 }; 

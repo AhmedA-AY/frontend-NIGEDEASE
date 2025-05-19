@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import * as React from 'react';
@@ -51,13 +50,7 @@ export default function SuppliersPage(): React.JSX.Element {
   const fetchSuppliers = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        throw new Error('No store ID found. Please select a store first.');
-      }
-      
-      const data = await transactionsApi.getSuppliers(storeId);
+      const data = await transactionsApi.getSuppliers();
       setSuppliers(data);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
@@ -126,15 +119,7 @@ export default function SuppliersPage(): React.JSX.Element {
   
   const handleSaveSupplier = async (supplierData: SupplierFormData) => {
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-        return;
-      }
-      
       const supplierPayload: SupplierCreateData = {
-        store_id: storeId,
         name: supplierData.name,
         email: supplierData.email,
         phone: supplierData.phone,
@@ -145,7 +130,7 @@ export default function SuppliersPage(): React.JSX.Element {
 
       if (supplierData.id) {
         // Update existing supplier
-        await transactionsApi.updateSupplier(storeId, supplierData.id, supplierPayload);
+        await transactionsApi.updateSupplier(supplierData.id, supplierPayload);
         enqueueSnackbar('Supplier updated successfully', { variant: 'success' });
       } else {
         // Add new supplier
@@ -175,14 +160,7 @@ export default function SuppliersPage(): React.JSX.Element {
   const handleDeleteSupplier = async () => {
     if (supplierToDelete) {
       try {
-        // Get current store ID from localStorage
-        const storeId = localStorage.getItem('current_store_id');
-        if (!storeId) {
-          enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-          return;
-        }
-        
-        await transactionsApi.deleteSupplier(storeId, supplierToDelete);
+        await transactionsApi.deleteSupplier(supplierToDelete);
         enqueueSnackbar('Supplier deleted successfully', { variant: 'success' });
         // Refresh the supplier list
         fetchSuppliers();

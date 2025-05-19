@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import * as React from 'react';
@@ -42,24 +41,18 @@ export default function PaymentInPage(): React.JSX.Element {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const { enqueueSnackbar } = useSnackbar();
   
-  // Fetch payments
-  const fetchPayments = useCallback(async () => {
+  // Fetch payments and customers
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        throw new Error('No store ID found. Please select a store first.');
-      }
-      
       const [paymentsData, customersData] = await Promise.all([
-        financialsApi.getPaymentsIn(storeId),
-        transactionsApi.getCustomers(storeId)
+        financialsApi.getPaymentsIn(),
+        transactionsApi.getCustomers()
       ]);
       setPayments(paymentsData);
       setCustomers(customersData);
     } catch (error) {
-      console.error('Error fetching payments:', error);
+      console.error('Error fetching data:', error);
       enqueueSnackbar('Failed to load payments', { variant: 'error' });
     } finally {
       setIsLoading(false);
@@ -67,8 +60,8 @@ export default function PaymentInPage(): React.JSX.Element {
   }, [enqueueSnackbar]);
 
   useEffect(() => {
-    fetchPayments();
-  }, [fetchPayments]);
+    fetchData();
+  }, [fetchData]);
 
   // Calculate total amount
   const totalAmount = payments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
@@ -106,7 +99,7 @@ export default function PaymentInPage(): React.JSX.Element {
     if (paymentToEdit) {
       setCurrentPayment({
         id: paymentToEdit.id,
-        store_id: paymentToEdit.store_id,
+        company: paymentToEdit.company,
         receivable: paymentToEdit.receivable,
         sale: paymentToEdit.sale,
         amount: paymentToEdit.amount,
@@ -125,16 +118,9 @@ export default function PaymentInPage(): React.JSX.Element {
   const handleConfirmDelete = async () => {
     if (paymentToDelete) {
       try {
-        // Get current store ID from localStorage
-        const storeId = localStorage.getItem('current_store_id');
-        if (!storeId) {
-          enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-          return;
-        }
-        
-        await financialsApi.deletePaymentIn(storeId, paymentToDelete);
+        await financialsApi.deletePaymentIn(paymentToDelete);
         enqueueSnackbar('Payment deleted successfully', { variant: 'success' });
-        fetchPayments();
+        fetchData();
         setIsDeleteModalOpen(false);
         setPaymentToDelete(null);
       } catch (error) {
@@ -146,27 +132,16 @@ export default function PaymentInPage(): React.JSX.Element {
 
   const handleSavePayment = async (paymentData: any) => {
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-        return;
-      }
-      
       if (paymentData.id) {
         // Update existing payment
-        await financialsApi.updatePaymentIn(storeId, paymentData.id, paymentData);
+        await financialsApi.updatePaymentIn(paymentData.id, paymentData);
         enqueueSnackbar('Payment updated successfully', { variant: 'success' });
       } else {
         // Add new payment
-        const createData = {
-          ...paymentData,
-          store_id: storeId
-        };
-        await financialsApi.createPaymentIn(createData);
+        await financialsApi.createPaymentIn(paymentData);
         enqueueSnackbar('Payment added successfully', { variant: 'success' });
       }
-      fetchPayments();
+      fetchData();
       setIsPaymentModalOpen(false);
     } catch (error) {
       console.error('Error saving payment:', error);

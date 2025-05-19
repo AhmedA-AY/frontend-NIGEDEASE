@@ -1,20 +1,10 @@
 import { coreApiClient } from './client';
-import { Company, Currency, SubscriptionPlan, companiesApi, Store as CompanyStore } from './companies';
+import { Company, Currency, SubscriptionPlan } from './companies';
 
 // Inventory Interfaces
-export interface Store {
-  id: string;
-  company: Company;
-  name: string;
-  location: string;
-  created_at: string;
-  updated_at: string;
-  is_active: "active" | "inactive";
-}
-
 export interface ProductUnit {
   id: string;
-  store: Store;
+  company: Company;
   name: string;
   description: string;
   created_at: string;
@@ -22,7 +12,7 @@ export interface ProductUnit {
 }
 
 export interface ProductUnitCreateData {
-  store_id: string;
+  company_id: string;
   name: string;
   description: string;
 }
@@ -31,7 +21,7 @@ export interface ProductUnitUpdateData extends ProductUnitCreateData {}
 
 export interface ProductCategory {
   id: string;
-  store: Store;
+  company: Company;
   name: string;
   description: string;
   created_at: string;
@@ -39,7 +29,7 @@ export interface ProductCategory {
 }
 
 export interface ProductCategoryCreateData {
-  store_id: string;
+  company_id: string;
   name: string;
   description: string;
 }
@@ -48,7 +38,7 @@ export interface ProductCategoryUpdateData extends ProductCategoryCreateData {}
 
 export interface Product {
   id: string;
-  store: Store;
+  company: Company;
   name: string;
   description: string;
   image: string;
@@ -56,14 +46,14 @@ export interface Product {
   product_category: ProductCategory;
   purchase_price?: string;
   sale_price?: string;
-  color?: string;
-  collection?: string;
+  color_id?: string;
+  collection_id?: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface ProductCreateData {
-  store_id: string;
+  company_id: string;
   name: string;
   description: string;
   image: string;
@@ -77,7 +67,6 @@ export interface ProductCreateData {
 
 export interface ProductUpdateData extends ProductCreateData {}
 
-// Stores - For backward compatibility
 export interface InventoryStore {
   id: string;
   company: Company;
@@ -106,7 +95,7 @@ export interface InventoryStoreUpdateData extends Partial<InventoryStoreCreateDa
 export interface Inventory {
   id: string;
   product: Product;
-  store: Store;
+  store: InventoryStore;
   quantity: string;
   created_at: string;
   updated_at: string;
@@ -221,8 +210,8 @@ export const inventoryApi = {
     return response.data;
   },
   
-  createProductUnit: async (data: ProductUnitCreateData): Promise<ProductUnit> => {
-    const response = await coreApiClient.post<ProductUnit>(`/inventory/stores/${data.store_id}/product-units/`, data);
+  createProductUnit: async (storeId: string, data: ProductUnitCreateData): Promise<ProductUnit> => {
+    const response = await coreApiClient.post<ProductUnit>(`/inventory/stores/${storeId}/product-units/`, data);
     return response.data;
   },
   
@@ -248,10 +237,10 @@ export const inventoryApi = {
     return response.data;
   },
   
-  createProductCategory: async (data: ProductCategoryCreateData): Promise<ProductCategory> => {
+  createProductCategory: async (storeId: string, data: ProductCategoryCreateData): Promise<ProductCategory> => {
     console.log('Creating product category with data:', data);
     try {
-      const response = await coreApiClient.post<ProductCategory>(`/inventory/stores/${data.store_id}/product-categories/`, data);
+      const response = await coreApiClient.post<ProductCategory>(`/inventory/stores/${storeId}/product-categories/`, data);
       console.log('Product category created, response:', response.data);
       return response.data;
     } catch (error) {
@@ -282,8 +271,8 @@ export const inventoryApi = {
     return response.data;
   },
   
-  createProduct: async (data: ProductCreateData): Promise<Product> => {
-    const response = await coreApiClient.post<Product>(`/inventory/stores/${data.store_id}/products/`, data);
+  createProduct: async (storeId: string, data: ProductCreateData): Promise<Product> => {
+    const response = await coreApiClient.post<Product>(`/inventory/stores/${storeId}/products/`, data);
     return response.data;
   },
   
@@ -296,165 +285,67 @@ export const inventoryApi = {
     await coreApiClient.delete(`/inventory/stores/${storeId}/products/${id}/`);
   },
 
-  // Stores - Using the new API for backward compatibility
+  // Stores
   getStores: async (): Promise<InventoryStore[]> => {
-    console.log('Making API call to get stores (using new companiesApi)');
-    try {
-      const stores = await companiesApi.getStores();
-      
-      // Convert the new store format to the old format for backward compatibility
-      const inventoryStores: InventoryStore[] = stores.map(store => ({
-        id: store.id,
-        company: store.company,
-        name: store.name,
-        location: store.location,
-        address: store.location, // Map location to address for compatibility
-        phone_number: '', // These fields don't exist in the new API
-        email: '',
-        is_active: store.is_active,
-        created_at: store.created_at,
-        updated_at: store.updated_at
-      }));
-      
-      console.log(`Converted ${stores.length} stores to inventory store format`);
-      return inventoryStores;
-    } catch (error) {
-      console.error('Error getting stores:', error);
-      throw error;
+    console.log('Making API call to get stores');
+    const response = await coreApiClient.get<InventoryStore[]>('/inventory/stores/');
+    console.log('Raw API response for stores:', response);
+    console.log('API response data structure:', JSON.stringify(response.data, null, 2));
+    
+    // Check if response is an array or has a specific data property
+    const storesData = Array.isArray(response.data) ? response.data : 
+                       (response.data as any).results || response.data;
+    
+    console.log('Processed stores data length:', storesData.length);
+    if (storesData.length > 0) {
+      console.log('Sample store object keys:', Object.keys(storesData[0]));
+      console.log('Sample store object:', storesData[0]);
     }
+    
+    return storesData;
   },
   
   getStore: async (id: string): Promise<InventoryStore> => {
-    try {
-      const store = await companiesApi.getStore(id);
-      
-      // Convert to old format
-      const inventoryStore: InventoryStore = {
-        id: store.id,
-        company: store.company,
-        name: store.name,
-        location: store.location,
-        address: store.location, // Map location to address for compatibility
-        phone_number: '', // These fields don't exist in the new API
-        email: '',
-        is_active: store.is_active,
-        created_at: store.created_at,
-        updated_at: store.updated_at
-      };
-      
-      return inventoryStore;
-    } catch (error) {
-      console.error(`Error getting store ${id}:`, error);
-      throw error;
-    }
+    const response = await coreApiClient.get<InventoryStore>(`/inventory/stores/${id}/`);
+    return response.data;
   },
   
   createStore: async (data: InventoryStoreCreateData): Promise<InventoryStore> => {
-    try {
-      // Convert to new format
-      const newStoreData = {
-        company_id: data.company_id,
-        name: data.name,
-        location: data.address || data.location,
-        is_active: data.is_active
-      };
-      
-      const store = await companiesApi.createStore(newStoreData);
-      
-      // Convert back to old format
-      const inventoryStore: InventoryStore = {
-        id: store.id,
-        company: store.company,
-        name: store.name,
-        location: store.location,
-        address: store.location,
-        phone_number: data.phone_number || '',
-        email: data.email || '',
-        is_active: store.is_active,
-        created_at: store.created_at,
-        updated_at: store.updated_at
-      };
-      
-      return inventoryStore;
-    } catch (error) {
-      console.error('Error creating store:', error);
-      throw error;
-    }
+    const response = await coreApiClient.post<InventoryStore>('/inventory/stores/', data);
+    return response.data;
   },
   
   updateStore: async (id: string, data: InventoryStoreUpdateData): Promise<InventoryStore> => {
-    try {
-      // Convert to new format
-      const updateStoreData = {
-        company_id: data.company_id || '',
-        name: data.name || '',
-        location: data.address || data.location || '',
-        is_active: data.is_active || 'active' as "active" | "inactive"
-      };
-      
-      const store = await companiesApi.updateStore(id, updateStoreData);
-      
-      // Convert back to old format
-      const inventoryStore: InventoryStore = {
-        id: store.id,
-        company: store.company,
-        name: store.name,
-        location: store.location,
-        address: store.location,
-        phone_number: data.phone_number || '',
-        email: data.email || '',
-        is_active: store.is_active,
-        created_at: store.created_at,
-        updated_at: store.updated_at
-      };
-      
-      return inventoryStore;
-    } catch (error) {
-      console.error(`Error updating store ${id}:`, error);
-      throw error;
-    }
+    const response = await coreApiClient.put<InventoryStore>(`/inventory/stores/${id}/`, data);
+    return response.data;
   },
   
   deleteStore: async (id: string): Promise<void> => {
-    try {
-      await companiesApi.deleteStore(id);
-    } catch (error) {
-      console.error(`Error deleting store ${id}:`, error);
-      throw error;
-    }
+    await coreApiClient.delete(`/inventory/stores/${id}/`);
   },
 
   toggleStoreStatus: async (id: string, isActive: boolean): Promise<InventoryStore> => {
     try {
       // First, get the current store data
       console.log(`Toggling store ${id} status to ${isActive ? 'active' : 'inactive'}`);
-      const store = await companiesApi.getStore(id);
+      const storeResponse = await coreApiClient.get<InventoryStore>(`/inventory/stores/${id}/`);
+      const store = storeResponse.data;
       
-      // Update with the new status
-      const updateData = {
-        company_id: store.company.id,
+      // Now update just the is_active field while preserving other fields
+      // The API expects "active" or "inactive" strings, not boolean values
+      const updateData: InventoryStoreUpdateData = {
+        company_id: store.company?.id,
         name: store.name,
         location: store.location,
-        is_active: (isActive ? "active" : "inactive") as "active" | "inactive"
+        address: store.address,
+        phone_number: store.phone_number,
+        email: store.email,
+        is_active: isActive ? "active" : "inactive"
       };
       
-      const updatedStore = await companiesApi.updateStore(id, updateData);
-      
-      // Convert to old format
-      const inventoryStore: InventoryStore = {
-        id: updatedStore.id,
-        company: updatedStore.company,
-        name: updatedStore.name,
-        location: updatedStore.location,
-        address: updatedStore.location,
-        phone_number: '',
-        email: '',
-        is_active: updatedStore.is_active,
-        created_at: updatedStore.created_at,
-        updated_at: updatedStore.updated_at
-      };
-      
-      return inventoryStore;
+      console.log('Updating store with data:', updateData);
+      const response = await coreApiClient.put<InventoryStore>(`/inventory/stores/${id}/`, updateData);
+      return response.data;
     } catch (error) {
       console.error('Error toggling store status:', error);
       throw error;
@@ -472,8 +363,8 @@ export const inventoryApi = {
     return response.data;
   },
   
-  createInventory: async (data: InventoryCreateData): Promise<Inventory> => {
-    const response = await coreApiClient.post<Inventory>(`/inventory/stores/${data.store_id}/inventories/`, data);
+  createInventory: async (storeId: string, data: InventoryCreateData): Promise<Inventory> => {
+    const response = await coreApiClient.post<Inventory>(`/inventory/stores/${storeId}/inventories/`, data);
     return response.data;
   },
   

@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import * as React from 'react';
@@ -51,13 +50,7 @@ export default function CustomersPage(): React.JSX.Element {
   const fetchCustomers = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        throw new Error('No store ID found. Please select a store first.');
-      }
-      
-      const data = await transactionsApi.getCustomers(storeId);
+      const data = await transactionsApi.getCustomers();
       setCustomers(data);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -126,15 +119,7 @@ export default function CustomersPage(): React.JSX.Element {
   
   const handleSaveCustomer = async (customerData: CustomerFormData) => {
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-        return;
-      }
-      
       const customerPayload: CustomerCreateData = {
-        store_id: storeId,
         name: customerData.name,
         email: customerData.email,
         phone: customerData.phone,
@@ -144,7 +129,7 @@ export default function CustomersPage(): React.JSX.Element {
 
       if (customerData.id) {
         // Update existing customer
-        await transactionsApi.updateCustomer(storeId, customerData.id, customerPayload);
+        await transactionsApi.updateCustomer(customerData.id, customerPayload);
         enqueueSnackbar('Customer updated successfully', { variant: 'success' });
       } else {
         // Add new customer
@@ -174,14 +159,7 @@ export default function CustomersPage(): React.JSX.Element {
   const handleDeleteCustomer = async () => {
     if (customerToDelete) {
       try {
-        // Get current store ID from localStorage
-        const storeId = localStorage.getItem('current_store_id');
-        if (!storeId) {
-          enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-          return;
-        }
-        
-        await transactionsApi.deleteCustomer(storeId, customerToDelete);
+        await transactionsApi.deleteCustomer(customerToDelete);
         enqueueSnackbar('Customer deleted successfully', { variant: 'success' });
         // Refresh the customer list
         fetchCustomers();

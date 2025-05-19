@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import * as React from 'react';
@@ -92,27 +91,21 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
     setIsLoading(true);
     setError(null);
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        throw new Error('No store ID found. Please select a store first.');
-      }
-      
-      const data = await financialsApi.getExpenseCategories(storeId);
+      const data = await financialsApi.getExpenseCategories();
       console.log("Categories data:", data);
       setCategories(data);
       
       // If we still don't have a company ID and we have categories, try to get it from there
       if (!companyId && data.length > 0) {
-        const existingStoreId = data[0].store_id;
-        console.log("Found existing store ID from categories:", existingStoreId);
+        const existingCompanyId = data[0].company;
+        console.log("Found existing company ID from categories:", existingCompanyId);
         
         // Check if it's a valid UUID before using it
-        if (isValidUUID(existingStoreId)) {
-          console.log("Using store ID from existing category:", existingStoreId);
-          setCompanyId(existingStoreId); // We still use companyId as the state variable name
+        if (isValidUUID(existingCompanyId)) {
+          console.log("Using company ID from existing category:", existingCompanyId);
+          setCompanyId(existingCompanyId);
         } else {
-          console.warn("Store ID from existing category is not a valid UUID:", existingStoreId);
+          console.warn("Company ID from existing category is not a valid UUID:", existingCompanyId);
         }
       }
     } catch (err) {
@@ -177,26 +170,26 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
     console.log("Current company ID:", companyId);
     
     // If we don't have a company ID, try to fetch one
-    let effectiveStoreId = companyId; // Using companyId as storeId
+    let effectiveCompanyId = companyId;
     
-    if (!effectiveStoreId) {
-      console.log("No store ID available, attempting to fetch one...");
-      effectiveStoreId = await fetchValidCompanyId();
+    if (!effectiveCompanyId) {
+      console.log("No company ID available, attempting to fetch one...");
+      effectiveCompanyId = await fetchValidCompanyId();
       
-      if (!effectiveStoreId) {
-        console.error("Could not obtain a valid store ID");
-        enqueueSnackbar('Could not obtain a valid store ID. Please try again later.', { variant: 'error' });
+      if (!effectiveCompanyId) {
+        console.error("Could not obtain a valid company ID");
+        enqueueSnackbar('Could not obtain a valid company ID. Please try again later.', { variant: 'error' });
         return;
       }
       
-      // Save the store ID for future use
-      setCompanyId(effectiveStoreId);
+      // Save the company ID for future use
+      setCompanyId(effectiveCompanyId);
     }
     
-    // Validate that the store ID is a valid UUID
-    if (!isValidUUID(effectiveStoreId)) {
-      console.error("Invalid store ID format (not a UUID):", effectiveStoreId);
-      enqueueSnackbar('Invalid store ID format', { variant: 'error' });
+    // Validate that the company ID is a valid UUID
+    if (!isValidUUID(effectiveCompanyId)) {
+      console.error("Invalid company ID format (not a UUID):", effectiveCompanyId);
+      enqueueSnackbar('Invalid company ID format', { variant: 'error' });
       return;
     }
     
@@ -205,19 +198,19 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
       if (categoryToEdit?.id) {
         // Update existing category
         const updateData: ExpenseCategoryUpdateData = {
-          store_id: effectiveStoreId,
           name: data.name || '',
-          description: data.description || ''
+          description: data.description || '',
+          company: categoryToEdit.company
         };
         console.log('Updating category with data:', updateData);
-        await financialsApi.updateExpenseCategory(effectiveStoreId, categoryToEdit.id, updateData);
+        await financialsApi.updateExpenseCategory(categoryToEdit.id, updateData);
         enqueueSnackbar('Category updated successfully', { variant: 'success' });
       } else {
         // Create new category
         const createData: ExpenseCategoryCreateData = {
-          store_id: effectiveStoreId,
           name: data.name || '',
-          description: data.description || ''
+          description: data.description || '',
+          company: effectiveCompanyId
         };
         console.log('Creating new category with data:', createData);
         try {
@@ -229,16 +222,16 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
           if (apiError.response && apiError.response.data) {
             console.error('API error response:', apiError.response.data);
             
-            // Handle store_id error specifically
-            if (apiError.response.data.store_id) {
-              const storeError = Array.isArray(apiError.response.data.store_id) 
-                ? apiError.response.data.store_id[0] 
-                : apiError.response.data.store_id;
+            // Handle company error specifically
+            if (apiError.response.data.company) {
+              const companyError = Array.isArray(apiError.response.data.company) 
+                ? apiError.response.data.company[0] 
+                : apiError.response.data.company;
               
-              enqueueSnackbar(`Store error: ${storeError}`, { variant: 'error' });
+              enqueueSnackbar(`Company error: ${companyError}`, { variant: 'error' });
               
-              if (storeError.includes("Invalid pk") || storeError.includes("object does not exist")) {
-                enqueueSnackbar("The store ID used doesn't exist. Please refresh and try again.", { variant: 'error' });
+              if (companyError.includes("Invalid pk") || companyError.includes("object does not exist")) {
+                enqueueSnackbar("The company ID used doesn't exist. Please refresh and try again.", { variant: 'error' });
               }
             }
             
@@ -267,15 +260,8 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
   const handleConfirmDelete = async () => {
     if (!categoryToDelete) return;
     
-    // Get current store ID from localStorage
-    const storeId = localStorage.getItem('current_store_id');
-    if (!storeId) {
-      enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-      return;
-    }
-    
     try {
-      await financialsApi.deleteExpenseCategory(storeId, categoryToDelete);
+      await financialsApi.deleteExpenseCategory(categoryToDelete);
       enqueueSnackbar('Category deleted successfully', { variant: 'success' });
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);

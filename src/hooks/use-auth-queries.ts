@@ -15,7 +15,7 @@ export const useLogin = () => {
 // Hook for verifying OTP
 export const useVerifyOtp = () => {
   return useMutation<
-    { access: string; refresh: string; role: string },
+    { access: string; refresh: string; role: string; assigned_store?: any },
     ApiError,
     { email: string; otp: string }
   >({
@@ -74,16 +74,5 @@ export const useCreateUser = () => {
     CreateUserData
   >({
     mutationFn: (userData) => authApi.createUser(userData),
-  });
-};
-
-// Hook for creating activity logs
-export const useCreateActivityLog = () => {
-  return useMutation<
-    any,
-    ApiError,
-    { user: string; action: string; description: string }
-  >({
-    mutationFn: (data) => authApi.createActivityLog(data),
   });
 }; 

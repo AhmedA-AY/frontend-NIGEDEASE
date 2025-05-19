@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import * as React from 'react';
@@ -46,15 +45,9 @@ export default function PaymentOutPage(): React.JSX.Element {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        throw new Error('No store ID found. Please select a store first.');
-      }
-      
       const [paymentsData, suppliersData] = await Promise.all([
-        financialsApi.getPaymentsOut(storeId),
-        transactionsApi.getSuppliers(storeId)
+        financialsApi.getPaymentsOut(),
+        transactionsApi.getSuppliers()
       ]);
       setPayments(paymentsData);
       setSuppliers(suppliersData);
@@ -106,7 +99,7 @@ export default function PaymentOutPage(): React.JSX.Element {
     if (paymentToEdit) {
       setCurrentPayment({
         id: paymentToEdit.id,
-        store_id: paymentToEdit.store_id,
+        company: paymentToEdit.company,
         payable: paymentToEdit.payable,
         purchase: paymentToEdit.purchase,
         amount: paymentToEdit.amount,
@@ -125,14 +118,7 @@ export default function PaymentOutPage(): React.JSX.Element {
   const handleConfirmDelete = async () => {
     if (paymentToDelete) {
       try {
-        // Get current store ID from localStorage
-        const storeId = localStorage.getItem('current_store_id');
-        if (!storeId) {
-          enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-          return;
-        }
-        
-        await financialsApi.deletePaymentOut(storeId, paymentToDelete);
+        await financialsApi.deletePaymentOut(paymentToDelete);
         enqueueSnackbar('Payment deleted successfully', { variant: 'success' });
         fetchData();
         setIsDeleteModalOpen(false);
@@ -146,24 +132,13 @@ export default function PaymentOutPage(): React.JSX.Element {
 
   const handleSavePayment = async (paymentData: any) => {
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-        return;
-      }
-      
       if (paymentData.id) {
         // Update existing payment
-        await financialsApi.updatePaymentOut(storeId, paymentData.id, paymentData);
+        await financialsApi.updatePaymentOut(paymentData.id, paymentData);
         enqueueSnackbar('Payment updated successfully', { variant: 'success' });
       } else {
         // Add new payment
-        const createData = {
-          ...paymentData,
-          store_id: storeId
-        };
-        await financialsApi.createPaymentOut(createData);
+        await financialsApi.createPaymentOut(paymentData);
         enqueueSnackbar('Payment added successfully', { variant: 'success' });
       }
       fetchData();

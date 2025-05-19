@@ -63,24 +63,28 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
     formState: { errors },
   } = useForm<Values>({ defaultValues, resolver: zodResolver(schema) });
 
-  const handleVerifyOtp = React.useCallback(
+  const onSubmit = React.useCallback(
     async (values: Values): Promise<void> => {
       try {
-        // Call the OTP verification API
         const response = await verifyOtpMutation.mutateAsync({
-          email: email,
-          otp: values.otp
+          email,
+          otp: values.otp,
         });
+
+        // Log the role for debugging
+        console.log('User role:', response.role);
         
-        // Login the user with the received tokens and role
-        const { access, refresh, role } = response;
-        login(access, refresh, role, email);
-        
-        // No need to manually redirect - login function handles the redirection based on role
-        console.log('OTP verification successful, role:', role);
+        // If the user is a salesman or stock manager and has an assigned store
+        if ((response.role === 'salesman' || response.role === 'stock_manager') && response.assigned_store) {
+          console.log('Assigned store:', response.assigned_store);
+          // Successful verification, save tokens and redirect with the assigned store
+          login(response.access, response.refresh, response.role, email, response.assigned_store);
+        } else {
+          // For other roles or cases without assigned store
+          login(response.access, response.refresh, response.role, email);
+        }
       } catch (error: any) {
-        console.error('OTP verification error:', error);
-        const errorMessage = error?.error || 'Invalid or expired OTP. Please try again.';
+        const errorMessage = error?.error || 'Invalid OTP. Please try again.';
         setError('root', { type: 'server', message: errorMessage });
       }
     },
@@ -207,7 +211,7 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
         </Typography>
       </Stack>
 
-      <form onSubmit={handleSubmit(handleVerifyOtp)}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={3}>
           <Controller
             control={control}

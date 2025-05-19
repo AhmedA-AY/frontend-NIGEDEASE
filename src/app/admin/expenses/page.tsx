@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import * as React from 'react';
@@ -69,17 +68,11 @@ export default function ExpensesPage(): React.JSX.Element {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        throw new Error('No store ID found. Please select a store first.');
-      }
-      
       const [expensesData, categoriesData, currenciesData, modesData, companiesData] = await Promise.all([
-        financialsApi.getExpenses(storeId),
-        financialsApi.getExpenseCategories(storeId),
+        financialsApi.getExpenses(),
+        financialsApi.getExpenseCategories(),
         companiesApi.getCurrencies(),
-        transactionsApi.getPaymentModes(storeId),
+        transactionsApi.getPaymentModes(),
         companiesApi.getCompanies()
       ]);
       setExpenses(expensesData);
@@ -123,15 +116,17 @@ export default function ExpensesPage(): React.JSX.Element {
     console.log('Currencies available:', currencies);
     console.log('Companies available:', companies);
     
-    // Get current store ID from localStorage
-    const storeId = localStorage.getItem('current_store_id');
-    if (!storeId) {
-      enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
+    // Use the first company if userInfo is not available
+    const companyId = userInfo?.company_id || (companies.length > 0 ? companies[0].id : '');
+    
+    if (!companyId) {
+      console.log('No company ID available');
+      enqueueSnackbar('Unable to add expense: Company data not available.', { variant: 'error' });
       return;
     }
     
     setCurrentExpense({
-      store_id: storeId,
+      company: companyId,
       expense_category: '',
       amount: '',
       description: '',
@@ -139,7 +134,7 @@ export default function ExpensesPage(): React.JSX.Element {
       payment_mode: '',
     });
     
-    console.log('currentExpense set with store ID:', storeId);
+    console.log('currentExpense set with company ID:', companyId);
     
     setIsExpenseModalOpen(true);
   };
@@ -162,14 +157,7 @@ export default function ExpensesPage(): React.JSX.Element {
   const handleConfirmDelete = async () => {
     if (expenseToDelete) {
       try {
-        // Get current store ID from localStorage
-        const storeId = localStorage.getItem('current_store_id');
-        if (!storeId) {
-          enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-          return;
-        }
-        
-        await financialsApi.deleteExpense(storeId, expenseToDelete);
+        await financialsApi.deleteExpense(expenseToDelete);
         enqueueSnackbar('Expense deleted successfully', { variant: 'success' });
         fetchData();
         setIsDeleteModalOpen(false);
@@ -184,26 +172,15 @@ export default function ExpensesPage(): React.JSX.Element {
   const handleSaveExpense = async (expenseData: ExpenseCreateData & { id?: string }) => {
     console.log('handleSaveExpense called with data:', expenseData);
     try {
-      // Get current store ID from localStorage
-      const storeId = localStorage.getItem('current_store_id');
-      if (!storeId) {
-        enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
-        return;
-      }
-      
       if (expenseData.id) {
         // Update existing expense
         console.log('Updating expense with ID:', expenseData.id);
-        await financialsApi.updateExpense(storeId, expenseData.id, expenseData);
+        await financialsApi.updateExpense(expenseData.id, expenseData);
         enqueueSnackbar('Expense updated successfully', { variant: 'success' });
       } else {
-        // Add new expense - ensure store_id is set
-        const createData = {
-          ...expenseData,
-          store_id: storeId,
-        };
-        console.log('Creating new expense with data:', createData);
-        await financialsApi.createExpense(createData);
+        // Add new expense - company ID is now properly set in the modal component
+        console.log('Creating new expense with data:', expenseData);
+        await financialsApi.createExpense(expenseData);
         enqueueSnackbar('Expense added successfully', { variant: 'success' });
       }
       fetchData();

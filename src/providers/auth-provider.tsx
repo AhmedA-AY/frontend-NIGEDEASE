@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { tokenStorage } from '@/utils/token-storage';
 import { paths } from '@/paths';
 import { authApi } from '@/services/api/auth';
+import { Store } from '@/services/api/stores';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -21,7 +22,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   userEmail: string | null;
   userRole: string | null;
-  login: (accessToken: string, refreshToken: string, role: string, email?: string) => void;
+  assignedStore: Store | null;
+  login: (accessToken: string, refreshToken: string, role: string, email?: string, assignedStore?: Store) => void;
   logout: () => void;
   saveEmail: (email: string) => void;
   refreshTokenIfNeeded: () => Promise<string | null>;
@@ -46,21 +48,24 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
   const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const [userRole, setUserRole] = React.useState<string | null>(null);
+  const [assignedStore, setAssignedStore] = React.useState<Store | null>(null);
 
   // Initialize auth state from storage on client-side
   React.useEffect(() => {
     const isAuthenticatedFromStorage = tokenStorage.isAuthenticated();
     const emailFromStorage = tokenStorage.getUserEmail();
     const roleFromStorage = tokenStorage.getUserRole();
+    const storeFromStorage = tokenStorage.getAssignedStore();
     
     setIsAuthenticated(isAuthenticatedFromStorage);
     setUserEmail(emailFromStorage);
     setUserRole(roleFromStorage);
+    setAssignedStore(storeFromStorage);
   }, []);
 
   const login = React.useCallback(
-    (accessToken: string, refreshToken: string, role: string, email?: string) => {
-      tokenStorage.saveTokens(accessToken, refreshToken, role, email);
+    (accessToken: string, refreshToken: string, role: string, email?: string, assignedStore?: Store) => {
+      tokenStorage.saveTokens(accessToken, refreshToken, role, email, assignedStore);
       setIsAuthenticated(true);
       setUserRole(role);
       
@@ -68,17 +73,18 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         setUserEmail(email);
       }
       
-      // Redirect based on role - ensure the role is properly set to lowercase for comparison
-      const userRole = role.toLowerCase();
-      console.log('Redirecting user with role:', userRole);
+      if (assignedStore) {
+        setAssignedStore(assignedStore);
+      }
       
-      if (userRole === 'super_admin') {
+      // Redirect based on role
+      if (role === 'super_admin') {
         router.push(paths.superAdmin.dashboard);
-      } else if (userRole === 'admin') {
+      } else if (role === 'admin') {
         router.push(paths.admin.dashboard);
-      } else if (userRole === 'salesman') {
+      } else if (role === 'salesman') {
         router.push(paths.salesman.dashboard);
-      } else if (userRole === 'stock_manager') {
+      } else if (role === 'stock_manager') {
         router.push(paths.stockManager.dashboard);
       } else {
         router.push(paths.dashboard.overview);
@@ -99,6 +105,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       setIsAuthenticated(false);
       setUserEmail(null);
       setUserRole(null);
+      setAssignedStore(null);
       
       // Clear React Query cache
       queryClient.clear();
@@ -123,7 +130,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         return null;
       }
       
-      // Verify if the token is valid using the new endpoint
+      // Verify if the token is valid
       const isValid = await authApi.verifyToken(accessToken);
       
       if (isValid) {
@@ -150,7 +157,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
           tokenResponse.access,
           tokenResponse.refresh,
           tokenStorage.getUserRole() || '',
-          tokenStorage.getUserEmail() || undefined
+          tokenStorage.getUserEmail() || undefined,
+          tokenStorage.getAssignedStore()
         );
         
         return tokenResponse.access;
@@ -187,12 +195,13 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       isAuthenticated,
       userEmail,
       userRole,
+      assignedStore,
       login,
       logout,
       saveEmail,
       refreshTokenIfNeeded,
     }),
-    [isAuthenticated, userEmail, userRole, login, logout, saveEmail, refreshTokenIfNeeded]
+    [isAuthenticated, userEmail, userRole, assignedStore, login, logout, saveEmail, refreshTokenIfNeeded]
   );
 
   return (

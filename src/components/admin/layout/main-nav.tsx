@@ -9,6 +9,7 @@ import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 
 import { usePopover } from '@/hooks/use-popover';
 import { useAuth } from '@/providers/auth-provider';
+import { StoreSelector } from '@/components/admin/store-selector';
 
 import { MobileNav } from './mobile-nav';
 import { UserPopover } from '@/components/dashboard/layout/user-popover';
@@ -66,8 +67,9 @@ export function MainNav(): React.JSX.Element {
             alignItems="center"
             direction="row"
             spacing={2}
-            sx={{ alignItems: 'center', flex: '1 1 auto', justifyContent: 'flex-end' }}
+            sx={{ alignItems: 'center', flex: '1 1 auto', justifyContent: 'space-between' }}
           >
+            <StoreSelector />
             <Box ref={userPopover.anchorRef}>
               <Avatar
                 onClick={userPopover.handleOpen}

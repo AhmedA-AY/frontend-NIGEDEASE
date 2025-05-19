@@ -4,6 +4,7 @@ const REFRESH_TOKEN_KEY = 'niged_ease_refresh_token';
 const USER_ROLE_KEY = 'niged_ease_user_role';
 const USER_EMAIL_KEY = 'niged_ease_user_email';
 const USER_ID_KEY = 'niged_ease_user_id';
+const ASSIGNED_STORE_KEY = 'niged_ease_assigned_store';
 
 // Helper to check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined';
@@ -26,7 +27,7 @@ const decodeToken = (token: string): any => {
 // Token storage utility
 export const tokenStorage = {
   // Save tokens and user info
-  saveTokens: (accessToken: string, refreshToken: string, role: string, email?: string): void => {
+  saveTokens: (accessToken: string, refreshToken: string, role: string, email?: string, assignedStore?: any): void => {
     if (!isBrowser) return;
     
     localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
@@ -37,20 +38,15 @@ export const tokenStorage = {
       localStorage.setItem(USER_EMAIL_KEY, email);
     }
     
+    if (assignedStore) {
+      localStorage.setItem(ASSIGNED_STORE_KEY, JSON.stringify(assignedStore));
+    }
+    
     // Extract user ID from token and store it
     const decodedToken = decodeToken(accessToken);
     if (decodedToken && decodedToken.user_id) {
       localStorage.setItem(USER_ID_KEY, decodedToken.user_id);
     }
-  },
-  
-  // Save user info separately
-  saveUserInfo: (userId: string, email: string, role: string): void => {
-    if (!isBrowser) return;
-    
-    localStorage.setItem(USER_ID_KEY, userId);
-    localStorage.setItem(USER_EMAIL_KEY, email);
-    localStorage.setItem(USER_ROLE_KEY, role);
   },
   
   // Get access token
@@ -81,6 +77,26 @@ export const tokenStorage = {
   getUserId: (): string | null => {
     if (!isBrowser) return null;
     return localStorage.getItem(USER_ID_KEY);
+  },
+  
+  // Get assigned store
+  getAssignedStore: (): any | null => {
+    if (!isBrowser) return null;
+    const storeData = localStorage.getItem(ASSIGNED_STORE_KEY);
+    if (!storeData) return null;
+    
+    try {
+      return JSON.parse(storeData);
+    } catch (error) {
+      console.error('Error parsing assigned store data:', error);
+      return null;
+    }
+  },
+  
+  // Save assigned store
+  saveAssignedStore: (store: any): void => {
+    if (!isBrowser) return;
+    localStorage.setItem(ASSIGNED_STORE_KEY, JSON.stringify(store));
   },
   
   // Get user info from token
@@ -116,6 +132,7 @@ export const tokenStorage = {
     localStorage.removeItem(USER_ROLE_KEY);
     localStorage.removeItem(USER_EMAIL_KEY);
     localStorage.removeItem(USER_ID_KEY);
+    localStorage.removeItem(ASSIGNED_STORE_KEY);
   },
   
   // Check if user is authenticated

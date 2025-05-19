@@ -4,10 +4,7 @@ import {
   CompanyCreateData, 
   CompanyUpdateData, 
   Currency, 
-  SubscriptionPlan,
-  Store,
-  StoreCreateData,
-  StoreUpdateData,
+  SubscriptionPlan, 
   companiesApi 
 } from '@/services/api/companies';
 
@@ -34,18 +31,6 @@ export const companiesKeys = {
     details: () => [...companiesKeys.subscriptionPlans.all, 'detail'] as const,
     detail: (id: string) => [...companiesKeys.subscriptionPlans.details(), id] as const,
   },
-
-  stores: {
-    all: ['stores'] as const,
-    lists: () => [...companiesKeys.stores.all, 'list'] as const,
-    list: (filters: string) => [...companiesKeys.stores.lists(), { filters }] as const,
-    details: () => [...companiesKeys.stores.all, 'detail'] as const,
-    detail: (id: string) => [...companiesKeys.stores.details(), id] as const,
-  },
-
-  subscription: {
-    check: (id: string) => [...companiesKeys.all, 'subscription', 'check', id] as const,
-  }
 };
 
 // Companies hooks
@@ -99,29 +84,6 @@ export function useDeleteCompany() {
       // Invalidate and refetch companies list
       queryClient.invalidateQueries({ queryKey: ['companies'] });
     }
-  });
-}
-
-// Company subscription hooks
-export function useCheckCompanySubscription(id: string) {
-  return useQuery({
-    queryKey: companiesKeys.subscription.check(id),
-    queryFn: () => companiesApi.checkSubscription(id),
-    enabled: !!id,
-  });
-}
-
-export function useRenewCompanySubscription() {
-  const queryClient = useQueryClient();
-  
-  return useMutation<any, Error, { id: string; data: any }>({
-    mutationFn: ({ id, data }) => companiesApi.renewSubscription(id, data),
-    onSuccess: (_, variables) => {
-      // Invalidate the subscription check query to refetch
-      queryClient.invalidateQueries({ queryKey: companiesKeys.subscription.check(variables.id) });
-      // Also invalidate the company detail to reflect updated subscription status
-      queryClient.invalidateQueries({ queryKey: companiesKeys.detail(variables.id) });
-    },
   });
 }
 
@@ -200,13 +162,9 @@ export interface SubscriptionPlanData {
   description: string;
   price: string;
   billing_cycle: 'monthly' | 'yearly';
-  duration_in_months: number;
   features: string;
   is_active: boolean;
   storage_limit_gb: number;
-  max_products: number;
-  max_stores: number;
-  max_users: number;
 }
 
 export function useCreateSubscriptionPlan() {
@@ -235,20 +193,6 @@ export function useUpdateSubscriptionPlan() {
   });
 }
 
-export function usePartialUpdateSubscriptionPlan() {
-  const queryClient = useQueryClient();
-  
-  return useMutation<SubscriptionPlan, Error, { id: string; data: Partial<SubscriptionPlanData> }>({
-    mutationFn: ({ id, data }) => companiesApi.partialUpdateSubscriptionPlan(id, data),
-    onSuccess: (data) => {
-      // Update the cache for this specific subscription plan
-      queryClient.setQueryData(companiesKeys.subscriptionPlans.detail(data.id), data);
-      // Invalidate the subscription plans list query to refetch
-      queryClient.invalidateQueries({ queryKey: companiesKeys.subscriptionPlans.lists() });
-    },
-  });
-}
-
 export function useDeleteSubscriptionPlan() {
   const queryClient = useQueryClient();
   
@@ -257,60 +201,6 @@ export function useDeleteSubscriptionPlan() {
     onSuccess: () => {
       // Invalidate the subscription plans list query to refetch
       queryClient.invalidateQueries({ queryKey: companiesKeys.subscriptionPlans.lists() });
-    },
-  });
-}
-
-// Store hooks
-export function useStores() {
-  return useQuery<Store[], Error>({
-    queryKey: companiesKeys.stores.lists(),
-    queryFn: () => companiesApi.getStores(),
-  });
-}
-
-export function useStore(id: string) {
-  return useQuery<Store, Error>({
-    queryKey: companiesKeys.stores.detail(id),
-    queryFn: () => companiesApi.getStore(id),
-    enabled: !!id,
-  });
-}
-
-export function useCreateStore() {
-  const queryClient = useQueryClient();
-  
-  return useMutation<Store, Error, StoreCreateData>({
-    mutationFn: (data) => companiesApi.createStore(data),
-    onSuccess: () => {
-      // Invalidate the stores list query to refetch
-      queryClient.invalidateQueries({ queryKey: companiesKeys.stores.lists() });
-    },
-  });
-}
-
-export function useUpdateStore() {
-  const queryClient = useQueryClient();
-  
-  return useMutation<Store, Error, { id: string; data: StoreUpdateData }>({
-    mutationFn: ({ id, data }) => companiesApi.updateStore(id, data),
-    onSuccess: (data) => {
-      // Update the cache for this specific store
-      queryClient.setQueryData(companiesKeys.stores.detail(data.id), data);
-      // Invalidate the stores list query to refetch
-      queryClient.invalidateQueries({ queryKey: companiesKeys.stores.lists() });
-    },
-  });
-}
-
-export function useDeleteStore() {
-  const queryClient = useQueryClient();
-  
-  return useMutation<void, Error, string>({
-    mutationFn: (id) => companiesApi.deleteStore(id),
-    onSuccess: () => {
-      // Invalidate the stores list query to refetch
-      queryClient.invalidateQueries({ queryKey: companiesKeys.stores.lists() });
     },
   });
 } 

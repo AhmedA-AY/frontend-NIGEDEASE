@@ -7,7 +7,7 @@
   "private": false,
   "scripts": {
     "dev": "next dev",
-    "build": "DISABLE_ESLINT_PLUGIN=true next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -58,7 +58,6 @@
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@types/react-syntax-highlighter": "15.5.13",
-    "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@vercel/style-guide": "6.0.0",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.4",
