@@ -30,7 +30,7 @@ export default function CategoriesPage(): React.JSX.Element {
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
-  const [currentCategory, setCurrentCategory] = React.useState<{ id?: string; name: string; description?: string; logoUrl?: string; hasExpand?: boolean; company_id?: string } | null>(null);
+  const [currentCategory, setCurrentCategory] = React.useState<{ id?: string; name: string; description?: string; logoUrl?: string; hasExpand?: boolean; store_id?: string } | null>(null);
   const [categoryToDelete, setCategoryToDelete] = React.useState<string | null>(null);
   const [categories, setCategories] = React.useState<ProductCategory[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -42,11 +42,17 @@ export default function CategoriesPage(): React.JSX.Element {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await inventoryApi.getProductCategories();
+      // Get current store ID from localStorage
+      const storeId = localStorage.getItem('current_store_id');
+      if (!storeId) {
+        throw new Error('No store ID found. Please select a store first.');
+      }
+      
+      const data = await inventoryApi.getProductCategories(storeId);
       setCategories(data);
     } catch (err) {
       console.error('Error fetching categories:', err);
-      setError('Failed to load categories. Please try again.');
+      setError('Failed to load categories');
       enqueueSnackbar('Failed to load categories', { variant: 'error' });
     } finally {
       setIsLoading(false);
@@ -82,7 +88,13 @@ export default function CategoriesPage(): React.JSX.Element {
     if (categoryToDelete) {
       setIsLoading(true);
       try {
-        await inventoryApi.deleteProductCategory(categoryToDelete);
+        // Get current store ID from localStorage
+        const storeId = localStorage.getItem('current_store_id');
+        if (!storeId) {
+          throw new Error('No store ID found. Please select a store first.');
+        }
+        
+        await inventoryApi.deleteProductCategory(storeId, categoryToDelete);
         enqueueSnackbar('Category deleted successfully', { variant: 'success' });
         await fetchCategories();
         setIsDeleteModalOpen(false);
@@ -99,57 +111,68 @@ export default function CategoriesPage(): React.JSX.Element {
   const handleEdit = (id: string) => {
     const categoryToEdit = categories.find(category => category.id === id);
     if (categoryToEdit) {
+      // Get current store ID from localStorage
+      const storeId = localStorage.getItem('current_store_id');
+      if (!storeId) {
+        enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
+        return;
+      }
+      
       setCurrentCategory({
         id: categoryToEdit.id,
         name: categoryToEdit.name,
         description: categoryToEdit.description,
-        company_id: categoryToEdit.company.id
+        store_id: storeId
       });
       setIsCategoryModalOpen(true);
     }
   };
 
   const handleAddCategory = () => {
-    // Get company ID from the first category (they should all be from the same company)
-    const companyId = categories.length > 0 ? categories[0].company.id : '';
+    // Get store ID from localStorage
+    const storeId = localStorage.getItem('current_store_id');
+    if (!storeId) {
+      enqueueSnackbar('No store ID found. Please select a store first.', { variant: 'error' });
+      return;
+    }
     
     setCurrentCategory({
       name: '',
       description: '',
-      company_id: companyId
+      store_id: storeId
     });
     setIsCategoryModalOpen(true);
   };
 
-  const handleSaveCategory = async (categoryData: { id?: string; name: string; description?: string; company_id?: string }) => {
+  const handleSaveCategory = async (categoryData: { id?: string; name: string; description?: string; store_id?: string }) => {
     setIsLoading(true);
     console.log('Saving category with data:', categoryData);
     
     try {
-      if (!categoryData.company_id) {
-        throw new Error('Company ID is required');
+      if (!categoryData.store_id) {
+        throw new Error('Store ID is required');
       }
       
       if (categoryData.id) {
         // Update existing category
         console.log('Updating category with ID:', categoryData.id);
         const updateData: ProductCategoryUpdateData = {
-          company_id: categoryData.company_id,
+          store_id: categoryData.store_id,
           name: categoryData.name,
           description: categoryData.description || ''
         };
-        await inventoryApi.updateProductCategory(categoryData.id, updateData);
+        await inventoryApi.updateProductCategory(categoryData.store_id, categoryData.id, updateData);
         enqueueSnackbar('Category updated successfully', { variant: 'success' });
       } else {
         // Add new category
         console.log('Creating new category with data:', {
-          company_id: categoryData.company_id,
+          store_id: categoryData.store_id,
           name: categoryData.name,
           description: categoryData.description || ''
         });
         
         const createData: ProductCategoryCreateData = {
-          company_id: categoryData.company_id,
+          store_id: categoryData.store_id,
           name: categoryData.name,
           description: categoryData.description || ''
         };
