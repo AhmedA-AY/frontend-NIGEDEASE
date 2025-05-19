@@ -68,14 +68,17 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         setUserEmail(email);
       }
       
-      // Redirect based on role
-      if (role === 'super_admin') {
+      // Redirect based on role - ensure the role is properly set to lowercase for comparison
+      const userRole = role.toLowerCase();
+      console.log('Redirecting user with role:', userRole);
+      
+      if (userRole === 'super_admin') {
         router.push(paths.superAdmin.dashboard);
-      } else if (role === 'admin') {
+      } else if (userRole === 'admin') {
         router.push(paths.admin.dashboard);
-      } else if (role === 'salesman') {
+      } else if (userRole === 'salesman') {
         router.push(paths.salesman.dashboard);
-      } else if (role === 'stock_manager') {
+      } else if (userRole === 'stock_manager') {
         router.push(paths.stockManager.dashboard);
       } else {
         router.push(paths.dashboard.overview);

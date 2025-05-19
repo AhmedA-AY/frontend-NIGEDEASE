@@ -63,21 +63,24 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
     formState: { errors },
   } = useForm<Values>({ defaultValues, resolver: zodResolver(schema) });
 
-  const onSubmit = React.useCallback(
+  const handleVerifyOtp = React.useCallback(
     async (values: Values): Promise<void> => {
       try {
+        // Call the OTP verification API
         const response = await verifyOtpMutation.mutateAsync({
-          email,
-          otp: values.otp,
+          email: email,
+          otp: values.otp
         });
-
-        // Log the role for debugging
-        console.log('User role:', response.role);
-
-        // Successful verification, save tokens and redirect
-        login(response.access, response.refresh, response.role, email);
+        
+        // Login the user with the received tokens and role
+        const { access, refresh, role } = response;
+        login(access, refresh, role, email);
+        
+        // No need to manually redirect - login function handles the redirection based on role
+        console.log('OTP verification successful, role:', role);
       } catch (error: any) {
-        const errorMessage = error?.error || 'Invalid OTP. Please try again.';
+        console.error('OTP verification error:', error);
+        const errorMessage = error?.error || 'Invalid or expired OTP. Please try again.';
         setError('root', { type: 'server', message: errorMessage });
       }
     },
@@ -204,7 +207,7 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
         </Typography>
       </Stack>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(handleVerifyOtp)}>
         <Stack spacing={3}>
           <Controller
             control={control}
