@@ -28,42 +28,37 @@ export interface StoreUpdateData extends Partial<StoreCreateData> {}
 export const storesApi = {
   // Get all stores
   getStores: async (): Promise<Store[]> => {
-    const response = await coreApiClient.get<Store[]>('/inventory/stores/');
+    const response = await coreApiClient.get<Store[]>('/companies/stores/');
     return response.data;
   },
   
   // Get store by ID
   getStore: async (id: string): Promise<Store> => {
-    const response = await coreApiClient.get<Store>(`/inventory/stores/${id}/`);
+    const response = await coreApiClient.get<Store>(`/companies/stores/${id}/`);
     return response.data;
   },
   
   // Create a new store
   createStore: async (data: StoreCreateData): Promise<Store> => {
-    const response = await coreApiClient.post<Store>('/inventory/stores/', data);
+    const response = await coreApiClient.post<Store>('/companies/stores/', data);
     return response.data;
   },
   
   // Update a store
   updateStore: async (id: string, data: StoreUpdateData): Promise<Store> => {
-    const response = await coreApiClient.put<Store>(`/inventory/stores/${id}/`, data);
+    const response = await coreApiClient.put<Store>(`/companies/stores/${id}/`, data);
     return response.data;
   },
   
   // Delete a store
   deleteStore: async (id: string): Promise<void> => {
-    await coreApiClient.delete(`/inventory/stores/${id}/`);
+    await coreApiClient.delete(`/companies/stores/${id}/`);
   },
   
-  // Get stores by company ID
-  getStoresByCompany: async (companyId: string): Promise<Store[]> => {
-    const response = await coreApiClient.get<Store[]>(`/inventory/companies/${companyId}/stores/`);
-    return response.data;
-  },
-  
+
   // Toggle store active status
   toggleStoreStatus: async (id: string, isActive: boolean): Promise<Store> => {
-    const response = await coreApiClient.put<Store>(`/inventory/stores/${id}/`, { is_active: isActive ? "active" : "inactive" });
+    const response = await coreApiClient.put<Store>(`/companies/stores/${id}/`, { is_active: isActive ? "active" : "inactive" });
     return response.data;
   }
 }; 
