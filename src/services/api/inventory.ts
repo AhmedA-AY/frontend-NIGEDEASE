@@ -69,15 +69,15 @@ export interface ProductUpdateData extends ProductCreateData {}
 
 export interface InventoryStore {
   id: string;
-  company: Company;
   name: string;
-  address: string;
-  phone_number: string;
-  email: string;
-  is_active: "active" | "inactive";
   location: string;
   created_at: string;
   updated_at: string;
+  is_active: "active" | "inactive";
+  company?: Company;
+  address?: string;
+  phone_number?: string;
+  email?: string;
 }
 
 export interface InventoryStoreCreateData {

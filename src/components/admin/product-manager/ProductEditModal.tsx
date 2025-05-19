@@ -25,6 +25,7 @@ import {
 import { useCurrentUser } from '@/hooks/use-auth';
 import { companiesApi } from '@/services/api/companies';
 import { clothingsApi } from '@/services/api/clothings';
+import { useStore } from '@/contexts/store-context';
 
 interface ProductEditModalProps {
   open: boolean;
@@ -48,6 +49,7 @@ export default function ProductEditModal({
   const [collections, setCollections] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { userInfo } = useCurrentUser();
+  const { selectedStore } = useStore();
   const [companies, setCompanies] = useState<any[]>([]);
   
   // Fetch required data
@@ -55,9 +57,14 @@ export default function ProductEditModal({
     async function fetchData() {
       setIsLoading(true);
       try {
+        if (!selectedStore) {
+          console.error('No store selected');
+          return;
+        }
+        
         const [companiesData, unitsData, colorsData, collectionsData] = await Promise.all([
           companiesApi.getCompanies(),
-          inventoryApi.getProductUnits(),
+          inventoryApi.getProductUnits(selectedStore.id),
           clothingsApi.getColors(),
           clothingsApi.getCollections()
         ]);
@@ -73,7 +80,7 @@ export default function ProductEditModal({
     }
     
     fetchData();
-  }, []);
+  }, [selectedStore]);
   
   // Reset form data when modal opens with new product data
   useEffect(() => {

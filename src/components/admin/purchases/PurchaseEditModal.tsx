@@ -27,6 +27,7 @@ import { transactionsApi, Supplier, TransactionPaymentMode } from '@/services/ap
 import { inventoryApi, Product, InventoryStore } from '@/services/api/inventory';
 import { companiesApi, Company, Currency } from '@/services/api/companies';
 import { useCurrentUser } from '@/hooks/use-auth';
+import { useStore } from '@/contexts/store-context';
 
 interface ProductItem {
   id: string;
@@ -113,6 +114,7 @@ export default function PurchaseEditModal({
   
   // Get current user's company
   const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
+  const { selectedStore } = useStore();
   
   // Fetch data when modal opens
   useEffect(() => {
@@ -120,6 +122,11 @@ export default function PurchaseEditModal({
       const fetchData = async () => {
         setIsLoading(true);
         try {
+          if (!selectedStore) {
+            console.error('No store selected');
+            return;
+          }
+          
           const [
             suppliersData, 
             productsData, 
@@ -129,7 +136,7 @@ export default function PurchaseEditModal({
             paymentModesData
           ] = await Promise.all([
             transactionsApi.getSuppliers(),
-            inventoryApi.getProducts(),
+            inventoryApi.getProducts(selectedStore.id),
             companiesApi.getCompanies(),
             inventoryApi.getStores(),
             companiesApi.getCurrencies(),

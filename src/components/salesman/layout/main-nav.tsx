@@ -16,25 +16,23 @@ export interface MainNavProps {
 }
 
 export function MainNav({ onMobileNavOpen }: MainNavProps): React.JSX.Element {
-  const { userEmail } = useAuth();
+  const { userInfo } = useAuth();
   const userPopover = usePopover<HTMLDivElement>();
 
   // Generate user initials from email
   const userInitials = React.useMemo(() => {
-    if (!userEmail) return '';
+    if (!userInfo?.email) return 'U';
     
-    const namePart = userEmail.split('@')[0];
-    if (namePart) {
-      // Get initials from name parts
-      return namePart
-        .split(/[._-]/)
-        .map(part => part.charAt(0).toUpperCase())
-        .slice(0, 2)
-        .join('');
-    }
+    const namePart = userInfo.email.split('@')[0];
+    if (!namePart) return 'U';
     
-    return userEmail.substring(0, 2).toUpperCase();
-  }, [userEmail]);
+    // Format initials from name parts (e.g., john.doe -> JD)
+    return namePart
+      .split(/[._-]/)
+      .map((part: string) => part.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  }, [userInfo?.email]);
 
   return (
     <React.Fragment>

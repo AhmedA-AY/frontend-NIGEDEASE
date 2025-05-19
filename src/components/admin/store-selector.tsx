@@ -1,29 +1,22 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useStore } from '@/contexts/store-context';
-import { FormControl, InputLabel, Select, MenuItem, Box, Tooltip, Typography, Chip } from '@mui/material';
-import { Storefront } from '@phosphor-icons/react';
+import React from 'react';
+import { useStore, Store } from '@/contexts/store-context';
+import { FormControl, InputLabel, Select, MenuItem, Box, Tooltip, Typography, SelectChangeEvent } from '@mui/material';
+import { Storefront } from '@phosphor-icons/react/dist/ssr';
 
 export const StoreSelector = () => {
-  const { stores, selectedStore, setSelectedStore, loading, fetchStores, isStoreSelectionLocked } = useStore();
+  const { stores, selectedStore, selectStore, isLoading } = useStore();
 
-  useEffect(() => {
-    // Ensure we have stores data
-    if (stores.length === 0 && !loading) {
-      fetchStores();
-    }
-  }, [stores.length, loading, fetchStores]);
-
-  const handleStoreChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-    const storeId = event.target.value as string;
-    const store = stores.find(s => s.id === storeId);
+  const handleStoreChange = (event: SelectChangeEvent<string>) => {
+    const storeId = event.target.value;
+    const store = stores.find((s) => s.id === storeId);
     if (store) {
-      setSelectedStore(store);
+      selectStore(store);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Storefront size={20} />
@@ -44,7 +37,7 @@ export const StoreSelector = () => {
   }
 
   // If user has a locked store selection, show a non-interactive component
-  if (isStoreSelectionLocked && selectedStore) {
+  if (selectedStore) {
     return (
       <Box sx={{ 
         display: 'flex', 
@@ -57,16 +50,6 @@ export const StoreSelector = () => {
       }}>
         <Storefront size={20} />
         <Typography variant="body2">{selectedStore.name}</Typography>
-        <Chip 
-          label="Assigned Store" 
-          size="small"
-          variant="outlined"
-          sx={{ 
-            fontSize: '0.7rem', 
-            height: '20px',
-            ml: 0.5
-          }}
-        />
       </Box>
     );
   }
@@ -84,8 +67,8 @@ export const StoreSelector = () => {
       <Select
         labelId="store-select-label"
         id="store-select"
-        value={selectedStore?.id || ''}
-        onChange={handleStoreChange as any}
+        value={(selectedStore as any)?.id || ''}
+        onChange={handleStoreChange}
         label="Select Store"
         startAdornment={
           <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
@@ -93,7 +76,7 @@ export const StoreSelector = () => {
           </Box>
         }
       >
-        {stores.map((store) => (
+        {stores.map((store: any) => (
           <MenuItem key={store.id} value={store.id}>
             {store.name}
           </MenuItem>

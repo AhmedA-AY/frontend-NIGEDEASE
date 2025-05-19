@@ -38,8 +38,12 @@ import Grid from '@mui/material/Grid';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { financialsApi } from '@/services/api/financials';
+import { useStore } from '@/contexts/store-context';
+import { useSnackbar } from 'notistack';
 
 export default function PurchasesPage(): React.JSX.Element {
+  const { selectedStore } = useStore();
+  const { enqueueSnackbar } = useSnackbar();
   const [tabValue, setTabValue] = React.useState(0);
   const [selectedPurchases, setSelectedPurchases] = React.useState<string[]>([]);
   const [anchorElMap, setAnchorElMap] = React.useState<{ [key: string]: HTMLElement | null }>({});
@@ -63,6 +67,12 @@ export default function PurchasesPage(): React.JSX.Element {
   
   // Fetch purchases and suppliers
   const fetchData = useCallback(async () => {
+    if (!selectedStore) {
+      enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const [
@@ -104,16 +114,17 @@ export default function PurchasesPage(): React.JSX.Element {
       });
     } catch (error) {
       console.error('Error fetching data:', error);
+      enqueueSnackbar('Failed to load data', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo]);
+  }, [enqueueSnackbar, selectedStore, userInfo]);
 
   useEffect(() => {
-    if (!isLoadingUser) {
+    if (!isLoadingUser && selectedStore) {
       fetchData();
     }
-  }, [fetchData, isLoadingUser]);
+  }, [fetchData, isLoadingUser, selectedStore]);
 
   // Filter stores when userInfo changes
   useEffect(() => {
@@ -205,7 +216,21 @@ export default function PurchasesPage(): React.JSX.Element {
   };
 
   const handleEditPurchase = async (id: string) => {
-    const purchaseToEdit = purchases.find(purchase => purchase.id === id);
+    // Find the purchase to edit
+    const purchaseToEdit = purchases.find((p) => p.id === id);
+    
+    if (!purchaseToEdit) {
+      console.error(`Purchase with ID ${id} not found`);
+      return;
+    }
+    
+    if (!selectedStore) {
+      alert("Please select a store first to edit purchases");
+      return;
+    }
+    
+    console.log(`Editing purchase: ${JSON.stringify(purchaseToEdit)}`);
+    
     if (purchaseToEdit) {
       // Show loading indicator
       setIsLoading(true);
@@ -220,7 +245,7 @@ export default function PurchasesPage(): React.JSX.Element {
             // Get product details
             let product;
             try {
-              product = await inventoryApi.getProduct(item.product.id);
+              product = await inventoryApi.getProduct(selectedStore.id, item.product.id);
             } catch (err) {
               console.error(`Error fetching product ${item.product.id}:`, err);
               product = item.product;
@@ -274,6 +299,11 @@ export default function PurchasesPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
+    if (!selectedStore) {
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      return;
+    }
+    
     if (purchaseToDelete) {
       try {
         await transactionsApi.deletePurchase(purchaseToDelete);

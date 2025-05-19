@@ -1,80 +1,183 @@
 'use client';
 
-import * as React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { tokenStorage } from '@/utils/token-storage';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { paths } from '@/paths';
 import { authApi } from '@/services/api/auth';
-import { Store } from '@/services/api/stores';
+import tokenStorage from '@/utils/token-storage';
 
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false, // default: true
-      retry: 1,
-    },
-  },
-});
-
-interface AuthContextType {
-  isAuthenticated: boolean;
-  userEmail: string | null;
-  userRole: string | null;
-  assignedStore: Store | null;
-  login: (accessToken: string, refreshToken: string, role: string, email?: string, assignedStore?: Store) => void;
-  logout: () => void;
-  saveEmail: (email: string) => void;
-  refreshTokenIfNeeded: () => Promise<string | null>;
-}
-
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = (): AuthContextType => {
-  const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+// Types
+export type Store = {
+  id: string;
+  name: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+  is_active: string;
 };
 
-interface AuthProviderProps {
-  children: React.ReactNode;
+export interface AuthContextType {
+  isAuthenticated: boolean;
+  isInitialized: boolean;
+  isLoading: boolean;
+  userRole: string | null;
+  userInfo: any;
+  login: (email: string, password: string) => Promise<void>;
+  verifyOtp: (email: string, otp: string, stores?: Store[], assignedStore?: Store) => Promise<void>;
+  logout: () => void;
+  stores: Store[];
+  assignedStore: Store | null;
+  saveEmail: (email: string) => void;
 }
 
-export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element {
-  const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
-  const [userEmail, setUserEmail] = React.useState<string | null>(null);
-  const [userRole, setUserRole] = React.useState<string | null>(null);
-  const [assignedStore, setAssignedStore] = React.useState<Store | null>(null);
+// Create the auth context
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-  // Initialize auth state from storage on client-side
-  React.useEffect(() => {
-    const isAuthenticatedFromStorage = tokenStorage.isAuthenticated();
-    const emailFromStorage = tokenStorage.getUserEmail();
-    const roleFromStorage = tokenStorage.getUserRole();
-    const storeFromStorage = tokenStorage.getAssignedStore();
-    
-    setIsAuthenticated(isAuthenticatedFromStorage);
-    setUserEmail(emailFromStorage);
-    setUserRole(roleFromStorage);
-    setAssignedStore(storeFromStorage);
+// Auth provider component
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [assignedStore, setAssignedStore] = useState<Store | null>(null);
+  
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Initialize authentication state
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const accessToken = tokenStorage.getAccessToken();
+        const role = tokenStorage.getUserRole();
+        
+        if (accessToken) {
+          try {
+            // Verify token with backend
+            const tokenInfo = await authApi.verifyToken(accessToken);
+            if (tokenInfo.is_valid) {
+              setIsAuthenticated(true);
+              setUserRole(role);
+              
+              // Set user info
+              setUserInfo({
+                id: tokenInfo.user_id,
+                email: tokenInfo.email,
+                role: role,
+                company_id: tokenInfo.company_id,
+              });
+              
+              // Load stores from storage
+              const storedStores = tokenStorage.getCompanyStores();
+              if (storedStores && storedStores.length > 0) {
+                setStores(storedStores);
+              }
+              
+              // Load assigned store for non-admin users
+              const storedAssignedStore = tokenStorage.getAssignedStore();
+              if (storedAssignedStore) {
+                setAssignedStore(storedAssignedStore);
+              }
+            } else {
+              // Token is invalid
+              handleLogout();
+            }
+          } catch (error) {
+            console.error('Error verifying token:', error);
+            handleLogout();
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    initAuth();
   }, []);
 
-  const login = React.useCallback(
-    (accessToken: string, refreshToken: string, role: string, email?: string, assignedStore?: Store) => {
-      tokenStorage.saveTokens(accessToken, refreshToken, role, email, assignedStore);
+  // Check if user should be redirected based on role & path
+  useEffect(() => {
+    if (isInitialized) {
+      const isAuthRoute = pathname?.includes('/auth');
+      
+      // Redirect to login if not authenticated and not on auth page
+      if (!isAuthenticated && !isAuthRoute && pathname !== '/') {
+        router.push(paths.auth.signIn);
+      }
+      
+      // Redirect to dashboard if authenticated but on login page
+      if (isAuthenticated && isAuthRoute) {
+        if (userRole === 'super_admin') {
+          router.push(paths.superAdmin.dashboard);
+        } else if (userRole === 'admin') {
+          router.push(paths.admin.dashboard);
+        } else if (userRole === 'stock_manager') {
+          router.push(paths.stockManager.dashboard);
+        } else if (userRole === 'sales') {
+          router.push(paths.salesman.dashboard);
+        } else {
+          // Default fallback
+          router.push(paths.admin.dashboard);
+        }
+      }
+    }
+  }, [isAuthenticated, isInitialized, pathname, router, userRole]);
+
+  // Login function - Step 1: Email/Password
+  const handleLogin = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      await authApi.login(email, password);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Login function - Step 2: Verify OTP
+  const handleVerifyOtp = async (email: string, otp: string, stores?: Store[], assignedStore?: Store) => {
+    setIsLoading(true);
+    try {
+      const response = await authApi.verifyOtp(email, otp);
+      const { access, refresh, role } = response;
+      
+      // Store tokens
+      tokenStorage.saveTokens(
+        access, 
+        refresh, 
+        role, 
+        assignedStore || response.assigned_store, 
+        stores || response.stores
+      );
+      
+      // Update state
       setIsAuthenticated(true);
       setUserRole(role);
       
-      if (email) {
-        setUserEmail(email);
+      // Set user info
+      const tokenInfo = await authApi.verifyToken(access);
+      if (tokenInfo.is_valid) {
+        setUserInfo({
+          id: tokenInfo.user_id,
+          email: tokenInfo.email,
+          role: role,
+          company_id: tokenInfo.company_id,
+        });
       }
       
-      if (assignedStore) {
-        setAssignedStore(assignedStore);
+      // Set stores and assigned store
+      if (response.stores) {
+        setStores(response.stores);
+      }
+      
+      if (response.assigned_store || assignedStore) {
+        setAssignedStore(response.assigned_store || assignedStore);
       }
       
       // Redirect based on role
@@ -82,131 +185,79 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         router.push(paths.superAdmin.dashboard);
       } else if (role === 'admin') {
         router.push(paths.admin.dashboard);
-      } else if (role === 'salesman') {
-        router.push(paths.salesman.dashboard);
       } else if (role === 'stock_manager') {
         router.push(paths.stockManager.dashboard);
+      } else if (role === 'sales') {
+        router.push(paths.salesman.dashboard);
       } else {
-        router.push(paths.dashboard.overview);
+        // Default fallback
+        router.push(paths.admin.dashboard);
       }
-    },
-    [router]
-  );
-
-  const logout = React.useCallback(async () => {
-    try {
-      // Call logout API
-      await authApi.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('OTP verification error:', error);
+      throw error;
     } finally {
-      // Regardless of API success, clear tokens and state
-      tokenStorage.clearTokens();
-      setIsAuthenticated(false);
-      setUserEmail(null);
-      setUserRole(null);
-      setAssignedStore(null);
-      
-      // Clear React Query cache
-      queryClient.clear();
-      
-      // Redirect to login page
-      router.push(paths.auth.signIn);
+      setIsLoading(false);
     }
-  }, [router]);
+  };
 
-  const saveEmail = React.useCallback((email: string) => {
+  // Logout function
+  const handleLogout = () => {
+    // Clear tokens
+    tokenStorage.clearTokens();
+    
+    // Reset state
+    setIsAuthenticated(false);
+    setUserRole(null);
+    setUserInfo(null);
+    setStores([]);
+    setAssignedStore(null);
+    
+    // Redirect to login
+    router.push(paths.auth.signIn);
+  };
+
+  // Save email function for OTP flow
+  const handleSaveEmail = (email: string) => {
     tokenStorage.saveEmail(email);
-    setUserEmail(email);
-  }, []);
+  };
 
-  // New function to refresh token if needed
-  const refreshTokenIfNeeded = React.useCallback(async (): Promise<string | null> => {
-    try {
-      // Check if access token exists
-      const accessToken = tokenStorage.getAccessToken();
-      
-      if (!accessToken) {
-        return null;
-      }
-      
-      // Verify if the token is valid
-      const isValid = await authApi.verifyToken(accessToken);
-      
-      if (isValid) {
-        return accessToken;
-      }
-      
-      // If not valid, try to refresh
-      const refreshToken = tokenStorage.getRefreshToken();
-      
-      if (!refreshToken) {
-        // No refresh token available
-        tokenStorage.clearTokens();
-        setIsAuthenticated(false);
-        router.push(paths.auth.signIn);
-        return null;
-      }
-      
-      try {
-        // Refresh token
-        const tokenResponse = await authApi.refreshToken(refreshToken);
-        
-        // Save new tokens
-        tokenStorage.saveTokens(
-          tokenResponse.access,
-          tokenResponse.refresh,
-          tokenStorage.getUserRole() || '',
-          tokenStorage.getUserEmail() || undefined,
-          tokenStorage.getAssignedStore()
-        );
-        
-        return tokenResponse.access;
-      } catch (refreshError: any) {
-        // Specifically handle invalid or expired refresh token errors
-        if (refreshError.response && 
-            (refreshError.response.status === 401 || refreshError.response.status === 400) &&
-            (refreshError.response.data?.detail === "Invalid or expired token" || 
-             refreshError.response.data?.error === "Invalid token" ||
-             refreshError.response.data?.error?.includes("expired"))) {
-          console.error('Refresh token expired or invalid. Logging out.');
-          // Force logout and redirect to login
-          await logout();
-        } else {
-          // For other errors, also logout but with different logging
-          console.error('Error during token refresh:', refreshError);
-          await logout();
-        }
-        return null;
-      }
-    } catch (error) {
-      console.error('Token refresh error:', error);
-      
-      // Clear auth state on failure
-      tokenStorage.clearTokens();
-      setIsAuthenticated(false);
-      router.push(paths.auth.signIn);
-      return null;
-    }
-  }, [router, logout]);
-
-  const contextValue = React.useMemo(
+  // Context value
+  const contextValue = useMemo(
     () => ({
       isAuthenticated,
-      userEmail,
+      isInitialized,
+      isLoading,
       userRole,
+      userInfo,
+      login: handleLogin,
+      verifyOtp: handleVerifyOtp,
+      logout: handleLogout,
+      stores,
       assignedStore,
-      login,
-      logout,
-      saveEmail,
-      refreshTokenIfNeeded,
+      saveEmail: handleSaveEmail
     }),
-    [isAuthenticated, userEmail, userRole, assignedStore, login, logout, saveEmail, refreshTokenIfNeeded]
+    [
+      isAuthenticated,
+      isInitialized,
+      isLoading,
+      userRole,
+      userInfo,
+      stores,
+      assignedStore
+    ]
   );
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
-    </QueryClientProvider>
-  );
-} 
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
+};
+
+// Hook to use auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  
+  return context;
+}; 

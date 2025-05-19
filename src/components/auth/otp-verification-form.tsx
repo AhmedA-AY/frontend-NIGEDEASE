@@ -36,7 +36,7 @@ interface OtpVerificationFormProps {
 }
 
 export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps): React.JSX.Element {
-  const { login } = useAuth();
+  const { verifyOtp } = useAuth();
   const verifyOtpMutation = useVerifyOtp();
   const resendOtpMutation = useResendOtp();
 
@@ -78,17 +78,17 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
         if ((response.role === 'salesman' || response.role === 'stock_manager') && response.assigned_store) {
           console.log('Assigned store:', response.assigned_store);
           // Successful verification, save tokens and redirect with the assigned store
-          login(response.access, response.refresh, response.role, email, response.assigned_store);
+          verifyOtp(email, values.otp, (response as any).stores || [], response.assigned_store);
         } else {
           // For other roles or cases without assigned store
-          login(response.access, response.refresh, response.role, email);
+          verifyOtp(email, values.otp);
         }
       } catch (error: any) {
         const errorMessage = error?.error || 'Invalid OTP. Please try again.';
         setError('root', { type: 'server', message: errorMessage });
       }
     },
-    [email, login, setError, verifyOtpMutation]
+    [email, verifyOtp, setError, verifyOtpMutation]
   );
 
   const handleResendOtp = React.useCallback(async () => {

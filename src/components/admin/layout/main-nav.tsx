@@ -16,25 +16,25 @@ import { UserPopover } from '@/components/dashboard/layout/user-popover';
 
 export function MainNav(): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
-  const { userEmail } = useAuth();
+  const { userInfo } = useAuth();
   const userPopover = usePopover<HTMLDivElement>();
 
   // Generate user initials from email
   const userInitials = React.useMemo(() => {
-    if (!userEmail) return '';
+    if (!userInfo?.email) return '';
     
-    const namePart = userEmail.split('@')[0];
+    const namePart = userInfo.email.split('@')[0];
     if (namePart) {
       // Get initials from name parts
       return namePart
         .split(/[._-]/)
-        .map(part => part.charAt(0).toUpperCase())
+        .map((part: string) => part.charAt(0).toUpperCase())
         .slice(0, 2)
         .join('');
     }
     
-    return userEmail.substring(0, 2).toUpperCase();
-  }, [userEmail]);
+    return userInfo.email.substring(0, 2).toUpperCase();
+  }, [userInfo?.email]);
 
   return (
     <>

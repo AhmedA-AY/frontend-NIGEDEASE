@@ -38,8 +38,12 @@ import Grid from '@mui/material/Grid';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { financialsApi } from '@/services/api/financials';
+import { useSnackbar } from 'notistack';
+import { useStore } from '@/contexts/store-context';
 
 export default function SalesPage(): React.JSX.Element {
+  const { selectedStore } = useStore();
+  const { enqueueSnackbar } = useSnackbar();
   const [tabValue, setTabValue] = React.useState(0);
   const [selectedSales, setSelectedSales] = React.useState<string[]>([]);
   const [anchorElMap, setAnchorElMap] = React.useState<{ [key: string]: HTMLElement | null }>({});
@@ -48,6 +52,7 @@ export default function SalesPage(): React.JSX.Element {
   const [currentSale, setCurrentSale] = React.useState<any>(null);
   const [saleToDelete, setSaleToDelete] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [editModalLoading, setEditModalLoading] = useState(false);
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -191,60 +196,60 @@ export default function SalesPage(): React.JSX.Element {
     setIsSaleModalOpen(true);
   };
 
-  const handleEditSale = async (id: string) => {
-    const saleToEdit = sales.find(sale => sale.id === id);
-    if (saleToEdit) {
-      // Show loading indicator
-      setIsLoading(true);
-      
-      try {
-        // Fetch sale items for this sale
-        const saleItems = await transactionsApi.getSaleItems(id);
-        
-        // Convert sale items to the format expected by the form
-        const products = await Promise.all(
-          saleItems.map(async (item) => {
-            // Get product details
-            let product;
-            try {
-              product = await inventoryApi.getProduct(item.product.id);
-            } catch (err) {
-              console.error(`Error fetching product ${item.product.id}:`, err);
-              product = item.product;
-            }
-            
-            return {
-              id: item.product.id,
-              name: product.name,
-              quantity: parseInt(item.quantity),
-              unitPrice: product.sale_price ? parseFloat(product.sale_price) : 0,
-              discount: 0, // Not available from API, default to 0
-              tax: 0, // Not available from API, default to 0
-              subtotal: parseFloat(item.quantity) * (product.sale_price ? parseFloat(product.sale_price) : 0)
-            };
-          })
-        );
-        
-        setCurrentSale({
-          id: saleToEdit.id,
-          customer: saleToEdit.customer.id,
-          company_id: saleToEdit.company.id,
-          store_id: saleToEdit.store.id,
-          currency_id: saleToEdit.currency.id,
-          payment_mode_id: saleToEdit.payment_mode.id,
-          totalAmount: parseFloat(saleToEdit.total_amount),
-          is_credit: saleToEdit.is_credit,
-          products: products
-        });
-        
-        setIsSaleModalOpen(true);
-        handleMenuClose(id);
-      } catch (error) {
-        console.error('Error fetching sale items:', error);
-        alert('Failed to fetch sale details. Please try again.');
-      } finally {
-        setIsLoading(false);
+  const handleEditSale = async (saleId: string) => {
+    try {
+      if (!selectedStore) {
+        enqueueSnackbar('Please select a store', { variant: 'error' });
+        return;
       }
+      
+      setEditModalLoading(true);
+      const saleToEdit = await transactionsApi.getSale(saleId);
+      const saleItems = await transactionsApi.getSaleItems(saleId);
+      
+      // Convert sale items to the format expected by the form
+      const products = await Promise.all(
+        saleItems.map(async (item) => {
+          // Get product details
+          let product;
+          try {
+            product = await inventoryApi.getProduct(selectedStore.id, item.product.id);
+          } catch (err) {
+            console.error(`Error fetching product ${item.product.id}:`, err);
+            product = item.product;
+          }
+          
+          return {
+            id: item.product.id,
+            name: product.name,
+            quantity: parseInt(item.quantity),
+            unitPrice: product.sale_price ? parseFloat(product.sale_price) : 0,
+            discount: 0, // Not available from API, default to 0
+            tax: 0, // Not available from API, default to 0
+            subtotal: parseFloat(item.quantity) * (product.sale_price ? parseFloat(product.sale_price) : 0)
+          };
+        })
+      );
+      
+      setCurrentSale({
+        id: saleToEdit.id,
+        customer: saleToEdit.customer.id,
+        company_id: saleToEdit.company.id,
+        store_id: saleToEdit.store.id,
+        currency_id: saleToEdit.currency.id,
+        payment_mode_id: saleToEdit.payment_mode.id,
+        totalAmount: parseFloat(saleToEdit.total_amount),
+        is_credit: saleToEdit.is_credit,
+        products: products
+      });
+      
+      setIsSaleModalOpen(true);
+      handleMenuClose(saleId);
+    } catch (error) {
+      console.error('Error fetching sale items:', error);
+      alert('Failed to fetch sale details. Please try again.');
+    } finally {
+      setEditModalLoading(false);
     }
   };
 
@@ -366,6 +371,22 @@ export default function SalesPage(): React.JSX.Element {
       } else {
         alert("An error occurred while saving the sale.");
       }
+    }
+  };
+
+  const fetchProductById = async (productId: string) => {
+    try {
+      if (!selectedStore) {
+        console.error('No store selected');
+        enqueueSnackbar('Please select a store', { variant: 'error' });
+        return null;
+      }
+      
+      const response = await inventoryApi.getProduct(selectedStore.id, productId);
+      return response;
+    } catch (error) {
+      console.error(`Error fetching product ${productId}:`, error);
+      return null;
     }
   };
 

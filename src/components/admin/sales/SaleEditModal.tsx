@@ -27,6 +27,7 @@ import { transactionsApi, Customer, TransactionPaymentMode } from '@/services/ap
 import { inventoryApi, Product, InventoryStore } from '@/services/api/inventory';
 import { companiesApi, Company, Currency } from '@/services/api/companies';
 import { useCurrentUser } from '@/hooks/use-auth';
+import { useStore } from '@/contexts/store-context';
 
 interface ProductItem {
   id: string;
@@ -72,36 +73,34 @@ export default function SaleEditModal({
   onClose,
   onSave,
   sale = {
+    date: new Date().toISOString().split('T')[0],
     customer: '',
+    status: 'Ordered',
+    products: [],
     totalAmount: 0,
-    is_credit: false,
+    paidAmount: 0,
+    dueAmount: 0,
+    paymentStatus: 'Unpaid',
     company_id: '',
     store_id: '',
     currency_id: '',
-    payment_mode_id: '',
-    date: new Date().toISOString().split('T')[0],
-    status: 'Confirmed',
-    products: [],
-    paidAmount: 0,
-    dueAmount: 0,
-    paymentStatus: 'Unpaid'
+    payment_mode_id: ''
   },
   isNew = true
 }: SaleEditModalProps): React.JSX.Element {
   const [formData, setFormData] = React.useState<SaleData>({
+    date: new Date().toISOString().split('T')[0],
     customer: '',
+    status: 'Ordered',
+    products: [],
     totalAmount: 0,
-    is_credit: false,
+    paidAmount: 0,
+    dueAmount: 0,
+    paymentStatus: 'Unpaid',
     company_id: '',
     store_id: '',
     currency_id: '',
-    payment_mode_id: '',
-    date: new Date().toISOString().split('T')[0],
-    status: 'Confirmed',
-    products: [],
-    paidAmount: 0,
-    dueAmount: 0,
-    paymentStatus: 'Unpaid'
+    payment_mode_id: ''
   });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [selectedProduct, setSelectedProduct] = React.useState<string>('');
@@ -117,6 +116,7 @@ export default function SaleEditModal({
   
   // Get current user's company
   const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
+  const { selectedStore } = useStore();
   
   // Fetch data when modal opens
   useEffect(() => {
@@ -124,6 +124,11 @@ export default function SaleEditModal({
       const fetchData = async () => {
         setIsLoading(true);
         try {
+          if (!selectedStore) {
+            console.error('No store selected');
+            return;
+          }
+          
           const [
             customersData, 
             productsData, 
@@ -133,7 +138,7 @@ export default function SaleEditModal({
             paymentModesData
           ] = await Promise.all([
             transactionsApi.getCustomers(),
-            inventoryApi.getProducts(),
+            inventoryApi.getProducts(selectedStore.id),
             companiesApi.getCompanies(),
             inventoryApi.getStores(),
             companiesApi.getCurrencies(),

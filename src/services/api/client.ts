@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { tokenStorage } from '@/utils/token-storage';
+import tokenStorage from '@/utils/token-storage';
 import { paths } from '@/paths';
 
 // API Base URLs

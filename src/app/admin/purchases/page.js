@@ -271,7 +271,7 @@ function PurchasesPage() {
                                 switch (_a.label) {
                                     case 0:
                                         _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, inventory_1.inventoryApi.getProduct(item.product.id)];
+                                        return [4 /*yield*/, inventory_1.inventoryApi.getProduct(selectedStore.id, item.product.id)];
                                     case 1:
                                         product = _a.sent();
                                         return [3 /*break*/, 3];

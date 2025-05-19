@@ -54,6 +54,7 @@ export const adminNavItems = [
   },
   { key: 'admin-payments', title: 'Payments', href: paths.admin.payments, icon: 'credit-card' },
   { key: 'admin-parties', title: 'Parties', href: paths.admin.parties, icon: 'users' },
+  { key: 'admin-stores', title: 'Stores', href: paths.admin.stores, icon: 'storefront' },
   { key: 'admin-users', title: 'Users', href: paths.admin.users, icon: 'user-gear' },
 ] satisfies NavItemConfig[];
 

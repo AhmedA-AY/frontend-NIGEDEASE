@@ -26,25 +26,22 @@ export interface UserPopoverProps {
 }
 
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
-  const { userEmail, userRole, logout } = useAuth();
+  const { userInfo, userRole, logout } = useAuth();
   const router = useRouter();
 
   // Generate display name from email if available
   const displayName = React.useMemo(() => {
-    if (!userEmail) return 'User';
+    if (!userInfo?.email) return 'User';
     
-    // If email contains a name part before @, use it and capitalize first letter
-    const namePart = userEmail.split('@')[0];
-    if (namePart) {
-      // Split by common separators and capitalize each part
-      return namePart
-        .split(/[._-]/)
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
-    }
+    const namePart = userInfo.email.split('@')[0];
+    if (!namePart) return 'User';
     
-    return 'User';
-  }, [userEmail]);
+    // Format name parts (e.g., john.doe -> John Doe)
+    return namePart
+      .split(/[._-]/)
+      .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }, [userInfo?.email]);
 
   const handleSignOut = React.useCallback(async (): Promise<void> => {
     try {
@@ -152,7 +149,7 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
       <Box sx={{ p: '16px 20px', pt: 3 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>{displayName}</Typography>
         <Typography color="text.secondary" variant="body2" sx={{ wordBreak: 'break-all' }}>
-          {userEmail || 'No email available'}
+          {userInfo?.email || 'No email available'}
         </Typography>
       </Box>
       <Divider sx={{ mx: 2 }} />

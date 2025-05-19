@@ -1,407 +1,320 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import Typography from '@mui/material/Typography';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
+import CircularProgress from '@mui/material/CircularProgress';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import CircularProgress from '@mui/material/CircularProgress';
-import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import IconButton from '@mui/material/IconButton';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import InputLabel from '@mui/material/InputLabel';
-import FormControl from '@mui/material/FormControl';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { PencilSimple as EditIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
-import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
-
-import { useStores, useCreateStore, useUpdateStore, useDeleteStore, useToggleStoreStatus } from '@/hooks/admin/use-stores';
-import { useCompanies } from '@/hooks/admin/use-companies';
-import { InventoryStoreCreateData } from '@/services/api/inventory';
+import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
+import { useRouter } from 'next/navigation';
+import { useCurrentUser } from '@/hooks/use-auth';
+import { inventoryApi, InventoryStore } from '@/services/api/inventory';
+import { useSnackbar } from 'notistack';
+import { paths } from '@/paths';
+import StoreEditModal from '@/components/admin/stores/StoreEditModal';
 
 export default function StoresPage(): React.JSX.Element {
-  // Query hooks
-  const { data: storesData, isLoading: isLoadingStores } = useStores();
-  const { data: companies } = useCompanies();
-  const createStoreMutation = useCreateStore();
-  const updateStoreMutation = useUpdateStore('');
-  const deleteStoreMutation = useDeleteStore();
-  const toggleStoreStatusMutation = useToggleStoreStatus('');
+  const router = useRouter();
+  const { enqueueSnackbar } = useSnackbar();
+  const { userInfo } = useCurrentUser();
   
-  // Form state
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData] = useState<InventoryStoreCreateData>({
-    name: '',
-    address: '',
-    phone_number: '',
-    email: '',
-    company_id: '',
-    is_active: "active",
-    location: '',
-  });
-  const [currentStoreId, setCurrentStoreId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [stores, setStores] = React.useState<InventoryStore[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedStore, setSelectedStore] = React.useState<InventoryStore | null>(null);
+  const [isStoreModalOpen, setIsStoreModalOpen] = React.useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+  const [storeToDelete, setStoreToDelete] = React.useState<string | null>(null);
+  const [anchorElMap, setAnchorElMap] = React.useState<{ [key: string]: HTMLElement | null }>({});
   
-  // Notification state
-  const [notification, setNotification] = useState({
-    open: false,
-    message: '',
-    severity: 'success' as 'success' | 'error',
-  });
-
-  // Handle form submission
-  const handleSubmit = async () => {
+  // Fetch stores data
+  const fetchStores = React.useCallback(async () => {
+    setIsLoading(true);
     try {
-      if (isEditMode && currentStoreId) {
-        await updateStoreMutation.mutateAsync(formData);
-        setNotification({
-          open: true,
-          message: 'Store updated successfully',
-          severity: 'success',
-        });
-      } else {
-        await createStoreMutation.mutateAsync(formData);
-        setNotification({
-          open: true,
-          message: 'Store created successfully',
-          severity: 'success',
-        });
-      }
+      const storesData = await inventoryApi.getStores();
+      // Filter stores by user's company
+      const filteredStores = userInfo?.company_id 
+        ? storesData.filter(store => store.company && store.company.id === userInfo.company_id)
+        : storesData;
       
-      handleCloseDialog();
-    } catch (err: any) {
-      console.error('Error saving store:', err);
-      
-      let errorMessage = 'Failed to save store. Please try again.';
-      
-      if (err.response?.data) {
-        const fieldErrors = err.response.data;
-        const errorDetails = Object.entries(fieldErrors)
-          .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-          .join('; ');
-        
-        if (errorDetails) {
-          errorMessage = `Validation errors: ${errorDetails}`;
-        }
-      }
-      
-      setNotification({
-        open: true,
-        message: errorMessage,
-        severity: 'error',
-      });
+      setStores(filteredStores);
+    } catch (error) {
+      console.error('Error fetching stores:', error);
+      enqueueSnackbar('Failed to fetch stores', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
     }
+  }, [userInfo, enqueueSnackbar]);
+  
+  // Load data on component mount
+  React.useEffect(() => {
+    fetchStores();
+  }, [fetchStores]);
+  
+  // Handle search
+  const filteredStores = searchQuery
+    ? stores.filter(store => 
+        store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        store.location.toLowerCase().includes(searchQuery.toLowerCase()))
+    : stores;
+  
+  // Menu handling
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
+    setAnchorElMap({ ...anchorElMap, [id]: event.currentTarget });
   };
-
-  // Handle edit store
-  const handleEditStore = (store: any) => {
-    setFormData({
-      name: store.name || '',
-      address: store.address || '',
-      phone_number: store.phone_number || '',
-      email: store.email || '',
-      company_id: store.company?.id || '',
-      is_active: typeof store.is_active === 'boolean' 
-        ? (store.is_active ? "active" : "inactive") 
-        : (store.is_active || "active"),
-      location: store.location || '',
-    });
-    setCurrentStoreId(store.id);
-    setIsEditMode(true);
-    setIsDialogOpen(true);
+  
+  const handleMenuClose = (id: string) => {
+    setAnchorElMap({ ...anchorElMap, [id]: null });
   };
-
-  // Handle delete store
-  const handleDeleteStore = async (storeId: string) => {
-    if (window.confirm('Are you sure you want to delete this store?')) {
+  
+  // Add/Edit/Delete handlers
+  const handleAddNewStore = () => {
+    setSelectedStore(null);
+    setIsStoreModalOpen(true);
+  };
+  
+  const handleEditStore = (store: InventoryStore) => {
+    setSelectedStore(store);
+    setIsStoreModalOpen(true);
+    handleMenuClose(store.id);
+  };
+  
+  const handleDeleteStore = (id: string) => {
+    setStoreToDelete(id);
+    setIsDeleteModalOpen(true);
+    handleMenuClose(id);
+  };
+  
+  const handleConfirmDelete = async () => {
+    if (storeToDelete) {
+      setIsLoading(true);
       try {
-        await deleteStoreMutation.mutateAsync(storeId);
-        setNotification({
-          open: true,
-          message: 'Store deleted successfully',
-          severity: 'success',
-        });
-      } catch (err) {
-        console.error('Error deleting store:', err);
-        setNotification({
-          open: true,
-          message: 'Failed to delete store. Please try again.',
-          severity: 'error',
-        });
+        await inventoryApi.deleteStore(storeToDelete);
+        enqueueSnackbar('Store deleted successfully', { variant: 'success' });
+        fetchStores();
+      } catch (error) {
+        console.error('Error deleting store:', error);
+        enqueueSnackbar('Failed to delete store', { variant: 'error' });
+      } finally {
+        setIsLoading(false);
+        setIsDeleteModalOpen(false);
+        setStoreToDelete(null);
       }
     }
   };
-
-  // Handle toggle store status
-  const handleToggleStatus = async (storeId: string, currentStatus: "active" | "inactive") => {
+  
+  const handleSaveStore = async (storeData: any) => {
+    setIsLoading(true);
     try {
-      await toggleStoreStatusMutation.mutateAsync({ 
-        is_active: currentStatus === "active" ? "inactive" : "active" 
-      });
-      setNotification({
-        open: true,
-        message: `Store ${currentStatus === "active" ? 'deactivated' : 'activated'} successfully`,
-        severity: 'success',
-      });
-    } catch (err) {
-      console.error('Error toggling store status:', err);
-      setNotification({
-        open: true,
-        message: 'Failed to update store status. Please try again.',
-        severity: 'error',
-      });
-    }
-  };
-
-  // Handle opening the dialog for creating a new store
-  const handleOpenCreateDialog = () => {
-    setFormData({
-      name: '',
-      address: '',
-      phone_number: '',
-      email: '',
-      company_id: companies?.data?.[0]?.id || '',
-      is_active: "active",
-      location: '',
-    });
-    setIsEditMode(false);
-    setCurrentStoreId(null);
-    setIsDialogOpen(true);
-  };
-
-  // Handle closing the dialog
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setFormData({
-      name: '',
-      address: '',
-      phone_number: '',
-      email: '',
-      company_id: '',
-      is_active: "active",
-      location: '',
-    });
-  };
-
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
-    const { name, value } = e.target;
-    if (name) {
-      setFormData({ ...formData, [name]: value });
+      if (storeData.id) {
+        // Update existing store
+        await inventoryApi.updateStore(storeData.id, {
+          name: storeData.name,
+          location: storeData.location,
+          company_id: userInfo?.company_id || storeData.company_id,
+          is_active: storeData.is_active,
+          address: '',
+          phone_number: '',
+          email: ''
+        });
+        enqueueSnackbar('Store updated successfully', { variant: 'success' });
+      } else {
+        // Add new store
+        await inventoryApi.createStore({
+          name: storeData.name,
+          location: storeData.location,
+          company_id: userInfo?.company_id || '',
+          is_active: 'active',
+          address: '',
+          phone_number: '',
+          email: ''
+        });
+        enqueueSnackbar('Store created successfully', { variant: 'success' });
+      }
+      fetchStores();
+      setIsStoreModalOpen(false);
+    } catch (error) {
+      console.error('Error saving store:', error);
+      enqueueSnackbar('Failed to save store', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   };
   
-  // Handle select input changes
-  const handleSelectChange = (e: SelectChangeEvent) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name as string]: value });
-  };
-
-  // Handle closing notifications
-  const handleCloseNotification = () => {
-    setNotification((prev) => ({ ...prev, open: false }));
-  };
-
-  if (isLoadingStores) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
+  // Generate breadcrumb path links
+  const breadcrumbItems = [
+    { label: 'Dashboard', url: paths.admin.dashboard },
+    { label: 'Stores', url: paths.admin.stores },
+  ];
+  
   return (
-    <Container maxWidth="lg">
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
-        <Typography variant="h4">Stores</Typography>
-        <Button
-          variant="contained"
-          startIcon={<PlusIcon />}
-          onClick={handleOpenCreateDialog}
-          disabled={isLoadingStores}
-        >
-          Add Store
-        </Button>
-      </Stack>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Address</TableCell>
-              <TableCell>Phone</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Company</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {storesData?.data.map((store) => (
-              <TableRow key={store.id}>
-                <TableCell>{store.name}</TableCell>
-                <TableCell>{store.address}</TableCell>
-                <TableCell>{store.phone_number}</TableCell>
-                <TableCell>{store.email}</TableCell>
-                <TableCell>{store.company?.name}</TableCell>
-                <TableCell>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={store.is_active === "active"}
-                        onChange={() => handleToggleStatus(store.id, store.is_active)}
-                        color="primary"
-                      />
-                    }
-                    label={store.is_active === "active" ? 'Active' : 'Inactive'}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    color="primary"
-                    onClick={() => handleEditStore(store)}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    color="error"
-                    onClick={() => handleDeleteStore(store.id)}
-                  >
-                    <TrashIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Store Form Dialog */}
-      <Dialog open={isDialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>{isEditMode ? 'Edit Store' : 'Add New Store'}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Store Name"
-              fullWidth
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-            />
-            <TextField
-              label="Address"
-              fullWidth
-              name="address"
-              value={formData.address}
-              onChange={handleInputChange}
-              multiline
-              rows={2}
-              required
-            />
-            <TextField
-              label="Location"
-              fullWidth
-              name="location"
-              value={formData.location}
-              onChange={handleInputChange}
-              placeholder="City, State, Country"
-              required
-            />
-            <TextField
-              label="Phone Number"
-              fullWidth
-              name="phone_number"
-              value={formData.phone_number}
-              onChange={handleInputChange}
-              required
-            />
-            <TextField
-              label="Email"
-              fullWidth
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-            />
-            <FormControl fullWidth>
-              <InputLabel id="company-select-label">Company</InputLabel>
-              <Select
-                labelId="company-select-label"
-                name="company_id"
-                value={formData.company_id}
-                label="Company"
-                onChange={handleSelectChange}
-                required
+    <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
+      {/* Header and Breadcrumbs */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" sx={{ mb: 1 }}>Stores Management</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
+          {breadcrumbItems.map((item, index) => (
+            <React.Fragment key={index}>
+              {index > 0 && <Box component="span" sx={{ mx: 0.5 }}>-</Box>}
+              <Typography 
+                component="a" 
+                href={item.url} 
+                variant="body2" 
+                color={index === breadcrumbItems.length - 1 ? 'text.primary' : 'inherit'}
+                sx={{ textDecoration: 'none' }}
               >
-                {companies?.data.map((company) => (
-                  <MenuItem key={company.id} value={company.id}>
-                    {company.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.is_active === "active"}
-                  onChange={(e) => 
-                    setFormData({ ...formData, is_active: e.target.checked ? "active" : "inactive" })
-                  }
-                  name="is_active"
-                  color="primary"
-                />
-              }
-              label={formData.is_active === "active" ? 'Active' : 'Inactive'}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={!formData.name || !formData.company_id}
+                {item.label}
+              </Typography>
+            </React.Fragment>
+          ))}
+        </Box>
+      </Box>
+      
+      {/* Action Buttons and Search */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Box>
+          <Button 
+            variant="contained" 
+            startIcon={<PlusIcon weight="bold" />}
+            sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
+            onClick={handleAddNewStore}
           >
-            {isEditMode ? 'Update' : 'Create'}
+            Add New Store
           </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Notification Snackbar */}
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={6000}
-        onClose={handleCloseNotification}
-      >
-        <Alert
-          onClose={handleCloseNotification}
-          severity={notification.severity}
-          sx={{ width: '100%' }}
-        >
-          {notification.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+        </Box>
+        <Box>
+          <TextField
+            placeholder="Search stores..."
+            size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <MagnifyingGlassIcon size={20} style={{ marginRight: 8 }} />
+              ),
+            }}
+            sx={{ width: 250 }}
+          />
+        </Box>
+      </Box>
+      
+      {/* Stores List */}
+      <Card>
+        <Box sx={{ overflowX: 'auto' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Location</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell width="100px">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                    <CircularProgress size={32} />
+                  </TableCell>
+                </TableRow>
+              ) : filteredStores.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1" color="text.secondary">
+                      No stores found
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredStores.map((store) => (
+                  <TableRow key={store.id} hover>
+                    <TableCell>{store.name}</TableCell>
+                    <TableCell>{store.location}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={store.is_active === 'active' ? 'Active' : 'Inactive'} 
+                        color={store.is_active === 'active' ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton onClick={(event) => handleMenuOpen(event, store.id)}>
+                        <DotsThreeIcon size={24} />
+                      </IconButton>
+                      <Menu
+                        anchorEl={anchorElMap[store.id]}
+                        open={Boolean(anchorElMap[store.id])}
+                        onClose={() => handleMenuClose(store.id)}
+                      >
+                        <MenuItem onClick={() => handleEditStore(store)}>Edit</MenuItem>
+                        <MenuItem onClick={() => handleDeleteStore(store.id)}>Delete</MenuItem>
+                      </Menu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Box>
+      </Card>
+      
+      {/* Edit/Create Store Modal */}
+      {isStoreModalOpen && (
+        <StoreEditModal
+          open={isStoreModalOpen}
+          onClose={() => setIsStoreModalOpen(false)}
+          onSave={handleSaveStore}
+          store={selectedStore || undefined}
+        />
+      )}
+      
+      {/* Delete Confirmation Modal */}
+      <StoreDeleteModal
+        open={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
+    </Box>
   );
-} 
+}
+
+// Delete confirmation modal component
+function StoreDeleteModal({ 
+  open, 
+  onClose, 
+  onConfirm 
+}: { 
+  open: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void; 
+}) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Delete Store</DialogTitle>
+      <DialogContent>
+        <Typography>Are you sure you want to delete this store? This action cannot be undone.</Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onConfirm} color="error">Delete</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}

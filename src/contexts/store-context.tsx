@@ -1,112 +1,84 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Store, storesApi } from '@/services/api/stores';
-import { useAuth } from '@/providers/auth-provider';
+import tokenStorage from '@/utils/token-storage';
 
-interface StoreContextType {
+export type Store = {
+  id: string;
+  name: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+  is_active: string;
+};
+
+export type StoreContextType = {
   stores: Store[];
   selectedStore: Store | null;
-  setSelectedStore: (store: Store | null) => void;
-  loading: boolean;
-  error: string | null;
-  fetchStores: () => Promise<void>;
-  isStoreSelectionLocked: boolean;
-}
+  selectStore: (store: Store) => void;
+  isLoading: boolean;
+};
 
+// Create context
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const { userRole, assignedStore } = useAuth();
+// Store provider component
+export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Determine if the user can select a store or is locked to their assigned store
-  const isStoreSelectionLocked = userRole === 'salesman' || userRole === 'stock_manager';
+  const [isLoading, setIsLoading] = useState(true);
 
-  const fetchStores = async () => {
-    setLoading(true);
-    try {
-      const storesData = await storesApi.getStores();
-      setStores(storesData);
-      
-      // If user has an assigned store and their role restricts selection, use that
-      if (assignedStore && isStoreSelectionLocked) {
+  useEffect(() => {
+    // Load stores from storage
+    const loadStores = () => {
+      const storesFromStorage = tokenStorage.getCompanyStores();
+      setStores(storesFromStorage);
+
+      // If admin has access to stores, select the first one
+      if (storesFromStorage.length > 0 && !selectedStore) {
+        setSelectedStore(storesFromStorage[0]);
+        localStorage.setItem('lastSelectedStore', JSON.stringify(storesFromStorage[0]));
+      }
+
+      // For non-admin roles, check if there's an assigned store
+      const assignedStore = tokenStorage.getAssignedStore();
+      if (assignedStore) {
         setSelectedStore(assignedStore);
-      }
-      // Otherwise select the first store by default if no store is selected yet
-      else if (storesData.length > 0 && !selectedStore) {
-        setSelectedStore(storesData[0]);
-      }
-      
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch stores');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Set assigned store when it becomes available
-  useEffect(() => {
-    if (assignedStore && isStoreSelectionLocked) {
-      setSelectedStore(assignedStore);
-    }
-  }, [assignedStore, isStoreSelectionLocked]);
-
-  // Load stores on first render
-  useEffect(() => {
-    fetchStores();
-  }, []);
-
-  // Only save selected store to localStorage if the user isn't restricted
-  useEffect(() => {
-    if (selectedStore && !isStoreSelectionLocked) {
-      localStorage.setItem('selectedStore', JSON.stringify(selectedStore));
-    }
-  }, [selectedStore, isStoreSelectionLocked]);
-
-  // Load selected store from localStorage on mount - only for non-restricted users
-  useEffect(() => {
-    if (!isStoreSelectionLocked) {
-      const storedStore = localStorage.getItem('selectedStore');
-      if (storedStore) {
-        try {
-          const parsedStore = JSON.parse(storedStore);
-          setSelectedStore(parsedStore);
-        } catch (err) {
-          console.error('Failed to parse stored store:', err);
+      } else {
+        // Try to get last selected store from local storage
+        const lastSelectedStore = localStorage.getItem('lastSelectedStore');
+        if (lastSelectedStore) {
+          try {
+            setSelectedStore(JSON.parse(lastSelectedStore));
+          } catch (e) {
+            console.error('Failed to parse last selected store', e);
+          }
         }
       }
-    }
-  }, [isStoreSelectionLocked]);
+
+      setIsLoading(false);
+    };
+
+    loadStores();
+  }, []);
+
+  const selectStore = (store: Store) => {
+    setSelectedStore(store);
+    localStorage.setItem('lastSelectedStore', JSON.stringify(store));
+  };
 
   return (
-    <StoreContext.Provider
-      value={{
-        stores,
-        selectedStore,
-        setSelectedStore,
-        loading,
-        error,
-        fetchStores,
-        isStoreSelectionLocked,
-      }}
-    >
+    <StoreContext.Provider value={{ stores, selectedStore, selectStore, isLoading }}>
       {children}
     </StoreContext.Provider>
   );
-}
+};
 
-export function useStore() {
+// Custom hook to use the store context
+export const useStore = (): StoreContextType => {
   const context = useContext(StoreContext);
-  
   if (context === undefined) {
     throw new Error('useStore must be used within a StoreProvider');
   }
-  
   return context;
-} 
+}; 

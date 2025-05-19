@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { authApi } from '@/services/api/auth';
 import { companiesApi } from '@/services/api/companies';
-import { tokenStorage } from '@/utils/token-storage';
+import tokenStorage from '@/utils/token-storage';
 
 // Test API Component
 export default function TestApiPage() {

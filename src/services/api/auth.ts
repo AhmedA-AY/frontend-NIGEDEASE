@@ -1,5 +1,6 @@
 import { userManagementApiClient, coreApiClient } from './client';
-import { tokenStorage } from '@/utils/token-storage';
+import tokenStorage from '@/utils/token-storage';
+import { decodeToken } from '@/utils/token-helpers';
 
 export interface AuthResponse {
   access: string;
@@ -96,12 +97,29 @@ export const authApi = {
   },
   
   // Verify OTP after login
-  verifyOtp: async (email: string, otp: string): Promise<{ access: string; refresh: string; role: string; assigned_store?: any }> => {
-    const response = await userManagementApiClient.post<{ access: string; refresh: string; role: string; assigned_store?: any }>('/auth/verify-otp/', {
-      email,
-      otp
-    });
-    return response.data;
+  verifyOtp: async (email: string, otp: string): Promise<{ 
+    access: string; 
+    refresh: string; 
+    role: string; 
+    stores?: any[];
+    assigned_store?: any;
+  }> => {
+    try {
+      const response = await userManagementApiClient.post<{ 
+        access: string; 
+        refresh: string; 
+        role: string; 
+        stores?: any[];
+        assigned_store?: any;
+      }>('/auth/verify-otp/', {
+        email,
+        otp
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      throw error;
+    }
   },
   
   // Resend OTP
@@ -112,13 +130,26 @@ export const authApi = {
     return response.data;
   },
   
-  // Verify token validity
-  verifyToken: async (token: string): Promise<boolean> => {
+  // Verify token
+  verifyToken: async (token: string): Promise<{
+    is_valid: boolean;
+    user_id?: string;
+    email?: string;
+    company_id?: string;
+  }> => {
     try {
-      await userManagementApiClient.post('/auth/verify-token/', { token });
-      return true;
+      const response = await userManagementApiClient.post<{
+        is_valid: boolean;
+        user_id?: string;
+        email?: string;
+        company_id?: string;
+      }>('/auth/verify-token/', {
+        token
+      });
+      return response.data;
     } catch (error) {
-      return false;
+      console.error('Error verifying token:', error);
+      throw error;
     }
   },
   
