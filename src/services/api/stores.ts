@@ -1,69 +1,70 @@
 import { coreApiClient } from './client';
+import { Company } from './companies';
 
 export interface Store {
   id: string;
+  company: Company;
   name: string;
-  address: string;
-  phone_number: string;
-  email: string;
-  company_id: string;
-  is_active: boolean;
+  location: string;
   created_at: string;
   updated_at: string;
+  is_active: "active" | "inactive";
 }
 
 export interface StoreCreateData {
-  name: string;
-  address: string;
-  phone_number: string;
-  email: string;
   company_id: string;
-  is_active: boolean;
+  name: string;
   location: string;
+  is_active: "active" | "inactive";
 }
 
-export interface StoreUpdateData extends Partial<StoreCreateData> {}
+export interface StoreUpdateData extends StoreCreateData {}
 
-// Stores API
+// Stores API - Note: This is now a wrapper around the companies API for backward compatibility
 export const storesApi = {
   // Get all stores
   getStores: async (): Promise<Store[]> => {
-    const response = await coreApiClient.get<Store[]>('/inventory/stores/');
+    const response = await coreApiClient.get<Store[]>('/companies/stores/');
     return response.data;
   },
   
   // Get store by ID
   getStore: async (id: string): Promise<Store> => {
-    const response = await coreApiClient.get<Store>(`/inventory/stores/${id}/`);
+    const response = await coreApiClient.get<Store>(`/companies/stores/${id}/`);
     return response.data;
   },
   
   // Create a new store
   createStore: async (data: StoreCreateData): Promise<Store> => {
-    const response = await coreApiClient.post<Store>('/inventory/stores/', data);
+    const response = await coreApiClient.post<Store>('/companies/stores/', data);
     return response.data;
   },
   
   // Update a store
   updateStore: async (id: string, data: StoreUpdateData): Promise<Store> => {
-    const response = await coreApiClient.put<Store>(`/inventory/stores/${id}/`, data);
+    const response = await coreApiClient.put<Store>(`/companies/stores/${id}/`, data);
     return response.data;
   },
   
   // Delete a store
   deleteStore: async (id: string): Promise<void> => {
-    await coreApiClient.delete(`/inventory/stores/${id}/`);
+    await coreApiClient.delete(`/companies/stores/${id}/`);
   },
   
-  // Get stores by company ID
+  // Get stores by company ID - This is a helper method as the API doesn't directly support this
   getStoresByCompany: async (companyId: string): Promise<Store[]> => {
-    const response = await coreApiClient.get<Store[]>(`/inventory/companies/${companyId}/stores/`);
-    return response.data;
+    const allStores = await storesApi.getStores();
+    return allStores.filter(store => store.company && store.company.id === companyId);
   },
   
   // Toggle store active status
   toggleStoreStatus: async (id: string, isActive: boolean): Promise<Store> => {
-    const response = await coreApiClient.put<Store>(`/inventory/stores/${id}/`, { is_active: isActive ? "active" : "inactive" });
+    const store = await storesApi.getStore(id);
+    const response = await coreApiClient.put<Store>(`/companies/stores/${id}/`, {
+      ...store,
+      company_id: store.company.id,
+      is_active: isActive ? "active" : "inactive"
+    });
     return response.data;
   }
 }; 

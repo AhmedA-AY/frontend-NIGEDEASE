@@ -44,6 +44,15 @@ export const tokenStorage = {
     }
   },
   
+  // Save user info separately
+  saveUserInfo: (userId: string, email: string, role: string): void => {
+    if (!isBrowser) return;
+    
+    localStorage.setItem(USER_ID_KEY, userId);
+    localStorage.setItem(USER_EMAIL_KEY, email);
+    localStorage.setItem(USER_ROLE_KEY, role);
+  },
+  
   // Get access token
   getAccessToken: (): string | null => {
     if (!isBrowser) return null;

@@ -120,7 +120,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         return null;
       }
       
-      // Verify if the token is valid
+      // Verify if the token is valid using the new endpoint
       const isValid = await authApi.verifyToken(accessToken);
       
       if (isValid) {

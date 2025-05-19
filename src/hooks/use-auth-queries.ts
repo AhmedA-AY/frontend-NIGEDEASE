@@ -75,4 +75,15 @@ export const useCreateUser = () => {
   >({
     mutationFn: (userData) => authApi.createUser(userData),
   });
+};
+
+// Hook for creating activity logs
+export const useCreateActivityLog = () => {
+  return useMutation<
+    any,
+    ApiError,
+    { user: string; action: string; description: string }
+  >({
+    mutationFn: (data) => authApi.createActivityLog(data),
+  });
 }; 

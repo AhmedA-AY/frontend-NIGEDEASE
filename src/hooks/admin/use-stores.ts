@@ -1,9 +1,9 @@
 import { useApiQuery, useApiMutation } from '@/utils/api';
 import { useQueryClient } from '@tanstack/react-query';
-import { InventoryStore, InventoryStoreCreateData, InventoryStoreUpdateData } from '@/services/api/inventory';
+import { Store, StoreCreateData, StoreUpdateData } from '@/services/api/companies';
 
 export interface StoresResponse {
-  data: InventoryStore[];
+  data: Store[];
   total: number;
   page: number;
   limit: number;
@@ -31,7 +31,7 @@ export function useStores(params: StoreParams = {}) {
   if (params.sortBy) queryParams.append('sortBy', params.sortBy);
   if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
 
-  const endpoint = `/inventory/stores?${queryParams.toString()}`;
+  const endpoint = `/companies/stores?${queryParams.toString()}`;
   
   return useApiQuery<StoresResponse>(
     ['stores', JSON.stringify(params)], 
@@ -41,9 +41,9 @@ export function useStores(params: StoreParams = {}) {
 
 // Get a single store by ID
 export function useStore(id: string) {
-  return useApiQuery<InventoryStore>(
+  return useApiQuery<Store>(
     ['store', id], 
-    `/inventory/stores/${id}`,
+    `/companies/stores/${id}`,
     {
       enabled: !!id,
     }
@@ -54,8 +54,8 @@ export function useStore(id: string) {
 export function useCreateStore() {
   const queryClient = useQueryClient();
   
-  return useApiMutation<InventoryStore, InventoryStoreCreateData>(
-    '/inventory/stores',
+  return useApiMutation<Store, StoreCreateData>(
+    '/companies/stores',
     'POST',
     {
       onSuccess: () => {
@@ -69,8 +69,8 @@ export function useCreateStore() {
 export function useUpdateStore(id: string) {
   const queryClient = useQueryClient();
   
-  return useApiMutation<InventoryStore, InventoryStoreUpdateData>(
-    `/inventory/stores/${id}`,
+  return useApiMutation<Store, StoreUpdateData>(
+    `/companies/stores/${id}`,
     'PUT',
     {
       onSuccess: () => {
@@ -86,7 +86,7 @@ export function useDeleteStore() {
   const queryClient = useQueryClient();
   
   return useApiMutation<void, string>(
-    '/inventory/stores',
+    '/companies/stores',
     'DELETE',
     {
       onSuccess: (_, storeId) => {
@@ -101,8 +101,8 @@ export function useDeleteStore() {
 export function useToggleStoreStatus(id: string) {
   const queryClient = useQueryClient();
   
-  return useApiMutation<InventoryStore, { is_active: "active" | "inactive" }>(
-    `/inventory/stores/${id}/status`,
+  return useApiMutation<Store, { is_active: "active" | "inactive" }>(
+    `/companies/stores/${id}`,
     'PATCH',
     {
       onSuccess: () => {
