@@ -25,8 +25,10 @@ import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteCo
 import { paths } from '@/paths';
 import { ProductCategory, inventoryApi, ProductCategoryCreateData, ProductCategoryUpdateData } from '@/services/api/inventory';
 import { useSnackbar } from 'notistack';
+import { useStore } from '@/contexts/store-context';
 
 export default function CategoriesPage(): React.JSX.Element {
+  const { selectedStore } = useStore();
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
@@ -39,10 +41,16 @@ export default function CategoriesPage(): React.JSX.Element {
   
   // Fetch categories
   const fetchCategories = React.useCallback(async () => {
+    if (!selectedStore) {
+      setError('No store selected. Please select a store first.');
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     try {
-      const data = await inventoryApi.getProductCategories();
+      const data = await inventoryApi.getProductCategories(selectedStore.id);
       setCategories(data);
     } catch (err) {
       console.error('Error fetching categories:', err);
@@ -51,11 +59,13 @@ export default function CategoriesPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar]);
+  }, [enqueueSnackbar, selectedStore]);
 
   React.useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    if (selectedStore) {
+      fetchCategories();
+    }
+  }, [fetchCategories, selectedStore]);
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -79,10 +89,10 @@ export default function CategoriesPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
-    if (categoryToDelete) {
+    if (categoryToDelete && selectedStore) {
       setIsLoading(true);
       try {
-        await inventoryApi.deleteProductCategory(categoryToDelete);
+        await inventoryApi.deleteProductCategory(selectedStore.id, categoryToDelete);
         enqueueSnackbar('Category deleted successfully', { variant: 'success' });
         await fetchCategories();
         setIsDeleteModalOpen(false);
@@ -122,6 +132,11 @@ export default function CategoriesPage(): React.JSX.Element {
   };
 
   const handleSaveCategory = async (categoryData: { id?: string; name: string; description?: string; company_id?: string }) => {
+    if (!selectedStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
     setIsLoading(true);
     console.log('Saving category with data:', categoryData);
     
@@ -138,7 +153,7 @@ export default function CategoriesPage(): React.JSX.Element {
           name: categoryData.name,
           description: categoryData.description || ''
         };
-        await inventoryApi.updateProductCategory(categoryData.id, updateData);
+        await inventoryApi.updateProductCategory(selectedStore.id, categoryData.id, updateData);
         enqueueSnackbar('Category updated successfully', { variant: 'success' });
       } else {
         // Add new category
@@ -154,7 +169,7 @@ export default function CategoriesPage(): React.JSX.Element {
           description: categoryData.description || ''
         };
         
-        const result = await inventoryApi.createProductCategory(createData);
+        const result = await inventoryApi.createProductCategory(selectedStore.id, createData);
         console.log('Category created successfully, result:', result);
         enqueueSnackbar('Category created successfully', { variant: 'success' });
       }
