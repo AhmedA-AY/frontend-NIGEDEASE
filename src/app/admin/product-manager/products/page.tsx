@@ -41,8 +41,10 @@ import DialogActions from '@mui/material/DialogActions';
 import ProductEditModal from '@/components/admin/product-manager/ProductEditModal';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { companiesApi } from '@/services/api/companies';
+import { useStore } from '@/contexts/store-context';
 
 export default function ProductsPage(): React.JSX.Element {
+  const { selectedStore } = useStore();
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
@@ -70,13 +72,19 @@ export default function ProductsPage(): React.JSX.Element {
   
   // Fetch products and categories
   const fetchData = useCallback(async () => {
+    if (!selectedStore) {
+      enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const [productsData, categoriesData, companiesData, unitsData] = await Promise.all([
-        inventoryApi.getProducts(),
-        inventoryApi.getProductCategories(),
+        inventoryApi.getProducts(selectedStore.id),
+        inventoryApi.getProductCategories(selectedStore.id),
         companiesApi.getCompanies(),
-        inventoryApi.getProductUnits()
+        inventoryApi.getProductUnits(selectedStore.id)
       ]);
       setProducts(productsData);
       setCategories(categoriesData);
@@ -88,11 +96,13 @@ export default function ProductsPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar]);
+  }, [enqueueSnackbar, selectedStore]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (selectedStore) {
+      fetchData();
+    }
+  }, [fetchData, selectedStore]);
 
   // Filter products based on search term and filters
   const filteredProducts = products.filter(product => {
@@ -135,6 +145,11 @@ export default function ProductsPage(): React.JSX.Element {
   };
 
   const handleAddProduct = () => {
+    if (!selectedStore) {
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      return;
+    }
+    
     console.log('handleAddProduct called');
     console.log('Categories available:', categories);
     console.log('Companies available:', companies);
@@ -193,17 +208,22 @@ export default function ProductsPage(): React.JSX.Element {
   };
 
   const handleSaveProduct = async (productData: ProductCreateData & { id?: string }) => {
+    if (!selectedStore) {
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      return;
+    }
+    
     console.log('handleSaveProduct called with data:', productData);
     try {
       if (productData.id) {
         // Update existing product
         console.log('Updating product with ID:', productData.id);
-        await inventoryApi.updateProduct(productData.id, productData);
+        await inventoryApi.updateProduct(selectedStore.id, productData.id, productData);
         enqueueSnackbar('Product updated successfully', { variant: 'success' });
       } else {
         // Add new product
         console.log('Creating new product with data:', productData);
-        await inventoryApi.createProduct(productData);
+        await inventoryApi.createProduct(selectedStore.id, productData);
         enqueueSnackbar('Product added successfully', { variant: 'success' });
       }
       fetchData();
@@ -232,9 +252,14 @@ export default function ProductsPage(): React.JSX.Element {
   };
 
   const handleDeleteConfirm = async () => {
+    if (!selectedStore) {
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      return;
+    }
+    
     if (productToDelete) {
       try {
-        await inventoryApi.deleteProduct(productToDelete);
+        await inventoryApi.deleteProduct(selectedStore.id, productToDelete);
         enqueueSnackbar('Product deleted successfully', { variant: 'success' });
         fetchData();
         setDeleteConfirmOpen(false);
