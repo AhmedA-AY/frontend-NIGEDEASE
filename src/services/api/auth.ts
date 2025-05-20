@@ -81,6 +81,7 @@ export interface CreateUserData {
   last_name?: string;
   role: string;
   profile_image?: string;
+  assigned_store_id?: string;
 }
 
 export interface UserResponse {

@@ -31,6 +31,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Avatar from '@mui/material/Avatar';
+import FormHelperText from '@mui/material/FormHelperText';
 
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
@@ -42,12 +43,14 @@ import { usersApi } from '@/services/api/users';
 import { authApi, UserResponse, CreateUserData } from '@/services/api/auth';
 import { useSnackbar } from 'notistack';
 import { useCurrentUser } from '@/hooks/use-auth';
+import { useStore } from '@/providers/store-provider';
 
 // User type definition for form data
 type UserRole = 'super_admin' | 'admin' | 'salesman' | 'stock_manager' | string;
 type UserFormData = Omit<CreateUserData, 'role'> & { 
   id?: string;
   role: UserRole;
+  assigned_store_id?: string;
 };
 
 // User form dialog component
@@ -60,22 +63,24 @@ function UserFormDialog({
 }: { 
   open: boolean; 
   onClose: () => void; 
-  user: Partial<CreateUserData & { id?: string; role?: string }> | null; 
+  user: Partial<CreateUserData & { id?: string; role?: string, assigned_store_id?: string }> | null; 
   companyId: string; 
   onSave: (userData: UserFormData) => Promise<void>; 
 }) {
-  const [formData, setFormData] = useState<UserFormData>({
+  const [formData, setFormData] = useState<UserFormData & { assigned_store_id?: string }>({
     company_id: companyId,
     email: '',
     password: '',
     first_name: '',
     last_name: '',
     role: 'stock_manager',
-    profile_image: ''
+    profile_image: '',
+    assigned_store_id: ''
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { enqueueSnackbar } = useSnackbar();
+  const { stores } = useStore();
 
   useEffect(() => {
     if (user) {
@@ -87,7 +92,8 @@ function UserFormDialog({
         first_name: user.first_name || '',
         last_name: user.last_name || '',
         role: (user.role as UserRole) || 'stock_manager',
-        profile_image: user.profile_image || ''
+        profile_image: user.profile_image || '',
+        assigned_store_id: user.assigned_store_id || ''
       });
     } else {
       setFormData({
@@ -97,11 +103,12 @@ function UserFormDialog({
         first_name: '',
         last_name: '',
         role: 'stock_manager',
-        profile_image: ''
+        profile_image: '',
+        assigned_store_id: stores.length > 0 ? stores[0].id : ''
       });
     }
     setErrors({});
-  }, [user, companyId]);
+  }, [user, companyId, stores]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -125,6 +132,11 @@ function UserFormDialog({
     if (!formData.last_name) {
       newErrors.last_name = 'Last name is required';
     }
+
+    // Validate assigned store for stock manager and salesman
+    if ((formData.role === 'stock_manager' || formData.role === 'salesman') && !formData.assigned_store_id) {
+      newErrors.assigned_store_id = 'Assigned store is required for this role';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -137,6 +149,10 @@ function UserFormDialog({
 
   const handleRoleChange = (e: SelectChangeEvent) => {
     setFormData(prev => ({ ...prev, role: e.target.value as UserRole }));
+  };
+
+  const handleStoreChange = (e: SelectChangeEvent) => {
+    setFormData(prev => ({ ...prev, assigned_store_id: e.target.value }));
   };
 
   const handleSubmit = async () => {
@@ -153,6 +169,9 @@ function UserFormDialog({
       setSaving(false);
     }
   };
+
+  // Check if role requires an assigned store
+  const requiresAssignedStore = formData.role === 'stock_manager' || formData.role === 'salesman';
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -236,6 +255,36 @@ function UserFormDialog({
               <MenuItem value="salesman">Salesman</MenuItem>
             </Select>
           </FormControl>
+          
+          {/* Store selector - only visible for stock manager and salesman */}
+          {requiresAssignedStore && (
+            <FormControl fullWidth error={!!errors.assigned_store_id}>
+              <InputLabel id="store-label">Assigned Store</InputLabel>
+              <Select
+                labelId="store-label"
+                name="assigned_store_id"
+                value={formData.assigned_store_id}
+                onChange={handleStoreChange}
+                label="Assigned Store"
+                required
+              >
+                {stores.length === 0 ? (
+                  <MenuItem disabled value="">
+                    <em>No stores available</em>
+                  </MenuItem>
+                ) : (
+                  stores.map(store => (
+                    <MenuItem key={store.id} value={store.id}>
+                      {store.name}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+              {errors.assigned_store_id && (
+                <FormHelperText>{errors.assigned_store_id}</FormHelperText>
+              )}
+            </FormControl>
+          )}
           
           <TextField
             label="Profile Image URL"
@@ -455,7 +504,7 @@ export default function UsersPage() {
     setDeleteDialogOpen(true);
   };
   
-  const handleSaveUser = async (userData: UserFormData) => {
+  const handleSaveUser = async (userData: UserFormData & { assigned_store_id?: string }) => {
     try {
       // Create a new object without the password if it's empty
       const { password, ...userDataWithoutPassword } = userData;
@@ -466,6 +515,16 @@ export default function UsersPage() {
         ...userDataWithoutPassword,
         company_id: userInfo?.company_id || '',
       };
+
+      // Add assigned_store_id if role requires it (stock_manager or salesman)
+      if (userData.role === 'stock_manager' || userData.role === 'salesman') {
+        if (!userData.assigned_store_id) {
+          enqueueSnackbar('Assigned store is required for this role', { variant: 'error' });
+          throw new Error('Assigned store is required');
+        }
+        
+        (userDataWithCompany as any).assigned_store_id = userData.assigned_store_id;
+      }
 
       if (userData.id) {
         const { id, ...updateData } = userDataWithCompany;
