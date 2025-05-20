@@ -5,6 +5,9 @@ import { useAuth, Store } from '@/providers/auth-provider';
 import tokenStorage from '@/utils/token-storage';
 import { enqueueSnackbar } from 'notistack';
 
+// Custom event for store selection change
+export const STORE_CHANGED_EVENT = 'store-selection-changed';
+
 interface StoreContextType {
   currentStore: Store | null;
   stores: Store[];
@@ -68,19 +71,51 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Handle store selection
   const handleSelectStore = (store: Store) => {
-    setCurrentStore(store);
-    tokenStorage.saveAssignedStore(store);
+    if (store.id !== currentStore?.id) {
+      setCurrentStore(store);
+      tokenStorage.saveAssignedStore(store);
+      
+      // Dispatch a custom event to notify components that the store has changed
+      if (typeof window !== 'undefined') {
+        const event = new CustomEvent(STORE_CHANGED_EVENT, { 
+          detail: { storeId: store.id, storeName: store.name } 
+        });
+        window.dispatchEvent(event);
+      }
+
+      // Show notification
+      enqueueSnackbar(`Switched to store: ${store.name}`, { 
+        variant: 'success',
+        autoHideDuration: 3000
+      });
+    }
   };
 
   // Force refresh stores from auth context
   const handleRefreshStores = () => {
     setIsLoading(true);
-    const availableStores = authStores.length > 0
-      ? authStores
-      : tokenStorage.getCompanyStores();
-    
-    setStores(availableStores);
-    setIsLoading(false);
+    try {
+      const availableStores = authStores.length > 0
+        ? authStores
+        : tokenStorage.getCompanyStores();
+      
+      setStores(availableStores);
+
+      // If current store is no longer available, select first available store
+      if (currentStore && !availableStores.some(store => store.id === currentStore.id)) {
+        if (availableStores.length > 0) {
+          setCurrentStore(availableStores[0]);
+          tokenStorage.saveAssignedStore(availableStores[0]);
+        } else {
+          setCurrentStore(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing stores:', error);
+      enqueueSnackbar('Failed to refresh store information', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const contextValue = useMemo(

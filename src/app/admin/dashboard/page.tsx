@@ -13,7 +13,7 @@ import { CircularProgress, Paper } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useCurrentUser } from '@/hooks/use-auth';
-import { useStore } from '@/providers/store-provider';
+import { useStore, STORE_CHANGED_EVENT } from '@/providers/store-provider';
 import { format as formatDate } from 'date-fns';
 
 // Import the @phosphor-icons
@@ -50,6 +50,8 @@ export default function AdminDashboardPage() {
     setError(null);
     
     try {
+      console.log(`Fetching dashboard data for ${period} with store: ${currentStore?.name || 'No store selected'}`);
+      
       // Simulate API call with timeout
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -68,10 +70,24 @@ export default function AdminDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentStore]);
 
   React.useEffect(() => {
     fetchData(selectedPeriod);
+  }, [fetchData, selectedPeriod]);
+  
+  // Listen for store change events
+  React.useEffect(() => {
+    const handleStoreChange = (event: Event) => {
+      // Force refetch data when store changes
+      fetchData(selectedPeriod);
+    };
+
+    window.addEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    
+    return () => {
+      window.removeEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    };
   }, [fetchData, selectedPeriod]);
 
   if (isLoading) {

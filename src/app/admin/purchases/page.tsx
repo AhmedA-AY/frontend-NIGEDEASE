@@ -38,7 +38,7 @@ import Grid from '@mui/material/Grid';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { financialsApi } from '@/services/api/financials';
-import { useStore } from '@/providers/store-provider';
+import { useStore, STORE_CHANGED_EVENT } from '@/providers/store-provider';
 import { useSnackbar } from 'notistack';
 
 export default function PurchasesPage(): React.JSX.Element {
@@ -75,6 +75,7 @@ export default function PurchasesPage(): React.JSX.Element {
     
     setIsLoading(true);
     try {
+      console.log(`Fetching purchase data for store: ${currentStore.name} (${currentStore.id})`);
       const [
         purchasesData, 
         suppliersData, 
@@ -105,13 +106,6 @@ export default function PurchasesPage(): React.JSX.Element {
         );
         setFilteredStores(storesForCompany);
       }
-      
-      console.log('Fetched data:', {
-        companies: companiesData,
-        stores: storesData,
-        currencies: currenciesData,
-        paymentModes: paymentModesData
-      });
     } catch (error) {
       console.error('Error fetching data:', error);
       enqueueSnackbar('Failed to load data', { variant: 'error' });
@@ -125,6 +119,25 @@ export default function PurchasesPage(): React.JSX.Element {
       fetchData();
     }
   }, [fetchData, isLoadingUser, currentStore]);
+
+  // Listen for store change events
+  useEffect(() => {
+    const handleStoreChange = (event: Event) => {
+      // Force refetch data when store changes
+      if (currentStore) {
+        // Small delay to ensure store context has been updated
+        setTimeout(() => {
+          fetchData();
+        }, 100);
+      }
+    };
+
+    window.addEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    
+    return () => {
+      window.removeEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    };
+  }, [fetchData]);
 
   // Filter stores when userInfo changes
   useEffect(() => {

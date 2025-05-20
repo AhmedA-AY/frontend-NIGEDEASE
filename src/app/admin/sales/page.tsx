@@ -39,7 +39,7 @@ import { SelectChangeEvent } from '@mui/material/Select';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { financialsApi } from '@/services/api/financials';
 import { useSnackbar } from 'notistack';
-import { useStore } from '@/providers/store-provider';
+import { useStore, STORE_CHANGED_EVENT } from '@/providers/store-provider';
 
 export default function SalesPage(): React.JSX.Element {
   const { currentStore } = useStore();
@@ -76,6 +76,7 @@ export default function SalesPage(): React.JSX.Element {
     
     setIsLoading(true);
     try {
+      console.log(`Fetching data for store: ${currentStore.name} (${currentStore.id})`);
       const [
         salesData, 
         customersData, 
@@ -115,10 +116,29 @@ export default function SalesPage(): React.JSX.Element {
   }, [enqueueSnackbar, currentStore, userInfo]);
 
   useEffect(() => {
-    if (!isLoadingUser) {
+    if (!isLoadingUser && currentStore) {
       fetchData();
     }
-  }, [fetchData, isLoadingUser]);
+  }, [fetchData, isLoadingUser, currentStore]);
+
+  // Listen for store change events
+  useEffect(() => {
+    const handleStoreChange = (event: Event) => {
+      // Force refetch data when store changes
+      if (currentStore) {
+        // Small delay to ensure store context has been updated
+        setTimeout(() => {
+          fetchData();
+        }, 100);
+      }
+    };
+
+    window.addEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    
+    return () => {
+      window.removeEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    };
+  }, [fetchData]);
 
   // Filter stores when userInfo changes
   useEffect(() => {
