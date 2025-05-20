@@ -186,11 +186,23 @@ export default function PurchasesPage(): React.JSX.Element {
   const filteredPurchases = selectedSupplier
     ? purchases.filter(purchase => purchase.supplier.id === selectedSupplier)
     : purchases;
+
+  // Filter purchases by current store
+  const storeFilteredPurchases = currentStore
+    ? filteredPurchases.filter(purchase => {
+        console.log(`Checking purchase supplier store_id: ${purchase.supplier.store_id} against current store: ${currentStore.id}`);
+        return purchase.supplier.store_id === currentStore.id;
+      })
+    : filteredPurchases;
     
+  console.log(`Original purchases count: ${purchases.length}`);
+  console.log(`After supplier filter: ${filteredPurchases.length}`);
+  console.log(`After store filter: ${storeFilteredPurchases.length}`);
+
   // Further filter purchases by user's company if available
   const companyPurchases = userInfo?.company_id
-    ? filteredPurchases
-    : filteredPurchases;
+    ? storeFilteredPurchases
+    : storeFilteredPurchases;
 
   // Calculate total amounts
   const totalAmount = companyPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.total_amount), 0);

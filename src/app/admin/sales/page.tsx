@@ -155,14 +155,22 @@ export default function SalesPage(): React.JSX.Element {
     ? sales.filter(sale => sale.customer.id === selectedCustomer)
     : sales;
     
+  // Filter sales by current store
+  const storeFilteredSales = currentStore
+    ? filteredSales.filter(sale => {
+        console.log(`Checking sale customer store_id: ${sale.customer.store_id} against current store: ${currentStore.id}`);
+        return sale.customer.store_id === currentStore.id;
+      })
+    : filteredSales;
+
+  console.log(`Original sales count: ${sales.length}`);
+  console.log(`After customer filter: ${filteredSales.length}`);
+  console.log(`After store filter: ${storeFilteredSales.length}`);
+    
   // Further filter sales by user's company if available
   const companySales = userInfo?.company_id
-    ? filteredSales.filter(sale => 
-        sale.store && 
-        sale.store.company && 
-        sale.store.company.id === userInfo.company_id
-      )
-    : filteredSales;
+    ? storeFilteredSales
+    : storeFilteredSales;
 
   // Calculate total amounts
   const totalAmount = companySales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
