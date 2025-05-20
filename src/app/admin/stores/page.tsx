@@ -58,7 +58,21 @@ export default function StoresPage(): React.JSX.Element {
         ? storesData 
         : storesData.filter(store => store.company && userInfo?.role === 'superadmin');
       
-      setStores(filteredStores);
+      // Fetch detailed information for each store to get address, phone, email
+      const storesWithDetails = await Promise.all(
+        filteredStores.map(async (store) => {
+          try {
+            // Get detailed store information
+            const detailedStore = await inventoryApi.getStore(store.id);
+            return detailedStore;
+          } catch (error) {
+            console.error(`Error fetching details for store ${store.id}:`, error);
+            return store; // Return original store if can't get details
+          }
+        })
+      );
+      
+      setStores(storesWithDetails);
     } catch (error) {
       console.error('Error fetching stores:', error);
       enqueueSnackbar('Failed to fetch stores', { variant: 'error' });
