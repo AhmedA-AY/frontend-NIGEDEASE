@@ -1,26 +1,26 @@
 'use client';
 
-import * as React from 'react';
-import Container from '@mui/material/Container';
-import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Grid from '@mui/material/Grid';
-import Button from '@mui/material/Button';
-import { CircularProgress, Paper } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import React from 'react';
+import { Box, Card, CardHeader, Container, Grid, Stack, Typography, Button, Paper } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import PeopleIcon from '@mui/icons-material/People';
+import { ApexOptions } from 'apexcharts';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { format as formatDate } from 'date-fns';
+
+import DynamicApexChart from '@/components/dynamic-apex-chart';
+import { DashboardFilters, dashboardApi, TopSellingProduct, RecentSale, StockAlert, TopCustomer } from '@/services/api/dashboard';
+import { TopSellingProducts } from '@/components/dashboard/overview/top-selling-products';
+import { RecentSales } from '@/components/dashboard/overview/recent-sales';
+import { StockAlerts } from '@/components/dashboard/overview/stock-alerts';
+import { TopCustomers } from '@/components/dashboard/overview/top-customers';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore, STORE_CHANGED_EVENT } from '@/providers/store-provider';
-import { format as formatDate } from 'date-fns';
 
 // Import the @phosphor-icons
 import { Storefront } from '@phosphor-icons/react/dist/ssr/Storefront';
-import { Money } from '@phosphor-icons/react/dist/ssr/Money';
-import { Package } from '@phosphor-icons/react/dist/ssr/Package';
-import { ShoppingCart } from '@phosphor-icons/react/dist/ssr/ShoppingCart';
 
 export default function AdminDashboardPage() {
   const { userInfo } = useCurrentUser();
@@ -30,57 +30,75 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = React.useState({
     totalSales: 0,
     totalExpenses: 0,
+    totalCustomers: 0,
+    salesGrowth: 0,
     paymentReceived: 0,
-    paymentSent: 0
+    paymentSent: 0,
+    topSellingProducts: [] as TopSellingProduct[],
+    recentSales: [] as RecentSale[],
+    stockAlerts: [] as StockAlert[],
+    topCustomers: [] as TopCustomer[],
   });
-  const [selectedPeriod, setSelectedPeriod] = React.useState<'today' | 'week' | 'month' | 'year'>('month');
+  const [salesStats, setSalesStats] = React.useState({
+    dailySales: [] as any[],
+    monthlySales: [] as any[],
+  });
+  const [selectedPeriod, setSelectedPeriod] = React.useState<DashboardFilters['period']>('month');
   const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
 
-  const handlePeriodChange = (period: 'today' | 'week' | 'month' | 'year') => {
-    setSelectedPeriod(period);
-    fetchData(period);
-  };
-
-  const handleRetry = () => {
-    fetchData(selectedPeriod);
-  };
-
-  const fetchData = React.useCallback(async (period: string) => {
+  const fetchDashboardData = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      console.log(`Fetching dashboard data for ${period} with store: ${currentStore?.name || 'No store selected'}`);
+      console.log('Fetching dashboard data with period:', selectedPeriod);
+      const [dashboardStats, sales] = await Promise.all([
+        dashboardApi.getDashboardStats({ period: selectedPeriod }),
+        dashboardApi.getSalesStats({ period: selectedPeriod }),
+      ]);
       
-      // Simulate API call with timeout
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock data based on period
-      setStats({
-        totalSales: Math.random() * 10000 + 5000,
-        totalExpenses: Math.random() * 5000 + 2000,
-        paymentReceived: Math.random() * 8000 + 4000,
-        paymentSent: Math.random() * 4000 + 1000
+      console.log('Dashboard data received:', { 
+        totalSales: dashboardStats.totalSales,
+        totalExpenses: dashboardStats.totalExpenses,
+        totalCustomers: dashboardStats.topCustomers.length,
+        dailySalesCount: sales.dailySales.length
       });
       
+      setStats({
+        ...dashboardStats,
+        totalCustomers: dashboardStats.topCustomers.length,
+        salesGrowth: calculateGrowth(sales.monthlySales),
+      });
+      setSalesStats(sales);
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data');
+      setError('Failed to load dashboard data. Please try again later.');
     } finally {
       setIsLoading(false);
     }
-  }, [currentStore]);
+  }, [selectedPeriod]);
+
+  // Calculate growth percentage from monthly sales data
+  const calculateGrowth = (monthlySales: any[]): number => {
+    if (monthlySales.length < 2) return 0;
+    
+    const currentMonth = monthlySales[monthlySales.length - 1].sales;
+    const previousMonth = monthlySales[monthlySales.length - 2].sales;
+    
+    if (previousMonth === 0) return 0;
+    
+    return ((currentMonth - previousMonth) / previousMonth) * 100;
+  };
 
   React.useEffect(() => {
-    fetchData(selectedPeriod);
-  }, [fetchData, selectedPeriod]);
-  
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
   // Listen for store change events
   React.useEffect(() => {
     const handleStoreChange = (event: Event) => {
       // Force refetch data when store changes
-      fetchData(selectedPeriod);
+      fetchDashboardData();
     };
 
     window.addEventListener(STORE_CHANGED_EVENT, handleStoreChange);
@@ -88,18 +106,67 @@ export default function AdminDashboardPage() {
     return () => {
       window.removeEventListener(STORE_CHANGED_EVENT, handleStoreChange);
     };
-  }, [fetchData, selectedPeriod]);
+  }, [fetchDashboardData]);
+
+  // Configure chart options
+  const salesChartOptions: ApexOptions = {
+    chart: {
+      type: 'area',
+      height: 350,
+      toolbar: {
+        show: false,
+      },
+    },
+    dataLabels: {
+      enabled: false,
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 2,
+    },
+    xaxis: {
+      categories: salesStats.dailySales.map((item: any) => item.day),
+    },
+    tooltip: {
+      x: {
+        format: 'dd/MM/yy HH:mm',
+      },
+    },
+    legend: {
+      position: 'top',
+    },
+    colors: ['#4CAF50', '#FF9800'],
+  };
+
+  const salesChartSeries = [
+    {
+      name: 'Sales',
+      data: salesStats.dailySales.map((item: any) => item.sales),
+    },
+    {
+      name: 'Expenses',
+      data: salesStats.dailySales.map((item: any) => item.expenses),
+    },
+  ];
+
+  const handlePeriodChange = (period: DashboardFilters['period']) => {
+    setSelectedPeriod(period);
+  };
+
+  const handleRetry = () => {
+    fetchDashboardData();
+  };
 
   if (isLoading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: 'calc(100vh - 100px)' 
-      }}>
-        <CircularProgress />
-      </Box>
+      <Container>
+        <Box sx={{ my: 5, textAlign: 'center' }}>
+          <Typography variant="h5">Loading dashboard data...</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Please wait while we fetch the latest statistics...
+          </Typography>
+        </Box>
+      </Container>
     );
   }
 
@@ -124,128 +191,220 @@ export default function AdminDashboardPage() {
   const formattedDate = formatDate(today, 'EEEE, MMMM d, yyyy');
 
   return (
-    <Container>
+    <Container maxWidth={false}>
       <Box sx={{ py: 3 }}>
-        <Stack spacing={3}>
+        <Box>
+          <Typography variant="h4" gutterBottom>
+            Welcome back, {userInfo?.first_name || 'Admin'}!
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            {formattedDate}
+          </Typography>
+        </Box>
+
+        {currentStore && (
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: 2, 
+              mt: 2,
+              backgroundColor: 'rgba(14, 165, 233, 0.1)', 
+              border: '1px solid rgba(14, 165, 233, 0.3)',
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2
+            }}
+          >
+            <Storefront size={24} weight="duotone" style={{ color: "#0ea5e9" }} />
+            <Typography variant="subtitle1">
+              Currently managing: <strong>{currentStore.name}</strong> ({currentStore.location})
+            </Typography>
+          </Paper>
+        )}
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 3 }}>
+          <Typography variant="h4">
+            Dashboard Overview
+          </Typography>
           <Box>
-            <Typography variant="h4" gutterBottom>
-              Welcome back, {userInfo?.first_name || 'Admin'}!
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {formattedDate}
-            </Typography>
-          </Box>
-
-          {currentStore && (
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: 2, 
-                backgroundColor: 'rgba(14, 165, 233, 0.1)', 
-                border: '1px solid rgba(14, 165, 233, 0.3)',
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2
-              }}
-            >
-              <Storefront size={24} weight="duotone" style={{ color: "#0ea5e9" }} />
-              <Typography variant="subtitle1">
-                Currently managing: <strong>{currentStore.name}</strong> ({currentStore.location})
+            {lastUpdated && (
+              <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
+                Last updated: {lastUpdated.toLocaleTimeString()}
               </Typography>
-            </Paper>
-          )}
-
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard 
-                title="Today's Sales" 
-                value="$2,500" 
-                change="+12.5%" 
-                positive={true}
-                icon={<Money size={24} />} 
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard 
-                title="Products" 
-                value="145" 
-                change="+3.2%" 
-                positive={true}
-                icon={<Package size={24} />} 
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard 
-                title="Orders" 
-                value="24" 
-                change="+6.8%" 
-                positive={true}
-                icon={<ShoppingCart size={24} />} 
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard 
-                title="Stores" 
-                value={String(stores?.length || 0)}
-                change="" 
-                positive={true}
-                icon={<Storefront size={24} />} 
-              />
-            </Grid>
-          </Grid>
-
-          {/* Other dashboard content */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h4">
-              Dashboard
-            </Typography>
-            <Box>
-              {lastUpdated && (
-                <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
-                  Last updated: {lastUpdated.toLocaleTimeString()}
-                </Typography>
-              )}
-              <Button 
-                variant="outlined" 
-                size="small" 
-                onClick={handleRetry}
-                disabled={isLoading}
-                startIcon={isLoading ? null : <RefreshIcon />}
-              >
-                {isLoading ? 'Refreshing...' : 'Refresh'}
-              </Button>
-            </Box>
+            )}
+            <Button 
+              variant="outlined" 
+              size="small" 
+              onClick={handleRetry}
+              disabled={isLoading}
+              startIcon={isLoading ? null : <RefreshIcon />}
+            >
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </Button>
           </Box>
+        </Box>
 
-          {/* Statistics summary cards */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ p: 2 }}>
-                <Stack direction="row" alignItems="center" spacing={2}>
-                  <Box sx={{ 
-                    p: 1.5, 
-                    bgcolor: 'primary.lighter', 
-                    borderRadius: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center' 
-                  }}>
-                    <TrendingUpIcon color="primary" />
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Total Sales
-                    </Typography>
-                    <Typography variant="h5" sx={{ mt: 0.5 }}>
-                      ${stats.totalSales.toFixed(2)}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Card>
-            </Grid>
-          </Grid>
+        {/* Time period selector */}
+        <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+          <Button 
+            variant={selectedPeriod === 'today' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('today')}
+          >
+            Today
+          </Button>
+          <Button 
+            variant={selectedPeriod === 'week' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('week')}
+          >
+            This Week
+          </Button>
+          <Button 
+            variant={selectedPeriod === 'month' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('month')}
+          >
+            This Month
+          </Button>
+          <Button 
+            variant={selectedPeriod === 'year' ? 'contained' : 'outlined'} 
+            onClick={() => handlePeriodChange('year')}
+          >
+            This Year
+          </Button>
         </Stack>
+
+        {/* Statistics summary cards */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'primary.lighter', 
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center' 
+                }}>
+                  <TrendingUpIcon color="primary" />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Total Sales
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.totalSales.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'error.lighter', 
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center' 
+                }}>
+                  <TrendingDownIcon color="error" />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Total Expenses
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    ${stats.totalExpenses.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'warning.lighter', 
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center' 
+                }}>
+                  <ReceiptIcon color="warning" />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Sales Growth
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    {stats.salesGrowth > 0 ? '+' : ''}{stats.salesGrowth.toFixed(1)}%
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'info.lighter', 
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center' 
+                }}>
+                  <PeopleIcon color="info" />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Total Customers
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5 }}>
+                    {stats.totalCustomers}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Chart */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12}>
+            <Card>
+              <CardHeader title="Sales & Expenses Overview" />
+              <Box sx={{ p: 2 }}>
+                <DynamicApexChart
+                  type="area"
+                  height={350}
+                  options={salesChartOptions}
+                  series={salesChartSeries}
+                />
+              </Box>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Dashboard widgets */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <TopSellingProducts products={stats.topSellingProducts} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <RecentSales sales={stats.recentSales} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <StockAlerts alerts={stats.stockAlerts} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TopCustomers customers={stats.topCustomers} />
+          </Grid>
+        </Grid>
       </Box>
     </Container>
   );
@@ -261,40 +420,26 @@ interface StatCardProps {
 
 function StatCard({ title, value, change, positive, icon }: StatCardProps) {
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography color="text.secondary" variant="subtitle2">
-            {title}
-          </Typography>
-          <Box sx={{ 
-            bgcolor: 'rgba(99, 102, 241, 0.1)', 
-            borderRadius: '50%',
-            width: 40,
-            height: 40,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'primary.main'
-          }}>
-            {icon}
-          </Box>
+    <Card>
+      <CardHeader title={title} />
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {icon}
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap' }}>
-          <Typography variant="h4" sx={{ mr: 1 }}>
-            {value}
+        <Box sx={{ ml: 2 }}>
+          <Typography variant="h4">{value}</Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: positive ? 'success.main' : 'error.main',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            {change}
           </Typography>
-          {change && (
-            <Typography 
-              color={positive ? 'success.main' : 'error.main'} 
-              variant="subtitle2"
-              sx={{ fontWeight: 500 }}
-            >
-              {change}
-            </Typography>
-          )}
         </Box>
-      </CardContent>
+      </Box>
     </Card>
   );
 } 
