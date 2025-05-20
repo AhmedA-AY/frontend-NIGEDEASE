@@ -28,6 +28,7 @@ import { inventoryApi, Product, InventoryStore } from '@/services/api/inventory'
 import { companiesApi, Company, Currency } from '@/services/api/companies';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore } from '@/providers/store-provider';
+import { useSnackbar } from 'notistack';
 
 interface ProductItem {
   id: string;
@@ -66,7 +67,7 @@ interface PurchaseEditModalProps {
   isNew?: boolean;
 }
 
-export default function PurchaseEditModal({
+const PurchaseEditModal = ({
   open,
   onClose,
   onSave,
@@ -85,200 +86,62 @@ export default function PurchaseEditModal({
     payment_mode_id: ''
   },
   isNew = true
-}: PurchaseEditModalProps): React.JSX.Element {
-  const [formData, setFormData] = React.useState<PurchaseData>({
-    date: new Date().toISOString().split('T')[0],
-    supplier: '',
-    status: 'Ordered',
-    products: [],
-    totalAmount: 0,
-    paidAmount: 0,
-    dueAmount: 0,
-    paymentStatus: 'Unpaid',
-    company_id: '',
-    store_id: '',
-    currency_id: '',
-    payment_mode_id: ''
-  });
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const [selectedProduct, setSelectedProduct] = React.useState<string>('');
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
-  const [companies, setCompanies] = React.useState<Company[]>([]);
-  const [stores, setStores] = React.useState<InventoryStore[]>([]);
-  const [filteredStores, setFilteredStores] = React.useState<InventoryStore[]>([]);
-  const [currencies, setCurrencies] = React.useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = React.useState<PaymentMode[]>([]);
-  const [products, setProducts] = React.useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = React.useState<Product[]>([]);
-  
-  // Get current user's company
-  const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
+}: PurchaseEditModalProps) => {
+  const { enqueueSnackbar } = useSnackbar();
+  const { userInfo } = useCurrentUser();
   const { currentStore } = useStore();
   
-  // Fetch data when modal opens
+  // State
+  const [formData, setFormData] = React.useState<PurchaseData>(purchase);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [paymentModes, setPaymentModes] = React.useState<PaymentMode[]>([]);
+  const [currencies, setCurrencies] = React.useState<Currency[]>([]);
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  
+  // Load data when modal opens
   React.useEffect(() => {
-    if (open) {
-      const fetchData = async () => {
-        setIsLoading(true);
+    if (open && currentStore) {
+      const loadData = async () => {
         try {
-          if (!currentStore) {
-            console.error('No store selected');
-            return;
-          }
+          setIsLoading(true);
           
-          const [
-            suppliersData, 
-            productsData, 
-            companiesData, 
-            storesData, 
-            currenciesData
-          ] = await Promise.all([
+          const [suppliersData, productsData, currenciesData, paymentModesData] = await Promise.all([
             transactionsApi.getSuppliers(currentStore.id),
             inventoryApi.getProducts(currentStore.id),
-            companiesApi.getCompanies(),
-            inventoryApi.getStores(),
-            companiesApi.getCurrencies()
+            companiesApi.getCurrencies(),
+            transactionsApi.getPaymentModes(currentStore.id)
           ]);
           
           setSuppliers(suppliersData);
           setProducts(productsData);
-          setCompanies(companiesData);
-          setStores(storesData);
           setCurrencies(currenciesData);
-          
-          // Get payment modes after we have the store ID
-          const paymentModesData = await transactionsApi.getPaymentModes(currentStore.id);
           setPaymentModes(paymentModesData);
           
-          // Filter stores by user's company
-          if (userInfo?.company_id) {
-            const companyStores = storesData.filter(store => 
-              store.company && store.company.id === userInfo.company_id
-            );
-            setFilteredStores(companyStores);
-            
-            // Filter products by user's company through the store
-            const companyProducts = productsData.filter(product => 
-              product.store && product.store.company && product.store.company.id === userInfo.company_id
-            );
-            setFilteredProducts(companyProducts);
-          } else {
-            setFilteredProducts(productsData);
-          }
-          
-          // If formData doesn't have IDs, set defaults
-          setFormData(prev => {
-            const updated = { ...prev };
-            // Always use the user's company
-            if (userInfo?.company_id) {
-              updated.company_id = userInfo.company_id;
-            } else if (!updated.company_id && companiesData.length > 0) {
-              updated.company_id = companiesData[0].id;
-            }
-            
-            // Set default store from filtered stores
-            if (!updated.store_id) {
-              const availableStores = userInfo?.company_id 
-                ? storesData.filter(store => store.company && store.company.id === userInfo.company_id)
-                : storesData;
-                
-              if (availableStores.length > 0) {
-                updated.store_id = availableStores[0].id;
-              }
-            }
-            
-            if (!updated.currency_id && currenciesData.length > 0) {
-              updated.currency_id = currenciesData[0].id;
-            }
-            if (!updated.payment_mode_id && paymentModesData.length > 0) {
-              updated.payment_mode_id = paymentModesData[0].id;
-            }
-            return updated;
-          });
+          // Initialize form data with defaults if needed
+          setFormData(current => ({
+            ...current,
+            store_id: currentStore.id,
+            company_id: userInfo?.company_id || '',
+            currency_id: currenciesData.length > 0 ? currenciesData[0].id : '',
+            payment_mode_id: paymentModesData.length > 0 ? paymentModesData[0].id : ''
+          }));
         } catch (error) {
-          console.error('Error fetching data:', error);
+          console.error('Error loading data:', error);
+          enqueueSnackbar('Failed to load data', { variant: 'error' });
         } finally {
           setIsLoading(false);
         }
       };
       
-      fetchData();
+      loadData();
     }
-  }, [open, userInfo]);
+  }, [open, currentStore, userInfo, enqueueSnackbar]);
   
-  // Filter stores whenever user company changes
-  React.useEffect(() => {
-    if (userInfo?.company_id) {
-      // Filter stores by company
-      if (stores.length > 0) {
-        const companyStores = stores.filter(store => 
-          store.company && store.company.id === userInfo.company_id
-        );
-        setFilteredStores(companyStores);
-      }
-      
-      // Filter products by company through the store
-      if (products.length > 0) {
-        const companyProducts = products.filter(product => 
-          product.store && product.store.company && product.store.company.id === userInfo.company_id
-        );
-        setFilteredProducts(companyProducts);
-      }
-    }
-  }, [userInfo, stores, products]);
-  
-  // Reset form data when modal opens with new purchase data
-  React.useEffect(() => {
-    if (open) {
-      // Update purchase data with user's company if creating new
-      const updatedPurchase = { ...purchase };
-      
-      // If creating new, use the current user's company_id
-      if (!updatedPurchase.id && userInfo?.company_id) {
-        updatedPurchase.company_id = userInfo.company_id;
-      }
-      
-      setFormData(updatedPurchase);
-      setErrors({});
-      calculateTotals(updatedPurchase.products);
-    }
-  }, [purchase, open, userInfo]);
-  
-  const calculateTotals = (productItems: ProductItem[]) => {
-    let total = 0;
-    
-    productItems.forEach(item => {
-      const subtotal = (item.quantity * item.unitPrice) - item.discount + item.tax;
-      total += subtotal;
-    });
-    
-    setFormData(prev => ({
-      ...prev,
-      totalAmount: total,
-      dueAmount: total - prev.paidAmount,
-      paymentStatus: prev.paidAmount >= total ? 'Paid' : (prev.paidAmount > 0 ? 'Partially Paid' : 'Unpaid')
-    }));
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    if (name === 'paidAmount') {
-      const paidAmount = parseFloat(value) || 0;
-      const paymentStatus = paidAmount >= formData.totalAmount 
-        ? 'Paid' 
-        : (paidAmount > 0 ? 'Partially Paid' : 'Unpaid');
-      
-      setFormData(prev => ({
-        ...prev,
-        paidAmount,
-        dueAmount: prev.totalAmount - paidAmount,
-        paymentStatus
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
     
     // Clear error when field is edited
     if (errors[name]) {
@@ -289,86 +152,28 @@ export default function PurchaseEditModal({
       });
     }
   };
-
-  const handleSelectChange = (e: any) => {
-    const { name, value } = e.target;
+  
+  const handleSelectChange = (e: React.ChangeEvent<{ name?: string; value: unknown }>) => {
+    const name = e.target.name as string;
+    const value = e.target.value as string;
+    
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Map the status to is_credit boolean
-    if (name === 'status') {
-      setFormData(prev => ({ 
-        ...prev, 
-        is_credit: value === 'Credit' || value === 'Pending'
-      }));
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
-
-  const handleAddProduct = () => {
-    if (!selectedProduct) return;
-    
-    const product = products.find(p => p.id === selectedProduct);
-    if (!product) return;
-    
-    const unitPrice = product.purchase_price ? parseFloat(product.purchase_price) : 0;
-    const tax = unitPrice * 0.1; // Default 10% tax if not available from the product
-    
-    const newProduct: ProductItem = {
-      id: product.id,
-      name: product.name,
-      quantity: 1,
-      unitPrice: unitPrice,
-      discount: 0,
-      tax: tax,
-      subtotal: unitPrice + tax
-    };
-    
-    const updatedProducts = [...formData.products, newProduct];
-    setFormData(prev => ({ ...prev, products: updatedProducts }));
-    calculateTotals(updatedProducts);
-    setSelectedProduct('');
-  };
-
-  const handleRemoveProduct = (id: string) => {
-    const updatedProducts = formData.products.filter(product => product.id !== id);
-    setFormData(prev => ({ ...prev, products: updatedProducts }));
-    calculateTotals(updatedProducts);
-  };
-
-  const handleProductChange = (id: string, field: keyof ProductItem, value: any) => {
-    const updatedProducts = formData.products.map(product => {
-      if (product.id === id) {
-        const updatedProduct = { ...product, [field]: parseFloat(value) || 0 };
-        
-        // Recalculate subtotal
-        updatedProduct.subtotal = (updatedProduct.quantity * updatedProduct.unitPrice) - 
-          updatedProduct.discount + updatedProduct.tax;
-          
-        return updatedProduct;
-      }
-      return product;
-    });
-    
-    setFormData(prev => ({ ...prev, products: updatedProducts }));
-    calculateTotals(updatedProducts);
-  };
-
+  
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
     if (!formData.supplier) {
       newErrors.supplier = 'Supplier is required';
-    }
-    
-    if (!formData.date) {
-      newErrors.date = 'Date is required';
-    }
-    
-    if (formData.products.length === 0) {
-      newErrors.products = 'At least one product is required';
-    }
-    
-    if (!formData.company_id) {
-      newErrors.company_id = 'Company is required';
     }
     
     if (!formData.store_id) {
@@ -383,386 +188,279 @@ export default function PurchaseEditModal({
       newErrors.payment_mode_id = 'Payment mode is required';
     }
     
+    if (formData.products.length === 0) {
+      newErrors.products = 'At least one product is required';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  const handleSubmit = () => {
+  
+  const handleAddProduct = () => {
+    // Get the selected product from a dropdown instead of using supplier ID
+    // For now, just select the first product in the list as a fallback
+    if (products.length === 0) {
+      enqueueSnackbar('No products available', { variant: 'error' });
+      return;
+    }
+    
+    const product = products[0]; // Default to first product
+    
+    const newProduct: ProductItem = {
+      id: product.id,
+      name: product.name,
+      quantity: 1,
+      unitPrice: parseFloat(product.purchase_price) || 0,
+      discount: 0,
+      tax: 0,
+      subtotal: parseFloat(product.purchase_price) || 0
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      products: [...prev.products, newProduct],
+      totalAmount: prev.totalAmount + newProduct.subtotal
+    }));
+  };
+  
+  const handleRemoveProduct = (id: string) => {
+    const productToRemove = formData.products.find(p => p.id === id);
+    const subtotal = productToRemove ? productToRemove.subtotal : 0;
+    
+    setFormData(prev => ({
+      ...prev,
+      products: prev.products.filter(p => p.id !== id),
+      totalAmount: prev.totalAmount - subtotal
+    }));
+  };
+  
+  const handleSave = () => {
     if (validateForm()) {
       onSave(formData);
     }
   };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>{isNew ? 'Create New Purchase' : 'Edit Purchase'}</DialogTitle>
-      <DialogContent>
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+  
+  if (isLoading) {
+    return (
+      <Dialog open={open} maxWidth="md" fullWidth>
+        <DialogContent>
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
           </Box>
-        ) : (
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={3}>
-              <TextField
-                name="date"
-                label="Purchase Date"
-                type="date"
-                fullWidth
-                value={formData.date}
-                onChange={handleChange}
-                error={!!errors.date}
-                helperText={errors.date}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.supplier}>
-                <InputLabel id="supplier-select-label">Supplier</InputLabel>
-                <Select
-                  labelId="supplier-select-label"
-                  id="supplier"
-                  name="supplier"
-                  value={formData.supplier}
-                  label="Supplier"
-                  onChange={handleSelectChange}
-                >
-                  {suppliers.map(supplier => (
-                    <MenuItem key={supplier.id} value={supplier.id}>{supplier.name}</MenuItem>
-                  ))}
-                </Select>
-                {errors.supplier && <Typography color="error" variant="caption">{errors.supplier}</Typography>}
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel id="status-select-label">Status</InputLabel>
-                <Select
-                  labelId="status-select-label"
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  label="Status"
-                  onChange={handleSelectChange}
-                >
-                  <MenuItem value="Ordered">Ordered</MenuItem>
-                  <MenuItem value="Pending">Pending</MenuItem>
-                  <MenuItem value="Received">Received</MenuItem>
-                  <MenuItem value="Credit">Credit</MenuItem>
-                  <MenuItem value="Paid">Paid</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <TextField
-                name="reference"
-                label="Reference (Optional)"
-                type="text"
-                fullWidth
-                value={formData.reference || ''}
-                onChange={handleChange}
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.company_id}>
-                <InputLabel id="company-select-label">Company</InputLabel>
-                <Select
-                  labelId="company-select-label"
-                  id="company_id"
-                  name="company_id"
-                  value={formData.company_id}
-                  label="Company"
-                  onChange={handleSelectChange}
-                  disabled={!!userInfo?.company_id} // Disable when we have a user company
-                >
-                  {companies.map(company => (
-                    <MenuItem 
-                      key={company.id} 
-                      value={company.id}
-                      disabled={Boolean(userInfo?.company_id && company.id !== userInfo.company_id)}
-                    >
-                      {company.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {errors.company_id && <Typography color="error" variant="caption">{errors.company_id}</Typography>}
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.store_id}>
-                <InputLabel id="store-select-label">Store</InputLabel>
-                <Select
-                  labelId="store-select-label"
-                  id="store_id"
-                  name="store_id"
-                  value={formData.store_id}
-                  label="Store"
-                  onChange={handleSelectChange}
-                >
-                  {filteredStores.length > 0 ? (
-                    filteredStores.map(store => (
-                      <MenuItem key={store.id} value={store.id}>{store.name}</MenuItem>
-                    ))
-                  ) : (
-                    stores.map(store => (
-                      <MenuItem 
-                        key={store.id} 
-                        value={store.id}
-                        disabled={Boolean(userInfo?.company_id && store.company && store.company.id !== userInfo.company_id)}
-                      >
-                        {store.name}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-                {errors.store_id && <Typography color="error" variant="caption">{errors.store_id}</Typography>}
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.currency_id}>
-                <InputLabel id="currency-select-label">Currency</InputLabel>
-                <Select
-                  labelId="currency-select-label"
-                  id="currency_id"
-                  name="currency_id"
-                  value={formData.currency_id}
-                  label="Currency"
-                  onChange={handleSelectChange}
-                >
-                  {currencies.map(currency => (
-                    <MenuItem key={currency.id} value={currency.id}>{currency.code}</MenuItem>
-                  ))}
-                </Select>
-                {errors.currency_id && <Typography color="error" variant="caption">{errors.currency_id}</Typography>}
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.payment_mode_id}>
-                <InputLabel id="payment-mode-select-label">Payment Mode</InputLabel>
-                <Select
-                  labelId="payment-mode-select-label"
-                  id="payment_mode_id"
-                  name="payment_mode_id"
-                  value={formData.payment_mode_id}
-                  label="Payment Mode"
-                  onChange={handleSelectChange}
-                >
-                  {paymentModes.map(mode => (
-                    <MenuItem key={mode.id} value={mode.id}>{mode.name}</MenuItem>
-                  ))}
-                </Select>
-                {errors.payment_mode_id && <Typography color="error" variant="caption">{errors.payment_mode_id}</Typography>}
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12}>
-              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="subtitle1">Products</Typography>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <FormControl sx={{ minWidth: 200 }}>
-                    <InputLabel id="product-select-label">Select Product</InputLabel>
-                    <Select
-                      labelId="product-select-label"
-                      id="selectedProduct"
-                      name="selectedProduct"
-                      value={selectedProduct}
-                      label="Select Product"
-                      onChange={(e) => setSelectedProduct(e.target.value as string)}
-                      size="small"
-                    >
-                      {(filteredProducts.length > 0 ? filteredProducts : products).map(product => (
-                        <MenuItem key={product.id} value={product.id}>{product.name}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Button 
-                    variant="contained" 
-                    onClick={handleAddProduct}
-                    startIcon={<PlusIcon weight="bold" />}
-                    sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
-                    size="small"
-                  >
-                    Add
-                  </Button>
-                </Box>
-              </Box>
-              
-              {errors.products && (
-                <Typography color="error" variant="caption" sx={{ mb: 1, display: 'block' }}>
-                  {errors.products}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>{isNew ? 'Add New Purchase' : 'Edit Purchase'}</DialogTitle>
+      <DialogContent>
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          {/* Supplier Selection */}
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth error={!!errors.supplier}>
+              <InputLabel id="supplier-label">Supplier</InputLabel>
+              <Select
+                labelId="supplier-label"
+                id="supplier"
+                name="supplier"
+                value={formData.supplier}
+                label="Supplier"
+                onChange={handleSelectChange as any}
+              >
+                {suppliers.map(supplier => (
+                  <MenuItem key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.supplier && (
+                <Typography color="error" variant="caption">
+                  {errors.supplier}
                 </Typography>
               )}
-              
-              <Table size="small" sx={{ mb: 3 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Product</TableCell>
-                    <TableCell>Quantity</TableCell>
-                    <TableCell>Unit Price</TableCell>
-                    <TableCell>Discount</TableCell>
-                    <TableCell>Tax</TableCell>
-                    <TableCell>Subtotal</TableCell>
-                    <TableCell>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {formData.products.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        <Typography variant="body2" color="text.secondary">
-                          No products added yet
-                        </Typography>
+            </FormControl>
+          </Grid>
+          
+          {/* Date */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Date"
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleInputChange}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          
+          {/* Currency */}
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth error={!!errors.currency_id}>
+              <InputLabel id="currency-label">Currency</InputLabel>
+              <Select
+                labelId="currency-label"
+                id="currency_id"
+                name="currency_id"
+                value={formData.currency_id || ''}
+                label="Currency"
+                onChange={handleSelectChange as any}
+              >
+                {currencies.map(currency => (
+                  <MenuItem key={currency.id} value={currency.id}>
+                    {currency.code} - {currency.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.currency_id && (
+                <Typography color="error" variant="caption">
+                  {errors.currency_id}
+                </Typography>
+              )}
+            </FormControl>
+          </Grid>
+          
+          {/* Payment Mode */}
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth error={!!errors.payment_mode_id}>
+              <InputLabel id="payment-mode-label">Payment Mode</InputLabel>
+              <Select
+                labelId="payment-mode-label"
+                id="payment_mode_id"
+                name="payment_mode_id"
+                value={formData.payment_mode_id || ''}
+                label="Payment Mode"
+                onChange={handleSelectChange as any}
+              >
+                {paymentModes.map(mode => (
+                  <MenuItem key={mode.id} value={mode.id}>
+                    {mode.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.payment_mode_id && (
+                <Typography color="error" variant="caption">
+                  {errors.payment_mode_id}
+                </Typography>
+              )}
+            </FormControl>
+          </Grid>
+          
+          {/* Is Credit */}
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth>
+              <InputLabel id="credit-label">Credit Purchase</InputLabel>
+              <Select
+                labelId="credit-label"
+                id="is_credit"
+                name="is_credit"
+                value={formData.is_credit ? 'true' : 'false'}
+                label="Credit Purchase"
+                onChange={handleSelectChange as any}
+              >
+                <MenuItem value="false">No</MenuItem>
+                <MenuItem value="true">Yes</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          
+          {/* Products */}
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Products</Typography>
+              <Button 
+                variant="contained" 
+                startIcon={<PlusIcon />}
+                onClick={handleAddProduct}
+              >
+                Add Product
+              </Button>
+            </Box>
+            
+            {errors.products && (
+              <Typography color="error" variant="caption" sx={{ display: 'block', mb: 2 }}>
+                {errors.products}
+              </Typography>
+            )}
+            
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Product</TableCell>
+                  <TableCell align="right">Quantity</TableCell>
+                  <TableCell align="right">Unit Price</TableCell>
+                  <TableCell align="right">Subtotal</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {formData.products.length > 0 ? (
+                  formData.products.map(product => (
+                    <TableRow key={product.id}>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell align="right">{product.quantity}</TableCell>
+                      <TableCell align="right">{product.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell align="right">{product.subtotal.toFixed(2)}</TableCell>
+                      <TableCell align="right">
+                        <IconButton 
+                          size="small" 
+                          color="error"
+                          onClick={() => handleRemoveProduct(product.id)}
+                        >
+                          <TrashIcon size={18} />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    formData.products.map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell>{product.name}</TableCell>
-                        <TableCell>
-                          <TextField
-                            type="number"
-                            value={product.quantity}
-                            onChange={(e) => handleProductChange(
-                              product.id, 
-                              'quantity', 
-                              e.target.value
-                            )}
-                            inputProps={{ min: 1 }}
-                            size="small"
-                            sx={{ width: 70 }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            type="number"
-                            value={product.unitPrice}
-                            onChange={(e) => handleProductChange(
-                              product.id, 
-                              'unitPrice', 
-                              e.target.value
-                            )}
-                            InputProps={{ startAdornment: '$' }}
-                            size="small"
-                            sx={{ width: 100 }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            type="number"
-                            value={product.discount}
-                            onChange={(e) => handleProductChange(
-                              product.id, 
-                              'discount', 
-                              e.target.value
-                            )}
-                            InputProps={{ startAdornment: '$' }}
-                            size="small"
-                            sx={{ width: 80 }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            type="number"
-                            value={product.tax}
-                            onChange={(e) => handleProductChange(
-                              product.id, 
-                              'tax', 
-                              e.target.value
-                            )}
-                            InputProps={{ startAdornment: '$' }}
-                            size="small"
-                            sx={{ width: 80 }}
-                          />
-                        </TableCell>
-                        <TableCell>${product.subtotal.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRemoveProduct(product.id)}
-                            sx={{ color: '#ef4444' }}
-                          >
-                            <TrashIcon size={16} />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </Grid>
-            
-            <Grid item xs={12}>
-              <TextField
-                name="note"
-                label="Note (Optional)"
-                multiline
-                rows={2}
-                fullWidth
-                value={formData.note || ''}
-                onChange={handleChange}
-              />
-            </Grid>
-            
-            <Grid item xs={12}>
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'flex-end',
-                gap: 1,
-                mt: 2
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>Total Amount:</Typography>
-                  <Typography variant="subtitle1">${formData.totalAmount.toFixed(2)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>Paid Amount:</Typography>
-                  <TextField
-                    name="paidAmount"
-                    type="number"
-                    value={formData.paidAmount}
-                    onChange={handleChange}
-                    InputProps={{ startAdornment: '$' }}
-                    size="small"
-                    sx={{ width: 120 }}
-                  />
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>Due Amount:</Typography>
-                  <Typography variant="subtitle1" color={formData.dueAmount > 0 ? 'error' : 'success'}>
-                    ${formData.dueAmount.toFixed(2)}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>Payment Status:</Typography>
-                  <Typography variant="subtitle1" 
-                    color={
-                      formData.paymentStatus === 'Paid' 
-                        ? 'success' 
-                        : formData.paymentStatus === 'Partially Paid' 
-                          ? 'warning'
-                          : 'error'
-                    }
-                  >
-                    {formData.paymentStatus}
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      No products added yet
+                    </TableCell>
+                  </TableRow>
+                )}
+                
+                <TableRow>
+                  <TableCell colSpan={3} align="right">
+                    <strong>Total:</strong>
+                  </TableCell>
+                  <TableCell align="right">
+                    <strong>{formData.totalAmount.toFixed(2)}</strong>
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableBody>
+            </Table>
           </Grid>
-        )}
+          
+          {/* Notes */}
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="Notes"
+              name="note"
+              value={formData.note || ''}
+              onChange={handleInputChange}
+              multiline
+              rows={3}
+            />
+          </Grid>
+        </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} variant="outlined">Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={isLoading}>Save</Button>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button 
+          variant="contained" 
+          onClick={handleSave}
+          disabled={isLoading}
+        >
+          {isNew ? 'Create Purchase' : 'Update Purchase'}
+        </Button>
       </DialogActions>
     </Dialog>
   );
-} 
+};
+
+export default PurchaseEditModal; 
