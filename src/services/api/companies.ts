@@ -234,12 +234,11 @@ export const companiesApi = {
       // 2. Delete all users associated with the company
       await Promise.all(companyUsers.map(user => usersApi.deleteUser(user.id)));
       
-      // 3. Get all stores for this company
-      const stores = await inventoryApi.getStores();
-      const companyStores = stores.filter(store => store.company && store.company.id === id);
+      // 3. Get all stores for this company - using company-specific endpoint
+      const stores = await inventoryApi.getStores(id);
       
       // 4. Delete all stores associated with the company
-      await Promise.all(companyStores.map(store => inventoryApi.deleteStore(store.id)));
+      await Promise.all(stores.map(store => inventoryApi.deleteStore(store.id)));
       
       // 5. Finally delete the company
       await coreApiClient.delete(`/companies/companies/${id}/`);
