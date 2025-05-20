@@ -319,55 +319,86 @@ export const inventoryApi = {
   },
 
   // Stores
-  getStores: async (): Promise<InventoryStore[]> => {
-    console.log('Making API call to get stores');
-    const response = await coreApiClient.get<InventoryStore[]>('/companies/stores/');
-    console.log('Raw API response for stores:', response);
-    console.log('API response data structure:', JSON.stringify(response.data, null, 2));
-    
-    // Check if response is an array or has a specific data property
-    const storesData = Array.isArray(response.data) ? response.data : 
-                       (response.data as any).results || response.data;
-    
-    console.log('Processed stores data length:', storesData.length);
-    if (storesData.length > 0) {
-      console.log('Sample store object keys:', Object.keys(storesData[0]));
-      console.log('Sample store object:', storesData[0]);
+  getStores: async (companyId?: string): Promise<InventoryStore[]> => {
+    try {
+      let endpoint = '/companies/companies/stores/';
+      
+      // If company ID is provided, use the specific endpoint
+      if (companyId) {
+        endpoint = `/companies/companies/${companyId}/stores/`;
+      }
+      
+      const response = await coreApiClient.get<InventoryStore[]>(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching stores:', error);
+      throw error;
     }
-    
-    return storesData;
   },
   
   getStore: async (id: string): Promise<InventoryStore> => {
-    const response = await coreApiClient.get<InventoryStore>(`/companies/stores/${id}/`);
-    return response.data;
+    try {
+      // First try to get the store from the stores endpoint without company ID
+      const storesResponse = await coreApiClient.get<InventoryStore[]>('/companies/companies/stores/');
+      const store = storesResponse.data.find(s => s.id === id);
+      
+      if (!store || !store.company) {
+        throw new Error("Store not found or missing company information");
+      }
+      
+      // Now get the specific store with the company ID
+      const response = await coreApiClient.get<InventoryStore>(`/companies/companies/${store.company.id}/stores/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting store:', error);
+      throw error;
+    }
   },
   
   createStore: async (data: InventoryStoreCreateData): Promise<InventoryStore> => {
-    const response = await coreApiClient.post<InventoryStore>('/companies/stores/', data);
+    const response = await coreApiClient.post<InventoryStore>(`/companies/companies/${data.company_id}/stores/`, data);
     return response.data;
   },
   
   updateStore: async (id: string, data: InventoryStoreUpdateData): Promise<InventoryStore> => {
-    const response = await coreApiClient.put<InventoryStore>(`/companies/stores/${id}/`, data);
+    if (!data.company_id) {
+      throw new Error("Company ID is required to update a store");
+    }
+    const response = await coreApiClient.put<InventoryStore>(`/companies/companies/${data.company_id}/stores/${id}/`, data);
     return response.data;
   },
   
   deleteStore: async (id: string): Promise<void> => {
-    await coreApiClient.delete(`/companies/stores/${id}/`);
+    try {
+      // First get all stores to find the company ID
+      const storesResponse = await coreApiClient.get<InventoryStore[]>('/companies/companies/stores/');
+      const store = storesResponse.data.find(s => s.id === id);
+      
+      if (!store || !store.company) {
+        throw new Error("Store not found or missing company information");
+      }
+      
+      await coreApiClient.delete(`/companies/companies/${store.company.id}/stores/${id}/`);
+    } catch (error) {
+      console.error('Error deleting store:', error);
+      throw error;
+    }
   },
 
   toggleStoreStatus: async (id: string, isActive: boolean): Promise<InventoryStore> => {
     try {
       // First, get the current store data
       console.log(`Toggling store ${id} status to ${isActive ? 'active' : 'inactive'}`);
-      const storeResponse = await coreApiClient.get<InventoryStore>(`/inventory/stores/${id}/`);
-      const store = storeResponse.data;
+      const store = await inventoryApi.getStore(id);
+      
+      if (!store || !store.company) {
+        throw new Error("Store not found or missing company information");
+      }
       
       // Now update just the is_active field while preserving other fields
       // The API expects "active" or "inactive" strings, not boolean values
       const updateData: InventoryStoreUpdateData = {
-        company_id: store.company?.id,
+        company_id: store.company.id,
         name: store.name,
         location: store.location,
         address: store.address,
@@ -377,7 +408,10 @@ export const inventoryApi = {
       };
       
       console.log('Updating store with data:', updateData);
-      const response = await coreApiClient.put<InventoryStore>(`/inventory/stores/${id}/`, updateData);
+      const response = await coreApiClient.put<InventoryStore>(
+        `/companies/companies/${store.company.id}/stores/${id}/`, 
+        updateData
+      );
       return response.data;
     } catch (error) {
       console.error('Error toggling store status:', error);

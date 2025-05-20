@@ -48,11 +48,15 @@ export default function StoresPage(): React.JSX.Element {
   const fetchStores = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const storesData = await inventoryApi.getStores();
+      // If user has a company_id, pass it to get only stores for that company
+      const storesData = userInfo?.company_id 
+        ? await inventoryApi.getStores(userInfo.company_id) 
+        : await inventoryApi.getStores();
+      
       // Filter stores by user's company
       const filteredStores = userInfo?.company_id 
-        ? storesData.filter(store => store.company && store.company.id === userInfo.company_id)
-        : storesData;
+        ? storesData 
+        : storesData.filter(store => store.company && userInfo?.role === 'superadmin');
       
       setStores(filteredStores);
     } catch (error) {
@@ -130,21 +134,25 @@ export default function StoresPage(): React.JSX.Element {
           location: storeData.location,
           company_id: userInfo?.company_id || storeData.company_id,
           is_active: storeData.is_active,
-          address: '',
-          phone_number: '',
-          email: ''
+          address: storeData.address || '',
+          phone_number: storeData.phone_number || '',
+          email: storeData.email || ''
         });
         enqueueSnackbar('Store updated successfully', { variant: 'success' });
       } else {
-        // Add new store
+        // Add new store - ensure company_id is provided
+        if (!userInfo?.company_id) {
+          throw new Error("Company ID is required to create a store");
+        }
+
         await inventoryApi.createStore({
           name: storeData.name,
           location: storeData.location,
-          company_id: userInfo?.company_id || '',
+          company_id: userInfo.company_id,
           is_active: 'active',
-          address: '',
-          phone_number: '',
-          email: ''
+          address: storeData.address || '',
+          phone_number: storeData.phone_number || '',
+          email: storeData.email || ''
         });
         enqueueSnackbar('Store created successfully', { variant: 'success' });
       }
