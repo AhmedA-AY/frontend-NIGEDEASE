@@ -516,14 +516,18 @@ export default function UsersPage() {
         company_id: userInfo?.company_id || '',
       };
 
-      // Add assigned_store_id if role requires it (stock_manager or salesman)
+      // Add assigned_store if role requires it (stock_manager or salesman)
       if (userData.role === 'stock_manager' || userData.role === 'salesman') {
         if (!userData.assigned_store_id) {
           enqueueSnackbar('Assigned store is required for this role', { variant: 'error' });
           throw new Error('Assigned store is required');
         }
         
-        (userDataWithCompany as any).assigned_store_id = userData.assigned_store_id;
+        // Use assigned_store field instead of assigned_store_id for backend compatibility
+        (userDataWithCompany as any).assigned_store = userData.assigned_store_id;
+        
+        // Remove the assigned_store_id field to prevent confusion
+        delete (userDataWithCompany as any).assigned_store_id;
       }
 
       if (userData.id) {
