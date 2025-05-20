@@ -1,5 +1,6 @@
 import { coreApiClient } from './client';
 import { Company, Currency, SubscriptionPlan } from './companies';
+import tokenStorage from '@/utils/token-storage';
 
 // Inventory Interfaces
 export interface ProductUnit {
@@ -321,13 +322,17 @@ export const inventoryApi = {
   // Stores
   getStores: async (companyId?: string): Promise<InventoryStore[]> => {
     try {
-      let endpoint = '/companies/companies/stores/';
-      
-      // If company ID is provided, use the specific endpoint
-      if (companyId) {
-        endpoint = `/companies/companies/${companyId}/stores/`;
+      // If no companyId is provided, try to get it from token storage
+      if (!companyId) {
+        const userInfo = tokenStorage.getUserInfo();
+        companyId = userInfo?.company_id;
+        
+        if (!companyId) {
+          throw new Error('Company ID is required to fetch stores');
+        }
       }
       
+      const endpoint = `/companies/companies/${companyId}/stores/`;
       const response = await coreApiClient.get<InventoryStore[]>(endpoint);
       return response.data;
     } catch (error) {

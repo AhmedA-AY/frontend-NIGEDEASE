@@ -1,15 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore, Store } from '@/contexts/store-context';
-import { FormControl, InputLabel, Select, MenuItem, Box, Tooltip, Typography, SelectChangeEvent, IconButton } from '@mui/material';
+import { FormControl, InputLabel, Select, MenuItem, Box, Tooltip, Typography, SelectChangeEvent, IconButton, CircularProgress } from '@mui/material';
 import { Storefront, ArrowsClockwise } from '@phosphor-icons/react/dist/ssr';
 
-export const StoreSelector = () => {
+export default function StoreSelector() {
   const { stores, selectedStore, selectStore, refreshStores, isLoading } = useStore();
-  const [refreshing, setRefreshing] = React.useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleStoreChange = (event: SelectChangeEvent<string>) => {
+  useEffect(() => {
+    // Refresh stores when component mounts to ensure fresh data
+    refreshStores();
+  }, [refreshStores]);
+
+  const handleStoreChange = (event: SelectChangeEvent) => {
     const storeId = event.target.value;
     const store = stores.find((s) => s.id === storeId);
     if (store) {
@@ -17,10 +22,10 @@ export const StoreSelector = () => {
     }
   };
 
-  // Function to manually refresh the store list
   const handleRefresh = () => {
     setRefreshing(true);
     refreshStores();
+    // Add a delay to show the refresh animation
     setTimeout(() => {
       setRefreshing(false);
     }, 1000);
@@ -28,10 +33,10 @@ export const StoreSelector = () => {
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Storefront size={20} />
-        <Typography variant="body2">Loading stores...</Typography>
-      </Box>
+      <div className="flex items-center gap-2 px-4 py-2">
+        <CircularProgress size={20} />
+        <span>Loading stores...</span>
+      </div>
     );
   }
 
@@ -48,54 +53,37 @@ export const StoreSelector = () => {
 
   // Always show dropdown for switching between stores, even if user has a selectedStore
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <FormControl
-        size="small"
-        sx={{
-          minWidth: 180,
-          background: 'rgba(255, 255, 255, 0.8)',
-          borderRadius: 1,
-        }}
-      >
-        <InputLabel id="store-select-label">Select Store</InputLabel>
+    <div className="flex items-center gap-2">
+      <FormControl variant="outlined" size="small" sx={{ minWidth: 180 }}>
         <Select
-          labelId="store-select-label"
-          id="store-select"
           value={selectedStore?.id || ''}
           onChange={handleStoreChange}
-          label="Select Store"
-          startAdornment={
-            <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-              <Storefront size={20} />
-            </Box>
-          }
+          displayEmpty
+          className="text-sm"
+          sx={{ 
+            borderRadius: '0.375rem',
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: 'var(--secondary-200)',
+            },
+          }}
         >
-          {stores.map((store: any) => (
+          <MenuItem value="" disabled>
+            Select Store
+          </MenuItem>
+          {stores.map((store) => (
             <MenuItem key={store.id} value={store.id}>
               {store.name}
             </MenuItem>
           ))}
         </Select>
       </FormControl>
-      
-      <Tooltip title="Refresh stores">
-        <IconButton 
-          size="small" 
-          onClick={handleRefresh}
-          sx={{
-            animation: refreshing ? 'spin 1s linear infinite' : 'none',
-          }}
-        >
-          <ArrowsClockwise size={18} />
-        </IconButton>
-      </Tooltip>
-
-      <style jsx global>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </Box>
+      <IconButton 
+        onClick={handleRefresh} 
+        className={`transition-all duration-300 ${refreshing ? 'animate-spin' : ''}`}
+        size="small"
+      >
+        <ArrowsClockwise size={18} />
+      </IconButton>
+    </div>
   );
-}; 
+} 
