@@ -39,7 +39,7 @@ import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 
 import { paths } from '@/paths';
-import { usersApi } from '@/services/api/users';
+import { usersApi, ExtendedUserResponse } from '@/services/api/users';
 import { authApi, UserResponse, CreateUserData } from '@/services/api/auth';
 import { useSnackbar } from 'notistack';
 import { useCurrentUser } from '@/hooks/use-auth';
@@ -366,19 +366,25 @@ function DeleteUserDialog({
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<UserResponse[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserResponse[]>([]);
+  const [users, setUsers] = useState<ExtendedUserResponse[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<ExtendedUserResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [storeFilter, setStoreFilter] = useState<string>('all');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [userFormOpen, setUserFormOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<(Partial<CreateUserData> & { id?: string; role?: string }) | null>(null);
+  const [currentUser, setCurrentUser] = useState<(Partial<CreateUserData> & { 
+    id?: string; 
+    role?: string;
+    assigned_store_id?: string;
+  }) | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   
   const { enqueueSnackbar } = useSnackbar();
   const { userInfo } = useCurrentUser();
+  const { stores } = useStore();
   
   // Fetch users data
   const fetchUsers = useCallback(async () => {
@@ -408,7 +414,25 @@ export default function UsersPage() {
       );
       console.log('Users after role filtering:', filteredByRole.length);
       
-      setUsers(filteredByRole);
+      // Fetch user details including assigned store for each user
+      const usersWithDetails = await Promise.all(filteredByRole.map(async (user) => {
+        try {
+          // Try to get more detailed user info including assigned store
+          const userDetail = await usersApi.getUser(user.id);
+          return {
+            ...user,
+            assigned_store: userDetail.assigned_store || null
+          };
+        } catch (error) {
+          console.error(`Error fetching details for user ${user.id}:`, error);
+          return {
+            ...user,
+            assigned_store: null
+          };
+        }
+      }));
+      
+      setUsers(usersWithDetails);
       
       // The filter effect will run after this to update filteredUsers
     } catch (error) {
@@ -425,8 +449,8 @@ export default function UsersPage() {
     fetchUsers();
   }, [fetchUsers]);
   
-  // Filter users based on search query and role filter
-  const filterUsers = useCallback((userList: UserResponse[], query: string, role: string) => {
+  // Filter users based on search query, role filter, and store filter
+  const filterUsers = useCallback((userList: ExtendedUserResponse[], query: string, role: string, store: string) => {
     let filtered = [...userList];
     
     // Apply search filter
@@ -444,19 +468,27 @@ export default function UsersPage() {
       filtered = filtered.filter(user => user.role === role);
     }
     
+    // Apply store filter
+    if (store !== 'all') {
+      filtered = filtered.filter(user => 
+        user.assigned_store && user.assigned_store.id === store
+      );
+    }
+    
     setFilteredUsers(filtered);
   }, []);
   
   useEffect(() => {
-    filterUsers(users, searchQuery, roleFilter);
+    filterUsers(users, searchQuery, roleFilter, storeFilter);
     // Add debug logging to help troubleshoot the filter functionality
     console.log('Filter applied:', {
       totalUsers: users.length,
       filteredUsersCount: filteredUsers.length,
       searchQuery,
-      roleFilter
+      roleFilter,
+      storeFilter
     });
-  }, [users, searchQuery, roleFilter, filterUsers]);
+  }, [users, searchQuery, roleFilter, storeFilter, filterUsers]);
   
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
@@ -464,6 +496,10 @@ export default function UsersPage() {
   
   const handleRoleFilterChange = (event: SelectChangeEvent) => {
     setRoleFilter(event.target.value);
+  };
+
+  const handleStoreFilterChange = (event: SelectChangeEvent) => {
+    setStoreFilter(event.target.value);
   };
   
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -490,11 +526,17 @@ export default function UsersPage() {
     setUserFormOpen(true);
   };
   
-  const handleEditUser = (user: UserResponse) => {
-    // Cast the role to ensure type compatibility
+  const handleEditUser = (user: ExtendedUserResponse) => {
+    // Extract the assigned store ID from user data and convert to the format needed by the form
+    const assigned_store_id = user.assigned_store ? user.assigned_store.id : undefined;
+    
+    // Create a user object compatible with the form, excluding assigned_store object
+    const { assigned_store, ...userWithoutAssignedStore } = user;
+    
     setCurrentUser({
-      ...user,
-      role: user.role as UserRole
+      ...userWithoutAssignedStore,
+      role: user.role as UserRole,
+      assigned_store_id
     });
     setUserFormOpen(true);
   };
@@ -639,6 +681,23 @@ export default function UsersPage() {
                 <MenuItem value="salesman">Salesman</MenuItem>
               </Select>
             </FormControl>
+
+            <FormControl sx={{ minWidth: 150 }}>
+              <InputLabel id="store-filter-label">Store</InputLabel>
+              <Select
+                labelId="store-filter-label"
+                value={storeFilter}
+                onChange={handleStoreFilterChange}
+                label="Store"
+              >
+                <MenuItem value="all">All Stores</MenuItem>
+                {stores.map(store => (
+                  <MenuItem key={store.id} value={store.id}>
+                    {store.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Stack>
         </Stack>
       </Card>
@@ -662,6 +721,7 @@ export default function UsersPage() {
                 <TableCell>Name</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Role</TableCell>
+                <TableCell>Assigned Store</TableCell>
                 <TableCell>Created At</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -669,7 +729,7 @@ export default function UsersPage() {
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                     <Typography variant="body1" color="text.secondary">
                       No users found
                     </Typography>
@@ -706,6 +766,7 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{getRoleDisplay(user.role)}</TableCell>
+                    <TableCell>{user.assigned_store ? user.assigned_store.name : 'N/A'}</TableCell>
                     <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                     <TableCell align="right">
                       <IconButton onClick={() => handleEditUser(user)}>

@@ -1,6 +1,17 @@
 import { userManagementApiClient } from './client';
 import { CreateUserData, UserResponse } from './auth';
 
+// Extended UserResponse type with assigned_store
+export interface ExtendedUserResponse extends UserResponse {
+  assigned_store?: {
+    id: string;
+    name: string;
+    location?: string;
+    is_active?: string;
+    [key: string]: any;
+  } | null;
+}
+
 // User API
 export const usersApi = {
   // Get all users
@@ -14,8 +25,8 @@ export const usersApi = {
   },
 
   // Get user by ID
-  getUser: async (id: string): Promise<UserResponse> => {
-    const response = await userManagementApiClient.get<UserResponse>(`/users/${id}/`);
+  getUser: async (id: string): Promise<ExtendedUserResponse> => {
+    const response = await userManagementApiClient.get<ExtendedUserResponse>(`/users/${id}/`);
     return response.data;
   },
 
