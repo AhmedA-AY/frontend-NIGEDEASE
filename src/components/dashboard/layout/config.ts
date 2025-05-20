@@ -27,7 +27,14 @@ export const adminNavItems = [
     icon: 'package',
     items: [
       { key: 'admin-categories', title: 'Categories', href: paths.admin.categories },
-      { key: 'admin-products', title: 'Products', href: paths.admin.products },
+      { 
+        key: 'admin-products', 
+        title: 'Products', 
+        href: paths.admin.products,
+        items: [
+          { key: 'admin-product-units', title: 'Product Units', href: paths.admin.productUnits }
+        ]
+      },
       { 
         key: 'admin-clothing', 
         title: 'Clothing', 

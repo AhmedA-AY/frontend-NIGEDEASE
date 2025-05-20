@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -38,16 +38,15 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, parseISO } from 'date-fns';
 
 import { PageHeading } from '@/components/page-heading';
-import { Collection, CollectionCreateData, Season, clothingsApi } from '@/services/api/clothings';
-import { companiesApi } from '@/services/api/companies';
+import { Collection, CollectionCreateData, Season } from '@/services/api/clothings';
 import { useSnackbar } from 'notistack';
 import { useCollections, useCreateCollection, useDeleteCollection, useUpdateCollection, useSeasons } from '@/hooks/use-clothings';
-import { useCurrentUser } from '@/hooks/use-auth';
+import { useStore } from '@/providers/store-provider';
 
 export default function CollectionsPage(): React.JSX.Element {
-  const [currentStoreId, setCurrentStoreId] = useState<string>('');
-  const { isLoading: isLoadingCollections, data: collections = [] } = useCollections(currentStoreId);
-  const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons(currentStoreId);
+  const { currentStore } = useStore();
+  const { isLoading: isLoadingCollections, data: collections = [] } = useCollections(currentStore?.id || '');
+  const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons(currentStore?.id || '');
   const { mutate: createCollection, isPending: isCreating } = useCreateCollection();
   const { mutate: updateCollection, isPending: isUpdating } = useUpdateCollection();
   const { mutate: deleteCollection, isPending: isDeleting } = useDeleteCollection();
@@ -63,46 +62,15 @@ export default function CollectionsPage(): React.JSX.Element {
     release_date: format(new Date(), 'yyyy-MM-dd')
   });
   
-  const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
-  const [isLoadingStore, setIsLoadingStore] = useState(true);
-  
-  useEffect(() => {
-    const fetchStoreId = async () => {
-      try {
-        // Get companies to find the user's company
-        const companiesData = await companiesApi.getCompanies();
-        const companyId = userInfo?.company_id || (companiesData.length > 0 ? companiesData[0].id : '');
-        
-        if (!companyId) {
-          enqueueSnackbar('No company information found', { variant: 'error' });
-          setIsLoadingStore(false);
-          return;
-        }
-        
-        // Get stores for the company
-        const stores = await companiesApi.getStores(companyId);
-        
-        if (stores.length > 0) {
-          const storeId = stores[0].id;
-          setCurrentStoreId(storeId);
-        } else {
-          enqueueSnackbar('No stores found for your company', { variant: 'warning' });
-        }
-        setIsLoadingStore(false);
-      } catch (error) {
-        console.error('Error fetching store ID:', error);
-        enqueueSnackbar('Failed to load store information', { variant: 'error' });
-        setIsLoadingStore(false);
-      }
-    };
-    
-    fetchStoreId();
-  }, [userInfo, enqueueSnackbar]);
-  
-  const isLoading = isLoadingStore || isLoadingCollections || isLoadingSeasons || isCreating || isUpdating || isDeleting;
+  const isLoading = !currentStore || isLoadingCollections || isLoadingSeasons || isCreating || isUpdating || isDeleting;
   
   const handleOpenAddDialog = () => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
     // Reset form data
     setNewCollection({
       name: '',
@@ -136,8 +104,8 @@ export default function CollectionsPage(): React.JSX.Element {
   };
   
   const handleAddCollection = () => {
-    if (!currentStoreId) {
-      enqueueSnackbar('Store information is required', { variant: 'error' });
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
     
@@ -149,13 +117,13 @@ export default function CollectionsPage(): React.JSX.Element {
     // Add store_id to the collection data
     const collectionData = {
       ...newCollection,
-      store_id: currentStoreId // Explicitly include store_id in the request data
+      store_id: currentStore.id // Explicitly include store_id in the request data
     };
     
     console.log('Creating collection with data:', collectionData);
     
     createCollection({ 
-      storeId: currentStoreId, 
+      storeId: currentStore.id, 
       data: collectionData  // Use the data with store_id included
     }, {
       onSuccess: () => {
@@ -165,18 +133,18 @@ export default function CollectionsPage(): React.JSX.Element {
   };
   
   const handleEditCollection = () => {
-    if (!openCollection || !currentStoreId) return;
+    if (!openCollection || !currentStore) return;
     
     // Add store_id to the collection data
     const collectionData = {
       ...newCollection,
-      store_id: currentStoreId // Explicitly include store_id in the request data
+      store_id: currentStore.id // Explicitly include store_id in the request data
     };
     
     console.log('Updating collection with data:', collectionData);
     
     updateCollection({ 
-      storeId: currentStoreId, 
+      storeId: currentStore.id, 
       id: openCollection.id, 
       data: collectionData // Use the data with store_id included
     }, {
@@ -187,10 +155,10 @@ export default function CollectionsPage(): React.JSX.Element {
   };
   
   const handleDeleteCollection = () => {
-    if (!openCollection || !currentStoreId) return;
+    if (!openCollection || !currentStore) return;
     
     deleteCollection({ 
-      storeId: currentStoreId, 
+      storeId: currentStore.id, 
       id: openCollection.id 
     }, {
       onSuccess: () => {
@@ -199,121 +167,124 @@ export default function CollectionsPage(): React.JSX.Element {
       }
     });
   };
-
+  
   const getSeasonName = (id: string) => {
     const season = seasons.find(s => s.id === id);
     return season ? season.name : 'Unknown Season';
   };
-
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setNewCollection({ ...newCollection, [name]: value });
   };
-
+  
   const handleSelectChange = (e: any) => {
     const { name, value } = e.target;
     setNewCollection({ ...newCollection, [name]: value });
   };
-
+  
   const handleDateChange = (date: Date | null) => {
     if (date) {
-      setNewCollection({
-        ...newCollection,
-        release_date: format(date, 'yyyy-MM-dd')
-      });
+      setNewCollection({ ...newCollection, release_date: format(date, 'yyyy-MM-dd') });
     }
   };
 
   return (
-    <>
-      <Box component="main" sx={{ flexGrow: 1, py: 4 }}>
-        <Container maxWidth="xl">
-          <Stack spacing={4}>
-            <PageHeading 
-              title="Clothing Collections Management" 
-              actions={
-                <Button
-                  startIcon={<PlusIcon />}
-                  variant="contained"
-                  onClick={handleOpenAddDialog}
-                  disabled={isLoading}
-                >
-                  Add Collection
-                </Button>
-              }
-            />
-            <Card sx={{ boxShadow: 2, borderRadius: 2 }}>
-              <CardHeader title="Collections" />
-              <CardContent>
-                {isLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                    <CircularProgress />
-                  </Box>
-                ) : collections.length === 0 ? (
-                  <Alert severity="info">No collections found. Start by adding your first collection.</Alert>
-                ) : (
-                  <TableContainer component={Paper} elevation={0}>
-                    <Table sx={{ minWidth: 650 }}>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Name</TableCell>
-                          <TableCell>Description</TableCell>
-                          <TableCell>Season</TableCell>
-                          <TableCell>Release Date</TableCell>
-                          <TableCell align="right">Actions</TableCell>
+    <Box component="main" sx={{ flexGrow: 1, py: 4 }}>
+      <Container maxWidth="xl">
+        <Stack spacing={4}>
+          <PageHeading 
+            title="Collections Management" 
+            subtitle={currentStore ? `Store: ${currentStore.name}` : 'No store selected'}
+            actions={
+              <Button
+                startIcon={<PlusIcon />}
+                variant="contained"
+                onClick={handleOpenAddDialog}
+                disabled={isLoading || !currentStore}
+              >
+                Add Collection
+              </Button>
+            }
+          />
+          
+          <Card>
+            <CardHeader title="Clothing Collections" />
+            <CardContent>
+              {!currentStore ? (
+                <Alert severity="warning">Please select a store to view collections.</Alert>
+              ) : isLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : collections.length === 0 ? (
+                <Alert severity="info">
+                  No collections found for this store. Start by adding your first collection.
+                </Alert>
+              ) : (
+                <TableContainer component={Paper} elevation={0}>
+                  <Table sx={{ minWidth: 650 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Description</TableCell>
+                        <TableCell>Season</TableCell>
+                        <TableCell>Release Date</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {collections.map((collection) => (
+                        <TableRow
+                          key={collection.id}
+                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                          <TableCell component="th" scope="row">
+                            {collection.name}
+                          </TableCell>
+                          <TableCell>{collection.description || '-'}</TableCell>
+                          <TableCell>{getSeasonName(collection.season_id)}</TableCell>
+                          <TableCell>
+                            {format(parseISO(collection.release_date), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Tooltip title="Edit">
+                                <IconButton 
+                                  edge="end" 
+                                  size="small"
+                                  onClick={() => handleOpenEditDialog(collection)}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete">
+                                <IconButton 
+                                  edge="end" 
+                                  size="small"
+                                  onClick={() => handleOpenDeleteDialog(collection)}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {collections.map((collection) => (
-                          <TableRow
-                            key={collection.id}
-                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                          >
-                            <TableCell>{collection.name}</TableCell>
-                            <TableCell>{collection.description || '-'}</TableCell>
-                            <TableCell>{getSeasonName(collection.season_id)}</TableCell>
-                            <TableCell>
-                              {format(parseISO(collection.release_date), 'MMM dd, yyyy')}
-                            </TableCell>
-                            <TableCell align="right">
-                              <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                <Tooltip title="Edit">
-                                  <IconButton 
-                                    edge="end" 
-                                    size="small"
-                                    onClick={() => handleOpenEditDialog(collection)}
-                                  >
-                                    <EditIcon />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Delete">
-                                  <IconButton 
-                                    edge="end" 
-                                    size="small"
-                                    onClick={() => handleOpenDeleteDialog(collection)}
-                                  >
-                                    <DeleteIcon />
-                                  </IconButton>
-                                </Tooltip>
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </CardContent>
-            </Card>
-          </Stack>
-        </Container>
-      </Box>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+        </Stack>
+      </Container>
 
       {/* Add Collection Dialog */}
       <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Collection</DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
               autoFocus
               margin="dense"
@@ -322,7 +293,7 @@ export default function CollectionsPage(): React.JSX.Element {
               label="Collection Name"
               type="text"
               fullWidth
-              value={newCollection.name || ''}
+              value={newCollection.name}
               onChange={handleInputChange}
               required
             />
@@ -335,16 +306,16 @@ export default function CollectionsPage(): React.JSX.Element {
               fullWidth
               multiline
               rows={3}
-              value={newCollection.description || ''}
+              value={newCollection.description}
               onChange={handleInputChange}
             />
             <FormControl fullWidth margin="dense">
-              <InputLabel id="season-select-label">Season</InputLabel>
+              <InputLabel id="season-label">Season</InputLabel>
               <Select
-                labelId="season-select-label"
+                labelId="season-label"
                 id="season_id"
                 name="season_id"
-                value={newCollection.season_id || ''}
+                value={newCollection.season_id}
                 label="Season"
                 onChange={handleSelectChange}
                 required
@@ -359,7 +330,7 @@ export default function CollectionsPage(): React.JSX.Element {
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Release Date"
-                value={newCollection.release_date ? parseISO(newCollection.release_date as string) : null}
+                value={parseISO(newCollection.release_date)}
                 onChange={handleDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
               />
@@ -373,7 +344,7 @@ export default function CollectionsPage(): React.JSX.Element {
             variant="contained"
             disabled={isCreating}
           >
-            {isCreating ? 'Saving...' : 'Add Collection'}
+            {isCreating ? 'Adding...' : 'Add Collection'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -382,7 +353,7 @@ export default function CollectionsPage(): React.JSX.Element {
       <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Collection</DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
               autoFocus
               margin="dense"
@@ -391,7 +362,7 @@ export default function CollectionsPage(): React.JSX.Element {
               label="Collection Name"
               type="text"
               fullWidth
-              value={newCollection.name || ''}
+              value={newCollection.name}
               onChange={handleInputChange}
               required
             />
@@ -404,16 +375,16 @@ export default function CollectionsPage(): React.JSX.Element {
               fullWidth
               multiline
               rows={3}
-              value={newCollection.description || ''}
+              value={newCollection.description}
               onChange={handleInputChange}
             />
             <FormControl fullWidth margin="dense">
-              <InputLabel id="edit-season-select-label">Season</InputLabel>
+              <InputLabel id="edit-season-label">Season</InputLabel>
               <Select
-                labelId="edit-season-select-label"
+                labelId="edit-season-label"
                 id="edit-season_id"
                 name="season_id"
-                value={newCollection.season_id || ''}
+                value={newCollection.season_id}
                 label="Season"
                 onChange={handleSelectChange}
                 required
@@ -428,7 +399,7 @@ export default function CollectionsPage(): React.JSX.Element {
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Release Date"
-                value={newCollection.release_date ? parseISO(newCollection.release_date as string) : null}
+                value={parseISO(newCollection.release_date)}
                 onChange={handleDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
               />
@@ -466,6 +437,6 @@ export default function CollectionsPage(): React.JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 } 

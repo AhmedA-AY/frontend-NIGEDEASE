@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -32,7 +32,6 @@ import { TrashSimple as DeleteIcon } from '@phosphor-icons/react/dist/ssr/TrashS
 import { format, parseISO } from 'date-fns';
 
 import { PageHeading } from '@/components/page-heading';
-import { companiesApi } from '@/services/api/companies';
 import { useSnackbar } from 'notistack';
 import { 
   useProductUnits, 
@@ -40,12 +39,12 @@ import {
   useUpdateProductUnit, 
   useDeleteProductUnit 
 } from '@/hooks/use-inventory';
-import { useCurrentUser } from '@/hooks/use-auth';
+import { useStore } from '@/providers/store-provider';
 import { ProductUnit, ProductUnitCreateData } from '@/services/api/inventory';
 
 export default function ProductUnitsPage(): React.JSX.Element {
-  const [currentStoreId, setCurrentStoreId] = useState<string>('');
-  const { isLoading: isLoadingUnits, data: productUnits = [] } = useProductUnits(currentStoreId);
+  const { currentStore } = useStore();
+  const { isLoading: isLoadingUnits, data: productUnits = [] } = useProductUnits(currentStore?.id || '');
   const { mutate: createProductUnit, isPending: isCreating } = useCreateProductUnit();
   const { mutate: updateProductUnit, isPending: isUpdating } = useUpdateProductUnit();
   const { mutate: deleteProductUnit, isPending: isDeleting } = useDeleteProductUnit();
@@ -59,46 +58,17 @@ export default function ProductUnitsPage(): React.JSX.Element {
     description: '',
   });
   
-  const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
-  const [isLoadingStore, setIsLoadingStore] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  useEffect(() => {
-    const fetchStoreId = async () => {
-      try {
-        // Get companies to find the user's company
-        const companiesData = await companiesApi.getCompanies();
-        const companyId = userInfo?.company_id || (companiesData.length > 0 ? companiesData[0].id : '');
-        
-        if (!companyId) {
-          enqueueSnackbar('No company information found', { variant: 'error' });
-          setIsLoadingStore(false);
-          return;
-        }
-        
-        // Get stores for the company
-        const stores = await companiesApi.getStores(companyId);
-        
-        if (stores.length > 0) {
-          const storeId = stores[0].id;
-          setCurrentStoreId(storeId);
-        } else {
-          enqueueSnackbar('No stores found for your company', { variant: 'warning' });
-        }
-        setIsLoadingStore(false);
-      } catch (error) {
-        console.error('Error fetching store ID:', error);
-        enqueueSnackbar('Failed to load store information', { variant: 'error' });
-        setIsLoadingStore(false);
-      }
-    };
-    
-    fetchStoreId();
-  }, [userInfo, enqueueSnackbar]);
-  
-  const isLoading = isLoadingStore || isLoadingUnits || isCreating || isUpdating || isDeleting;
+  const isLoading = !currentStore || isLoadingUnits || isCreating || isUpdating || isDeleting;
   
   const handleOpenAddDialog = () => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
     // Reset form data
     setNewUnit({
       name: '',
@@ -123,8 +93,8 @@ export default function ProductUnitsPage(): React.JSX.Element {
   };
   
   const handleAddUnit = () => {
-    if (!currentStoreId) {
-      enqueueSnackbar('Store information is required', { variant: 'error' });
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
     
@@ -136,13 +106,13 @@ export default function ProductUnitsPage(): React.JSX.Element {
     // Add store_id to the unit data
     const unitData: ProductUnitCreateData = {
       ...newUnit as Omit<ProductUnitCreateData, 'store_id'>,
-      store_id: currentStoreId
+      store_id: currentStore.id
     };
     
     console.log('Creating product unit with data:', unitData);
     
     createProductUnit({ 
-      storeId: currentStoreId, 
+      storeId: currentStore.id, 
       data: unitData
     }, {
       onSuccess: () => {
@@ -152,7 +122,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
   };
   
   const handleEditUnit = () => {
-    if (!openUnit || !currentStoreId) return;
+    if (!openUnit || !currentStore) return;
     
     if (!newUnit.name) {
       enqueueSnackbar('Unit name is required', { variant: 'error' });
@@ -162,13 +132,13 @@ export default function ProductUnitsPage(): React.JSX.Element {
     // Add store_id to the unit data
     const unitData = {
       ...newUnit,
-      store_id: currentStoreId
+      store_id: currentStore.id
     };
     
     console.log('Updating product unit with data:', unitData);
     
     updateProductUnit({ 
-      storeId: currentStoreId, 
+      storeId: currentStore.id, 
       id: openUnit.id, 
       data: unitData as ProductUnitCreateData
     }, {
@@ -179,10 +149,10 @@ export default function ProductUnitsPage(): React.JSX.Element {
   };
   
   const handleDeleteUnit = () => {
-    if (!openUnit || !currentStoreId) return;
+    if (!openUnit || !currentStore) return;
     
     deleteProductUnit({ 
-      storeId: currentStoreId, 
+      storeId: currentStore.id, 
       id: openUnit.id 
     }, {
       onSuccess: () => {
@@ -204,12 +174,13 @@ export default function ProductUnitsPage(): React.JSX.Element {
           <Stack spacing={4}>
             <PageHeading 
               title="Product Units Management" 
+              subtitle={currentStore ? `Store: ${currentStore.name}` : 'No store selected'}
               actions={
                 <Button
                   startIcon={<PlusIcon />}
                   variant="contained"
                   onClick={handleOpenAddDialog}
-                  disabled={isLoading}
+                  disabled={isLoading || !currentStore}
                 >
                   Add Product Unit
                 </Button>
@@ -218,12 +189,16 @@ export default function ProductUnitsPage(): React.JSX.Element {
             <Card sx={{ boxShadow: 2, borderRadius: 2 }}>
               <CardHeader title="Product Units" />
               <CardContent>
-                {isLoading ? (
+                {!currentStore ? (
+                  <Alert severity="warning">Please select a store to view product units.</Alert>
+                ) : isLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                     <CircularProgress />
                   </Box>
+                ) : error ? (
+                  <Alert severity="error">{error}</Alert>
                 ) : productUnits.length === 0 ? (
-                  <Alert severity="info">No product units found. Start by adding your first product unit.</Alert>
+                  <Alert severity="info">No product units found for this store. Start by adding your first product unit.</Alert>
                 ) : (
                   <TableContainer component={Paper} elevation={0}>
                     <Table sx={{ minWidth: 650 }}>

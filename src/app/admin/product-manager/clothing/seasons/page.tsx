@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -35,14 +35,13 @@ import { format, parseISO } from 'date-fns';
 
 import { PageHeading } from '@/components/page-heading';
 import { Season, SeasonCreateData } from '@/services/api/clothings';
-import { companiesApi } from '@/services/api/companies';
 import { useSnackbar } from 'notistack';
 import { useSeasons, useCreateSeason, useUpdateSeason, useDeleteSeason } from '@/hooks/use-clothings';
-import { useCurrentUser } from '@/hooks/use-auth';
+import { useStore } from '@/providers/store-provider';
 
 export default function SeasonsPage(): React.JSX.Element {
-  const [currentStoreId, setCurrentStoreId] = useState<string>('');
-  const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons(currentStoreId);
+  const { currentStore } = useStore();
+  const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons(currentStore?.id || '');
   const { mutate: createSeason, isPending: isCreating } = useCreateSeason();
   const { mutate: updateSeason, isPending: isUpdating } = useUpdateSeason();
   const { mutate: deleteSeason, isPending: isDeleting } = useDeleteSeason();
@@ -58,46 +57,15 @@ export default function SeasonsPage(): React.JSX.Element {
     end_date: format(new Date(new Date().setMonth(new Date().getMonth() + 3)), 'yyyy-MM-dd')
   });
   
-  const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
-  const [isLoadingStore, setIsLoadingStore] = useState(true);
-  
-  useEffect(() => {
-    const fetchStoreId = async () => {
-      try {
-        // Get companies to find the user's company
-        const companiesData = await companiesApi.getCompanies();
-        const companyId = userInfo?.company_id || (companiesData.length > 0 ? companiesData[0].id : '');
-        
-        if (!companyId) {
-          enqueueSnackbar('No company information found', { variant: 'error' });
-          setIsLoadingStore(false);
-          return;
-        }
-        
-        // Get stores for the company
-        const stores = await companiesApi.getStores(companyId);
-        
-        if (stores.length > 0) {
-          const storeId = stores[0].id;
-          setCurrentStoreId(storeId);
-        } else {
-          enqueueSnackbar('No stores found for your company', { variant: 'warning' });
-        }
-        setIsLoadingStore(false);
-      } catch (error) {
-        console.error('Error fetching store ID:', error);
-        enqueueSnackbar('Failed to load store information', { variant: 'error' });
-        setIsLoadingStore(false);
-      }
-    };
-    
-    fetchStoreId();
-  }, [userInfo, enqueueSnackbar]);
-  
-  const isLoading = isLoadingStore || isLoadingSeasons || isCreating || isUpdating || isDeleting;
+  const isLoading = !currentStore || isLoadingSeasons || isCreating || isUpdating || isDeleting;
   
   const handleOpenAddDialog = () => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
     setNewSeason({
       name: '',
       description: '',
@@ -124,8 +92,8 @@ export default function SeasonsPage(): React.JSX.Element {
   };
   
   const handleAddSeason = () => {
-    if (!currentStoreId) {
-      enqueueSnackbar('Store information is required', { variant: 'error' });
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
     
@@ -136,11 +104,11 @@ export default function SeasonsPage(): React.JSX.Element {
     
     const seasonData = {
       ...newSeason,
-      store_id: currentStoreId
+      store_id: currentStore.id
     };
     
     createSeason({ 
-      storeId: currentStoreId, 
+      storeId: currentStore.id, 
       data: seasonData 
     }, {
       onSuccess: () => {
@@ -151,7 +119,7 @@ export default function SeasonsPage(): React.JSX.Element {
   };
   
   const handleEditSeason = () => {
-    if (!currentSeason || !currentStoreId) return;
+    if (!currentSeason || !currentStore) return;
     
     if (!newSeason.name) {
       enqueueSnackbar('Season name is required', { variant: 'error' });
@@ -160,11 +128,11 @@ export default function SeasonsPage(): React.JSX.Element {
     
     const seasonData = {
       ...newSeason,
-      store_id: currentStoreId
+      store_id: currentStore.id
     };
     
     updateSeason({ 
-      storeId: currentStoreId,
+      storeId: currentStore.id,
       id: currentSeason.id, 
       data: seasonData 
     }, {
@@ -176,10 +144,10 @@ export default function SeasonsPage(): React.JSX.Element {
   };
   
   const handleDeleteSeason = () => {
-    if (!currentSeason || !currentStoreId) return;
+    if (!currentSeason || !currentStore) return;
     
     deleteSeason({ 
-      storeId: currentStoreId, 
+      storeId: currentStore.id, 
       id: currentSeason.id 
     }, {
       onSuccess: () => {
@@ -208,97 +176,103 @@ export default function SeasonsPage(): React.JSX.Element {
   };
 
   return (
-    <>
-      <Box component="main" sx={{ flexGrow: 1, py: 4 }}>
-        <Container maxWidth="xl">
-          <Stack spacing={4}>
-            <PageHeading 
-              title="Clothing Seasons Management" 
-              actions={
-                <Button
-                  startIcon={<PlusIcon />}
-                  variant="contained"
-                  onClick={handleOpenAddDialog}
-                  disabled={isLoading}
-                >
-                  Add Season
-                </Button>
-              }
-            />
-            <Card sx={{ boxShadow: 2, borderRadius: 2 }}>
-              <CardHeader title="Seasons" />
-              <CardContent>
-                {isLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                    <CircularProgress />
-                  </Box>
-                ) : seasons.length === 0 ? (
-                  <Alert severity="info">No seasons found. Start by adding your first season.</Alert>
-                ) : (
-                  <TableContainer component={Paper} elevation={0}>
-                    <Table sx={{ minWidth: 650 }}>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Name</TableCell>
-                          <TableCell>Description</TableCell>
-                          <TableCell>Start Date</TableCell>
-                          <TableCell>End Date</TableCell>
-                          <TableCell align="right">Actions</TableCell>
+    <Box component="main" sx={{ flexGrow: 1, py: 4 }}>
+      <Container maxWidth="xl">
+        <Stack spacing={4}>
+          <PageHeading 
+            title="Seasons Management" 
+            subtitle={currentStore ? `Store: ${currentStore.name}` : 'No store selected'}
+            actions={
+              <Button
+                startIcon={<PlusIcon />}
+                variant="contained"
+                onClick={handleOpenAddDialog}
+                disabled={isLoading || !currentStore}
+              >
+                Add Season
+              </Button>
+            }
+          />
+          
+          <Card>
+            <CardHeader title="Clothing Seasons" />
+            <CardContent>
+              {!currentStore ? (
+                <Alert severity="warning">Please select a store to view seasons.</Alert>
+              ) : isLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : seasons.length === 0 ? (
+                <Alert severity="info">
+                  No seasons found for this store. Start by adding your first season.
+                </Alert>
+              ) : (
+                <TableContainer component={Paper} elevation={0}>
+                  <Table sx={{ minWidth: 650 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Description</TableCell>
+                        <TableCell>Start Date</TableCell>
+                        <TableCell>End Date</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {seasons.map((season) => (
+                        <TableRow
+                          key={season.id}
+                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                          <TableCell component="th" scope="row">
+                            {season.name}
+                          </TableCell>
+                          <TableCell>{season.description || '-'}</TableCell>
+                          <TableCell>
+                            {format(parseISO(season.start_date), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            {format(parseISO(season.end_date), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Tooltip title="Edit">
+                                <IconButton 
+                                  edge="end" 
+                                  size="small"
+                                  onClick={() => handleOpenEditDialog(season)}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete">
+                                <IconButton 
+                                  edge="end" 
+                                  size="small"
+                                  onClick={() => handleOpenDeleteDialog(season)}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {seasons.map((season) => (
-                          <TableRow
-                            key={season.id}
-                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                          >
-                            <TableCell>{season.name}</TableCell>
-                            <TableCell>{season.description || '-'}</TableCell>
-                            <TableCell>
-                              {format(parseISO(season.start_date), 'MMM dd, yyyy')}
-                            </TableCell>
-                            <TableCell>
-                              {format(parseISO(season.end_date), 'MMM dd, yyyy')}
-                            </TableCell>
-                            <TableCell align="right">
-                              <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                <Tooltip title="Edit">
-                                  <IconButton 
-                                    edge="end" 
-                                    size="small"
-                                    onClick={() => handleOpenEditDialog(season)}
-                                  >
-                                    <EditIcon />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Delete">
-                                  <IconButton 
-                                    edge="end" 
-                                    size="small"
-                                    onClick={() => handleOpenDeleteDialog(season)}
-                                  >
-                                    <DeleteIcon />
-                                  </IconButton>
-                                </Tooltip>
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </CardContent>
-            </Card>
-          </Stack>
-        </Container>
-      </Box>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+        </Stack>
+      </Container>
 
       {/* Add Season Dialog */}
       <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Season</DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
               autoFocus
               margin="dense"
@@ -307,7 +281,7 @@ export default function SeasonsPage(): React.JSX.Element {
               label="Season Name"
               type="text"
               fullWidth
-              value={newSeason.name || ''}
+              value={newSeason.name}
               onChange={handleInputChange}
               required
             />
@@ -320,19 +294,19 @@ export default function SeasonsPage(): React.JSX.Element {
               fullWidth
               multiline
               rows={3}
-              value={newSeason.description || ''}
+              value={newSeason.description}
               onChange={handleInputChange}
             />
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Start Date"
-                value={newSeason.start_date ? parseISO(newSeason.start_date as string) : null}
+                value={parseISO(newSeason.start_date)}
                 onChange={handleStartDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
               />
               <DatePicker
                 label="End Date"
-                value={newSeason.end_date ? parseISO(newSeason.end_date as string) : null}
+                value={parseISO(newSeason.end_date)}
                 onChange={handleEndDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
               />
@@ -346,7 +320,7 @@ export default function SeasonsPage(): React.JSX.Element {
             variant="contained"
             disabled={isCreating}
           >
-            {isCreating ? 'Saving...' : 'Add Season'}
+            {isCreating ? 'Adding...' : 'Add Season'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -355,7 +329,7 @@ export default function SeasonsPage(): React.JSX.Element {
       <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Season</DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
               autoFocus
               margin="dense"
@@ -364,7 +338,7 @@ export default function SeasonsPage(): React.JSX.Element {
               label="Season Name"
               type="text"
               fullWidth
-              value={newSeason.name || ''}
+              value={newSeason.name}
               onChange={handleInputChange}
               required
             />
@@ -377,19 +351,19 @@ export default function SeasonsPage(): React.JSX.Element {
               fullWidth
               multiline
               rows={3}
-              value={newSeason.description || ''}
+              value={newSeason.description}
               onChange={handleInputChange}
             />
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Start Date"
-                value={newSeason.start_date ? parseISO(newSeason.start_date as string) : null}
+                value={parseISO(newSeason.start_date)}
                 onChange={handleStartDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
               />
               <DatePicker
                 label="End Date"
-                value={newSeason.end_date ? parseISO(newSeason.end_date as string) : null}
+                value={parseISO(newSeason.end_date)}
                 onChange={handleEndDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
               />
@@ -427,6 +401,6 @@ export default function SeasonsPage(): React.JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 } 
