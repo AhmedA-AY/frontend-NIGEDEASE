@@ -207,12 +207,37 @@ export default function PurchasesPage(): React.JSX.Element {
   };
 
   const handleAddNewPurchase = () => {
-    // Use the current user's company ID instead of the first company
-    const userCompanyId = userInfo?.company_id || '';
+    if (isLoadingUser) {
+      enqueueSnackbar('Please wait while we load your user information...', { variant: 'info' });
+      return;
+    }
+
+    if (!userInfo?.company_id) {
+      enqueueSnackbar('Unable to determine your company. Please try logging in again.', { variant: 'error' });
+      return;
+    }
+
+    if (filteredStores.length === 0) {
+      enqueueSnackbar('No stores available for your company. Please contact your administrator.', { variant: 'error' });
+      return;
+    }
+
+    if (currencies.length === 0) {
+      enqueueSnackbar('No currencies available. Please contact your administrator.', { variant: 'error' });
+      return;
+    }
+
+    if (paymentModes.length === 0) {
+      enqueueSnackbar('No payment modes available. Please contact your administrator.', { variant: 'error' });
+      return;
+    }
+
+    // Use the current user's company ID
+    const userCompanyId = userInfo.company_id;
     // Only get stores from user's company
-    const defaultStoreId = filteredStores.length > 0 ? filteredStores[0].id : '';
-    const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
-    const defaultPaymentModeId = paymentModes.length > 0 ? paymentModes[0].id : '';
+    const defaultStoreId = filteredStores[0].id;
+    const defaultCurrencyId = currencies[0].id;
+    const defaultPaymentModeId = paymentModes[0].id;
     
     setCurrentPurchase({
       date: new Date().toISOString().split('T')[0],
@@ -286,6 +311,26 @@ export default function PurchasesPage(): React.JSX.Element {
       enqueueSnackbar('Please select a store first', { variant: 'warning' });
       return;
     }
+
+    if (!purchaseData.supplier) {
+      enqueueSnackbar('Please select a supplier', { variant: 'error' });
+      return;
+    }
+
+    if (!purchaseData.products || purchaseData.products.length === 0) {
+      enqueueSnackbar('Please add at least one product to the purchase', { variant: 'error' });
+      return;
+    }
+
+    if (!purchaseData.currency_id) {
+      enqueueSnackbar('Please select a currency', { variant: 'error' });
+      return;
+    }
+
+    if (!purchaseData.payment_mode_id) {
+      enqueueSnackbar('Please select a payment mode', { variant: 'error' });
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -314,9 +359,10 @@ export default function PurchasesPage(): React.JSX.Element {
       
       setIsPurchaseModalOpen(false);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving purchase:', error);
-      enqueueSnackbar('Failed to save purchase', { variant: 'error' });
+      const errorMessage = error?.message || error?.error || 'Failed to save purchase';
+      enqueueSnackbar(errorMessage, { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
