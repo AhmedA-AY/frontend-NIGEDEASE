@@ -316,7 +316,6 @@ export default function PaymentOutPage(): React.JSX.Element {
           onClose={() => setIsPaymentModalOpen(false)}
           onSave={handleSavePayment}
           payment={currentPayment}
-          suppliers={suppliers}
         />
       )}
 
