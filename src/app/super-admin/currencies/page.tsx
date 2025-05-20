@@ -33,7 +33,7 @@ import { z as zod } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import { useCurrencies, useCreateCurrency, useUpdateCurrency, useDeleteCurrency } from '@/hooks/use-companies';
+import { useCurrencies, useCreateCurrency, useUpdateCurrency, useDeleteCurrency, usePatchCurrency } from '@/hooks/use-companies';
 
 const currencySchema = zod.object({
   id: zod.string().optional(),
@@ -48,6 +48,7 @@ export default function CurrenciesPage(): React.JSX.Element {
   const createCurrencyMutation = useCreateCurrency();
   const updateCurrencyMutation = useUpdateCurrency();
   const deleteCurrencyMutation = useDeleteCurrency();
+  const patchCurrencyMutation = usePatchCurrency();
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -73,7 +74,8 @@ export default function CurrenciesPage(): React.JSX.Element {
   const isLoading = isLoadingCurrencies || 
     createCurrencyMutation.isPending || 
     updateCurrencyMutation.isPending || 
-    deleteCurrencyMutation.isPending;
+    deleteCurrencyMutation.isPending ||
+    patchCurrencyMutation.isPending;
   
   const handleCreateDialogOpen = () => {
     reset(defaultValues);
@@ -141,6 +143,19 @@ export default function CurrenciesPage(): React.JSX.Element {
     }
   };
   
+  // Quick edit for currency code using PATCH
+  const handleQuickCodeUpdate = async (id: string, newCode: string) => {
+    try {
+      await patchCurrencyMutation.mutateAsync({
+        id,
+        data: { code: newCode }
+      });
+      setSuccessMessage('Currency code updated successfully');
+    } catch (error) {
+      console.error('Error updating currency code:', error);
+    }
+  };
+  
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 8 }}>
       <Container maxWidth="lg">
@@ -183,6 +198,10 @@ export default function CurrenciesPage(): React.JSX.Element {
             <Alert severity="error">{(deleteCurrencyMutation.error as any)?.message || 'Failed to delete currency'}</Alert>
           )}
           
+          {patchCurrencyMutation.isError && (
+            <Alert severity="error">{(patchCurrencyMutation.error as any)?.message || 'Failed to update currency'}</Alert>
+          )}
+          
           <Card>
             <CardContent>
               {isLoadingCurrencies ? (
@@ -203,7 +222,25 @@ export default function CurrenciesPage(): React.JSX.Element {
                       {currencies?.map((currency) => (
                         <TableRow key={currency.id}>
                           <TableCell>{currency.name}</TableCell>
-                          <TableCell>{currency.code}</TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <TextField
+                                size="small"
+                                defaultValue={currency.code}
+                                inputProps={{
+                                  maxLength: 3,
+                                  style: { textTransform: 'uppercase' }
+                                }}
+                                onBlur={(e) => {
+                                  const newCode = e.target.value.toUpperCase();
+                                  if (newCode !== currency.code) {
+                                    handleQuickCodeUpdate(currency.id, newCode);
+                                  }
+                                }}
+                                sx={{ maxWidth: 80 }}
+                              />
+                            </Box>
+                          </TableCell>
                           <TableCell align="right">
                             <IconButton
                               color="primary"

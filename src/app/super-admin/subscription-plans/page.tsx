@@ -45,6 +45,7 @@ import {
   useCreateSubscriptionPlan, 
   useUpdateSubscriptionPlan, 
   useDeleteSubscriptionPlan,
+  usePatchSubscriptionPlan,
   SubscriptionPlanData
 } from '@/hooks/use-companies';
 
@@ -66,6 +67,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
   const createPlanMutation = useCreateSubscriptionPlan();
   const updatePlanMutation = useUpdateSubscriptionPlan();
   const deletePlanMutation = useDeleteSubscriptionPlan();
+  const patchPlanMutation = usePatchSubscriptionPlan();
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -96,7 +98,8 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
   const isLoading = isLoadingPlans || 
     createPlanMutation.isPending || 
     updatePlanMutation.isPending || 
-    deletePlanMutation.isPending;
+    deletePlanMutation.isPending ||
+    patchPlanMutation.isPending;
   
   const handleCreateDialogOpen = () => {
     reset(defaultValues);
@@ -164,6 +167,18 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     }
   };
 
+  const handleToggleStatus = async (plan: any) => {
+    try {
+      await patchPlanMutation.mutateAsync({
+        id: plan.id,
+        data: { is_active: !plan.is_active }
+      });
+      setSuccessMessage(`Plan ${plan.name} ${!plan.is_active ? 'activated' : 'deactivated'} successfully`);
+    } catch (error) {
+      console.error('Error toggling plan status:', error);
+    }
+  };
+
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 8 }}>
       <Container maxWidth="lg">
@@ -206,6 +221,10 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
             <Alert severity="error">{(deletePlanMutation.error as any)?.message || 'Failed to delete subscription plan'}</Alert>
           )}
           
+          {patchPlanMutation.isError && (
+            <Alert severity="error">{(patchPlanMutation.error as any)?.message || 'Failed to update subscription plan status'}</Alert>
+          )}
+          
           <Card>
             <CardContent>
               {isLoadingPlans ? (
@@ -234,20 +253,28 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                             {plan.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly'}
                     </TableCell>
                           <TableCell>{plan.storage_limit_gb}</TableCell>
-                    <TableCell>
-                            <Box
-                              sx={{
-                                backgroundColor: plan.is_active ? 'success.light' : 'error.light',
-                                borderRadius: 1,
-                                color: 'white',
-                                display: 'inline-block',
-                                px: 1,
-                                py: 0.5
-                              }}
-                            >
-                              {plan.is_active ? 'Active' : 'Inactive'}
-                            </Box>
-                    </TableCell>
+                          <TableCell>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Switch
+                                checked={plan.is_active}
+                                onChange={() => handleToggleStatus(plan)}
+                                color="success"
+                                size="small"
+                              />
+                              <Box
+                                sx={{
+                                  backgroundColor: plan.is_active ? 'success.light' : 'error.light',
+                                  borderRadius: 1,
+                                  color: 'white',
+                                  display: 'inline-block',
+                                  px: 1,
+                                  py: 0.5
+                                }}
+                              >
+                                {plan.is_active ? 'Active' : 'Inactive'}
+                              </Box>
+                            </Stack>
+                          </TableCell>
                           <TableCell align="right">
                             <IconButton
                           color="primary"

@@ -4,6 +4,8 @@ import {
   CompanyCreateData, 
   CompanyUpdateData, 
   Currency, 
+  CurrencyCreateData,
+  CurrencyUpdateData,
   SubscriptionPlan, 
   companiesApi 
 } from '@/services/api/companies';
@@ -106,7 +108,7 @@ export function useCurrency(id: string) {
 export function useCreateCurrency() {
   const queryClient = useQueryClient();
   
-  return useMutation<Currency, Error, { name: string; code: string }>({
+  return useMutation<Currency, Error, CurrencyCreateData>({
     mutationFn: (data) => companiesApi.createCurrency(data),
     onSuccess: () => {
       // Invalidate the currencies list query to refetch
@@ -118,8 +120,22 @@ export function useCreateCurrency() {
 export function useUpdateCurrency() {
   const queryClient = useQueryClient();
   
-  return useMutation<Currency, Error, { id: string; data: { name: string; code: string } }>({
+  return useMutation<Currency, Error, { id: string; data: CurrencyUpdateData }>({
     mutationFn: ({ id, data }) => companiesApi.updateCurrency(id, data),
+    onSuccess: (data) => {
+      // Update the cache for this specific currency
+      queryClient.setQueryData(companiesKeys.currencies.detail(data.id), data);
+      // Invalidate the currencies list query to refetch
+      queryClient.invalidateQueries({ queryKey: companiesKeys.currencies.lists() });
+    },
+  });
+}
+
+export function usePatchCurrency() {
+  const queryClient = useQueryClient();
+  
+  return useMutation<Currency, Error, { id: string; data: CurrencyUpdateData }>({
+    mutationFn: ({ id, data }) => companiesApi.patchCurrency(id, data),
     onSuccess: (data) => {
       // Update the cache for this specific currency
       queryClient.setQueryData(companiesKeys.currencies.detail(data.id), data);
@@ -203,6 +219,20 @@ export function useDeleteSubscriptionPlan() {
   return useMutation<void, Error, string>({
     mutationFn: (id) => companiesApi.deleteSubscriptionPlan(id),
     onSuccess: () => {
+      // Invalidate the subscription plans list query to refetch
+      queryClient.invalidateQueries({ queryKey: companiesKeys.subscriptionPlans.lists() });
+    },
+  });
+}
+
+export function usePatchSubscriptionPlan() {
+  const queryClient = useQueryClient();
+  
+  return useMutation<SubscriptionPlan, Error, { id: string; data: Partial<SubscriptionPlanData> }>({
+    mutationFn: ({ id, data }) => companiesApi.patchSubscriptionPlan(id, data),
+    onSuccess: (data) => {
+      // Update the cache for this specific subscription plan
+      queryClient.setQueryData(companiesKeys.subscriptionPlans.detail(data.id), data);
       // Invalidate the subscription plans list query to refetch
       queryClient.invalidateQueries({ queryKey: companiesKeys.subscriptionPlans.lists() });
     },

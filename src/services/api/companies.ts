@@ -11,6 +11,13 @@ export interface Currency {
   updated_at: string;
 }
 
+export interface CurrencyCreateData {
+  name: string;
+  code: string;
+}
+
+export interface CurrencyUpdateData extends Partial<CurrencyCreateData> {}
+
 export interface SubscriptionPlan {
   id: string;
   name: string;
@@ -27,6 +34,22 @@ export interface SubscriptionPlan {
   created_at: string;
   updated_at: string;
 }
+
+export interface SubscriptionPlanCreateData {
+  name: string;
+  description: string;
+  price: string;
+  billing_cycle: 'monthly' | 'yearly';
+  duration_in_months: number;
+  features?: any;
+  is_active?: boolean;
+  storage_limit_gb?: number;
+  max_products?: number;
+  max_stores?: number;
+  max_users?: number;
+}
+
+export interface SubscriptionPlanUpdateData extends Partial<SubscriptionPlanCreateData> {}
 
 export interface Company {
   id: string;
@@ -123,14 +146,20 @@ export const companiesApi = {
   },
   
   // Create a new currency
-  createCurrency: async (data: { name: string; code: string }): Promise<Currency> => {
+  createCurrency: async (data: CurrencyCreateData): Promise<Currency> => {
     const response = await coreApiClient.post<Currency>('/companies/currencies/', data);
     return response.data;
   },
   
   // Update a currency
-  updateCurrency: async (id: string, data: { name: string; code: string }): Promise<Currency> => {
+  updateCurrency: async (id: string, data: CurrencyUpdateData): Promise<Currency> => {
     const response = await coreApiClient.put<Currency>(`/companies/currencies/${id}/`, data);
+    return response.data;
+  },
+  
+  // Partially update a currency (PATCH)
+  patchCurrency: async (id: string, data: CurrencyUpdateData): Promise<Currency> => {
+    const response = await coreApiClient.patch<Currency>(`/companies/currencies/${id}/`, data);
     return response.data;
   },
   
@@ -181,19 +210,7 @@ export const companiesApi = {
   },
   
   // Create a new subscription plan
-  createSubscriptionPlan: async (data: {
-    name: string;
-    description: string;
-    price: string;
-    billing_cycle: 'monthly' | 'yearly';
-    duration_in_months: number;
-    features?: any;
-    is_active?: boolean;
-    storage_limit_gb?: number;
-    max_products?: number;
-    max_stores?: number;
-    max_users?: number;
-  }): Promise<SubscriptionPlan> => {
+  createSubscriptionPlan: async (data: SubscriptionPlanCreateData): Promise<SubscriptionPlan> => {
     const response = await coreApiClient.post<SubscriptionPlan>('/companies/subscription-plans/', data);
     return response.data;
   },
@@ -201,21 +218,18 @@ export const companiesApi = {
   // Update a subscription plan
   updateSubscriptionPlan: async (
     id: string,
-    data: {
-      name?: string;
-      description?: string;
-      price?: string;
-      billing_cycle?: 'monthly' | 'yearly';
-      duration_in_months?: number;
-      features?: any;
-      is_active?: boolean;
-      storage_limit_gb?: number;
-      max_products?: number;
-      max_stores?: number;
-      max_users?: number;
-    }
+    data: SubscriptionPlanUpdateData
   ): Promise<SubscriptionPlan> => {
     const response = await coreApiClient.put<SubscriptionPlan>(`/companies/subscription-plans/${id}/`, data);
+    return response.data;
+  },
+  
+  // Partially update a subscription plan (PATCH)
+  patchSubscriptionPlan: async (
+    id: string,
+    data: SubscriptionPlanUpdateData
+  ): Promise<SubscriptionPlan> => {
+    const response = await coreApiClient.patch<SubscriptionPlan>(`/companies/subscription-plans/${id}/`, data);
     return response.data;
   },
   
