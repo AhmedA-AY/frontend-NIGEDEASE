@@ -231,6 +231,8 @@ export default function StoresPage(): React.JSX.Element {
               <TableRow>
                 <TableCell>Name</TableCell>
                 <TableCell>Location</TableCell>
+                <TableCell>Address</TableCell>
+                <TableCell>Contact Info</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell width="100px">Actions</TableCell>
               </TableRow>
@@ -238,13 +240,13 @@ export default function StoresPage(): React.JSX.Element {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <CircularProgress size={32} />
                   </TableCell>
                 </TableRow>
               ) : filteredStores.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Typography variant="body1" color="text.secondary">
                       No stores found
                     </Typography>
@@ -255,6 +257,20 @@ export default function StoresPage(): React.JSX.Element {
                   <TableRow key={store.id} hover>
                     <TableCell>{store.name}</TableCell>
                     <TableCell>{store.location}</TableCell>
+                    <TableCell>{store.address || '-'}</TableCell>
+                    <TableCell>
+                      {store.phone_number && (
+                        <Typography variant="body2" sx={{ mb: 0.5 }}>
+                          📞 {store.phone_number}
+                        </Typography>
+                      )}
+                      {store.email && (
+                        <Typography variant="body2">
+                          ✉️ {store.email}
+                        </Typography>
+                      )}
+                      {!store.phone_number && !store.email && '-'}
+                    </TableCell>
                     <TableCell>
                       <Chip 
                         label={store.is_active === 'active' ? 'Active' : 'Inactive'} 

@@ -23,6 +23,9 @@ export default function StoreEditModal({ open, onClose, onSave, store }: StoreEd
     id: store?.id || '',
     name: store?.name || '',
     location: store?.location || '',
+    address: store?.address || '',
+    phone_number: store?.phone_number || '',
+    email: store?.email || '',
     is_active: store?.is_active === 'active'
   });
   
@@ -35,6 +38,9 @@ export default function StoreEditModal({ open, onClose, onSave, store }: StoreEd
         id: store?.id || '',
         name: store?.name || '',
         location: store?.location || '',
+        address: store?.address || '',
+        phone_number: store?.phone_number || '',
+        email: store?.email || '',
         is_active: store?.is_active === 'active'
       });
     }
@@ -89,6 +95,31 @@ export default function StoreEditModal({ open, onClose, onSave, store }: StoreEd
               required
               fullWidth
               placeholder="City, Country"
+            />
+            <TextField
+              label="Address"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              fullWidth
+              placeholder="Full street address"
+            />
+            <TextField
+              label="Phone Number"
+              name="phone_number"
+              value={formData.phone_number}
+              onChange={handleChange}
+              fullWidth
+              placeholder="e.g. +123456789"
+            />
+            <TextField
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              fullWidth
+              placeholder="store@example.com"
             />
             <FormControlLabel
               control={
