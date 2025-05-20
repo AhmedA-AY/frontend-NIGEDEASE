@@ -146,9 +146,17 @@ export default function CollectionsPage(): React.JSX.Element {
       return;
     }
     
+    // Add store_id to the collection data
+    const collectionData = {
+      ...newCollection,
+      store_id: currentStoreId // Explicitly include store_id in the request data
+    };
+    
+    console.log('Creating collection with data:', collectionData);
+    
     createCollection({ 
       storeId: currentStoreId, 
-      data: newCollection 
+      data: collectionData  // Use the data with store_id included
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
@@ -159,10 +167,18 @@ export default function CollectionsPage(): React.JSX.Element {
   const handleEditCollection = () => {
     if (!openCollection || !currentStoreId) return;
     
+    // Add store_id to the collection data
+    const collectionData = {
+      ...newCollection,
+      store_id: currentStoreId // Explicitly include store_id in the request data
+    };
+    
+    console.log('Updating collection with data:', collectionData);
+    
     updateCollection({ 
       storeId: currentStoreId, 
       id: openCollection.id, 
-      data: newCollection 
+      data: collectionData // Use the data with store_id included
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);

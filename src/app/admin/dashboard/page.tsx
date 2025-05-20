@@ -432,7 +432,7 @@ export default function AdminDashboardPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Please wait while we fetch the latest statistics...
           </Typography>
-        </Box>
+      </Box>
       </Container>
     );
   }
@@ -460,57 +460,57 @@ export default function AdminDashboardPage() {
   return (
     <Container maxWidth={false}>
       <Box sx={{ py: 3 }}>
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Welcome back, {userInfo?.first_name || 'Admin'}!
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            {formattedDate}
-          </Typography>
-        </Box>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Welcome back, {userInfo?.first_name || 'Admin'}!
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {formattedDate}
+            </Typography>
+          </Box>
 
         {currentStore && (
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 2, 
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 2, 
               mt: 2,
-              backgroundColor: 'rgba(14, 165, 233, 0.1)', 
-              border: '1px solid rgba(14, 165, 233, 0.3)',
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2
-            }}
-          >
-            <Storefront size={24} weight="duotone" style={{ color: "#0ea5e9" }} />
-            <Typography variant="subtitle1">
+                backgroundColor: 'rgba(14, 165, 233, 0.1)', 
+                border: '1px solid rgba(14, 165, 233, 0.3)',
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2
+              }}
+            >
+              <Storefront size={24} weight="duotone" style={{ color: "#0ea5e9" }} />
+              <Typography variant="subtitle1">
               Currently managing: <strong>{currentStore.name}</strong> ({currentStore.location})
-            </Typography>
-          </Paper>
-        )}
+              </Typography>
+            </Paper>
+          )}
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 3 }}>
-          <Typography variant="h4">
+            <Typography variant="h4">
             Dashboard Overview
-          </Typography>
-          <Box>
-            {lastUpdated && (
-              <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
-                Last updated: {lastUpdated.toLocaleTimeString()}
-              </Typography>
-            )}
-            <Button 
-              variant="outlined" 
-              size="small" 
-              onClick={handleRetry}
-              disabled={isLoading}
-              startIcon={isLoading ? null : <RefreshIcon />}
-            >
-              {isLoading ? 'Refreshing...' : 'Refresh'}
-            </Button>
+            </Typography>
+            <Box>
+              {lastUpdated && (
+                <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </Typography>
+              )}
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={handleRetry}
+                disabled={isLoading}
+                startIcon={isLoading ? null : <RefreshIcon />}
+              >
+                {isLoading ? 'Refreshing...' : 'Refresh'}
+              </Button>
+            </Box>
           </Box>
-        </Box>
 
         {/* Time period selector */}
         <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
@@ -540,32 +540,32 @@ export default function AdminDashboardPage() {
           </Button>
         </Stack>
 
-        {/* Statistics summary cards */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ p: 2 }}>
-              <Stack direction="row" alignItems="center" spacing={2}>
-                <Box sx={{ 
-                  p: 1.5, 
-                  bgcolor: 'primary.lighter', 
-                  borderRadius: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center' 
-                }}>
-                  <TrendingUpIcon color="primary" />
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Total Sales
-                  </Typography>
-                  <Typography variant="h5" sx={{ mt: 0.5 }}>
-                    ${stats.totalSales.toFixed(2)}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Card>
-          </Grid>
+          {/* Statistics summary cards */}
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ p: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Box sx={{ 
+                    p: 1.5, 
+                    bgcolor: 'primary.lighter', 
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center' 
+                  }}>
+                    <TrendingUpIcon color="primary" />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Total Sales
+                    </Typography>
+                    <Typography variant="h5" sx={{ mt: 0.5 }}>
+                      ${stats.totalSales.toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Card>
+            </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ p: 2 }}>
               <Stack direction="row" alignItems="center" spacing={2}>
@@ -635,7 +635,7 @@ export default function AdminDashboardPage() {
                     {stats.totalCustomers}
                   </Typography>
                 </Box>
-              </Stack>
+        </Stack>
             </Card>
           </Grid>
         </Grid>
@@ -691,20 +691,20 @@ function StatCard({ title, value, change, positive, icon }: StatCardProps) {
       <CardHeader title={title} />
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          {icon}
+            {icon}
         </Box>
         <Box sx={{ ml: 2 }}>
           <Typography variant="h4">{value}</Typography>
-          <Typography 
+            <Typography 
             variant="body2" 
             sx={{ 
               color: positive ? 'success.main' : 'error.main',
               display: 'flex',
               alignItems: 'center'
             }}
-          >
-            {change}
-          </Typography>
+            >
+              {change}
+            </Typography>
         </Box>
       </Box>
     </Card>

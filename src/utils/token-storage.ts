@@ -137,7 +137,7 @@ const tokenStorage = {
   },
 
   // Get user info from token
-  getUserInfo: (): { id?: string; email?: string; role?: string; company_id?: string } => {
+  getUserInfo: (): { id?: string; email?: string; role?: string; company_id?: string; store_id?: string } => {
     if (!isBrowser) return {};
     
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -147,12 +147,14 @@ const tokenStorage = {
     const email = localStorage.getItem(USER_EMAIL_KEY);
     const role = localStorage.getItem(USER_ROLE_KEY);
     const companyId = localStorage.getItem(COMPANY_ID_KEY);
+    const storeId = localStorage.getItem('store_id'); // Try to get store_id
     
     return {
       id: decodedToken?.user_id || decodedToken?.sub || localStorage.getItem(USER_ID_KEY),
       email: email || decodedToken?.email,
       role: role || decodedToken?.role,
-      company_id: companyId || decodedToken?.company_id
+      company_id: companyId || decodedToken?.company_id,
+      store_id: storeId || decodedToken?.store_id // Include store_id from token or localStorage
     };
   },
 
