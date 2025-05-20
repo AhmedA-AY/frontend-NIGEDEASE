@@ -140,16 +140,18 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     try {
       const { id, ...planData } = data;
       
-      // Format the data to match API expectations
+      // Format the data to match API expectations - ensure all numeric fields are numbers
       const formattedData = {
         ...planData,
         // Ensure numeric fields are sent as proper data types
         storage_limit_gb: Number(planData.storage_limit_gb),
-        price: String(planData.price), // Ensure price is a string
+        price: String(planData.price),
         duration_in_months: Number(planData.duration_in_months || 1),
-        max_products: planData.max_products ? Number(planData.max_products) : undefined,
-        max_stores: planData.max_stores ? Number(planData.max_stores) : undefined,
-        max_users: planData.max_users ? Number(planData.max_users) : undefined,
+        max_products: Number(planData.max_products || 100),
+        max_stores: Number(planData.max_stores || 5),
+        max_users: Number(planData.max_users || 10),
+        features: String(planData.features),
+        is_active: Boolean(planData.is_active)
       };
       
       console.log('Sending data to create subscription plan:', formattedData);
@@ -173,16 +175,18 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
       if (data.id) {
         const { id, ...planData } = data;
         
-        // Format the data to match API expectations
+        // Format the data to match API expectations - ensure all numeric fields are numbers
         const formattedData = {
           ...planData,
           // Ensure numeric fields are sent as proper data types
           storage_limit_gb: Number(planData.storage_limit_gb),
-          price: String(planData.price), // Ensure price is a string
+          price: String(planData.price),
           duration_in_months: Number(planData.duration_in_months || 1),
-          max_products: planData.max_products ? Number(planData.max_products) : undefined,
-          max_stores: planData.max_stores ? Number(planData.max_stores) : undefined,
-          max_users: planData.max_users ? Number(planData.max_users) : undefined,
+          max_products: Number(planData.max_products || 100),
+          max_stores: Number(planData.max_stores || 5),
+          max_users: Number(planData.max_users || 10),
+          features: String(planData.features),
+          is_active: Boolean(planData.is_active)
         };
         
         console.log('Sending data to update subscription plan:', formattedData);
@@ -225,11 +229,15 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     try {
       await patchPlanMutation.mutateAsync({
         id: plan.id,
-        data: { is_active: !plan.is_active }
+        data: { is_active: Boolean(!plan.is_active) }
       });
       setSuccessMessage(`Plan ${plan.name} ${!plan.is_active ? 'activated' : 'deactivated'} successfully`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling plan status:', error);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.message || 
+                          'Failed to update plan status';
+      alert(`Error: ${errorMessage}`);
     }
   };
 
@@ -466,9 +474,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       <Controller
                         name="storage_limit_gb"
                         control={control}
-                        render={({ field }) => (
+                        render={({ field: { onChange, value, ...rest } }) => (
                           <TextField
-                            {...field}
+                            {...rest}
+                            value={value}
+                            onChange={(e) => onChange(Number(e.target.value))}
                             label="Storage Limit (GB)"
                             type="number"
                             error={!!errors.storage_limit_gb}
@@ -482,9 +492,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       <Controller
                         name="duration_in_months"
                         control={control}
-                        render={({ field }) => (
+                        render={({ field: { onChange, value, ...rest } }) => (
                           <TextField
-                            {...field}
+                            {...rest}
+                            value={value}
+                            onChange={(e) => onChange(Number(e.target.value))}
                             label="Duration (months)"
                             type="number"
                             error={!!errors.duration_in_months}
@@ -499,9 +511,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       <Controller
                         name="max_products"
                         control={control}
-                        render={({ field }) => (
+                        render={({ field: { onChange, value, ...rest } }) => (
                           <TextField
-                            {...field}
+                            {...rest}
+                            value={value}
+                            onChange={(e) => onChange(Number(e.target.value))}
                             label="Max Products"
                             type="number"
                             error={!!errors.max_products}
@@ -514,9 +528,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       <Controller
                         name="max_stores"
                         control={control}
-                        render={({ field }) => (
+                        render={({ field: { onChange, value, ...rest } }) => (
                           <TextField
-                            {...field}
+                            {...rest}
+                            value={value}
+                            onChange={(e) => onChange(Number(e.target.value))}
                             label="Max Stores"
                             type="number"
                             error={!!errors.max_stores}
@@ -529,9 +545,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       <Controller
                         name="max_users"
                         control={control}
-                        render={({ field }) => (
+                        render={({ field: { onChange, value, ...rest } }) => (
                           <TextField
-                            {...field}
+                            {...rest}
+                            value={value}
+                            onChange={(e) => onChange(Number(e.target.value))}
                             label="Max Users"
                             type="number"
                             error={!!errors.max_users}
