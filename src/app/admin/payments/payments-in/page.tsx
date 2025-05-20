@@ -29,7 +29,7 @@ import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteCo
 import { financialsApi, PaymentIn } from '@/services/api/financials';
 import { transactionsApi, Customer } from '@/services/api/transactions';
 import { useSnackbar } from 'notistack';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 
 export default function PaymentInPage(): React.JSX.Element {
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
@@ -41,11 +41,11 @@ export default function PaymentInPage(): React.JSX.Element {
   const [payments, setPayments] = useState<PaymentIn[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const { enqueueSnackbar } = useSnackbar();
-  const { selectedStore } = useStore();
+  const { currentStore } = useStore();
   
   // Fetch payments and customers
   const fetchData = useCallback(async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'warning' });
       setIsLoading(false);
       return;
@@ -54,8 +54,8 @@ export default function PaymentInPage(): React.JSX.Element {
     setIsLoading(true);
     try {
       const [paymentsData, customersData] = await Promise.all([
-        financialsApi.getPaymentsIn(selectedStore.id),
-        transactionsApi.getCustomers(selectedStore.id)
+        financialsApi.getPaymentsIn(currentStore.id),
+        transactionsApi.getCustomers(currentStore.id)
       ]);
       setPayments(paymentsData);
       setCustomers(customersData);
@@ -65,13 +65,13 @@ export default function PaymentInPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, selectedStore]);
+  }, [enqueueSnackbar, currentStore]);
 
   useEffect(() => {
-    if (selectedStore) {
+    if (currentStore) {
       fetchData();
     }
-  }, [fetchData, selectedStore]);
+  }, [fetchData, currentStore]);
 
   // Calculate total amount
   const totalAmount = payments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
@@ -126,14 +126,14 @@ export default function PaymentInPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
     
     if (paymentToDelete) {
       try {
-        await financialsApi.deletePaymentIn(selectedStore.id, paymentToDelete);
+        await financialsApi.deletePaymentIn(currentStore.id, paymentToDelete);
         enqueueSnackbar('Payment deleted successfully', { variant: 'success' });
         fetchData();
         setIsDeleteModalOpen(false);
@@ -146,7 +146,7 @@ export default function PaymentInPage(): React.JSX.Element {
   };
 
   const handleSavePayment = async (paymentData: any) => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
@@ -155,16 +155,16 @@ export default function PaymentInPage(): React.JSX.Element {
       // Make sure the payment data includes the store_id
       const paymentWithStore = {
         ...paymentData,
-        store_id: selectedStore.id
+        store_id: currentStore.id
       };
       
       if (paymentData.id) {
         // Update existing payment
-        await financialsApi.updatePaymentIn(selectedStore.id, paymentData.id, paymentWithStore);
+        await financialsApi.updatePaymentIn(currentStore.id, paymentData.id, paymentWithStore);
         enqueueSnackbar('Payment updated successfully', { variant: 'success' });
       } else {
         // Add new payment
-        await financialsApi.createPaymentIn(selectedStore.id, paymentWithStore);
+        await financialsApi.createPaymentIn(currentStore.id, paymentWithStore);
         enqueueSnackbar('Payment added successfully', { variant: 'success' });
       }
       fetchData();

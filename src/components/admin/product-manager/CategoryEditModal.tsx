@@ -11,7 +11,7 @@ import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useSnackbar } from 'notistack';
 import { useCurrentUser } from '@/hooks/use-auth';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 
 interface CategoryData {
   id?: string;
@@ -38,17 +38,17 @@ export default function CategoryEditModal({
   const [formData, setFormData] = React.useState<CategoryData>({ name: '', description: '' });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const { selectedStore } = useStore();
+  const { currentStore } = useStore();
   const { enqueueSnackbar } = useSnackbar();
   
   // Reset form data when modal opens with new category data
   React.useEffect(() => {
     if (open) {
-      // If store_id isn't provided, try to get it from selectedStore
+      // If store_id isn't provided, try to get it from currentStore
       let storeId = category.store_id;
       
-      if (!storeId && selectedStore) {
-        storeId = selectedStore.id;
+      if (!storeId && currentStore) {
+        storeId = currentStore.id;
       }
       
       setFormData({
@@ -58,7 +58,7 @@ export default function CategoryEditModal({
       setErrors({});
       setIsSubmitting(false);
     }
-  }, [category, open, selectedStore]);
+  }, [category, open, currentStore]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -97,8 +97,8 @@ export default function CategoryEditModal({
       try {
         // Make sure we have a store_id
         if (!formData.store_id) {
-          if (selectedStore) {
-            formData.store_id = selectedStore.id;
+          if (currentStore) {
+            formData.store_id = currentStore.id;
           } else {
             throw new Error('Store ID is required');
           }

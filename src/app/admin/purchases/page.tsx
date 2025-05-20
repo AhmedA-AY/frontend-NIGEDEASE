@@ -38,11 +38,11 @@ import Grid from '@mui/material/Grid';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { financialsApi } from '@/services/api/financials';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 import { useSnackbar } from 'notistack';
 
 export default function PurchasesPage(): React.JSX.Element {
-  const { selectedStore } = useStore();
+  const { currentStore } = useStore();
   const { enqueueSnackbar } = useSnackbar();
   const [tabValue, setTabValue] = React.useState(0);
   const [selectedPurchases, setSelectedPurchases] = React.useState<string[]>([]);
@@ -67,7 +67,7 @@ export default function PurchasesPage(): React.JSX.Element {
   
   // Fetch purchases and suppliers
   const fetchData = useCallback(async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
       setIsLoading(false);
       return;
@@ -83,12 +83,12 @@ export default function PurchasesPage(): React.JSX.Element {
         currenciesData, 
         paymentModesData
       ] = await Promise.all([
-        transactionsApi.getPurchases(selectedStore.id),
-        transactionsApi.getSuppliers(selectedStore.id),
+        transactionsApi.getPurchases(currentStore.id),
+        transactionsApi.getSuppliers(currentStore.id),
         companiesApi.getCompanies(),
         inventoryApi.getStores(),
         companiesApi.getCurrencies(),
-        transactionsApi.getPaymentModes(selectedStore.id)
+        transactionsApi.getPaymentModes(currentStore.id)
       ]);
       
       setPurchases(purchasesData);
@@ -118,13 +118,13 @@ export default function PurchasesPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, selectedStore, userInfo]);
+  }, [enqueueSnackbar, currentStore, userInfo]);
 
   useEffect(() => {
-    if (!isLoadingUser && selectedStore) {
+    if (!isLoadingUser && currentStore) {
       fetchData();
     }
-  }, [fetchData, isLoadingUser, selectedStore]);
+  }, [fetchData, isLoadingUser, currentStore]);
 
   // Filter stores when userInfo changes
   useEffect(() => {
@@ -220,55 +220,22 @@ export default function PurchasesPage(): React.JSX.Element {
   };
 
   const handleEditPurchase = async (id: string) => {
-    // Find the purchase to edit
-    const purchaseToEdit = purchases.find((p) => p.id === id);
-    
-    if (!purchaseToEdit) {
-      console.error(`Purchase with ID ${id} not found`);
+    if (!currentStore) {
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
       return;
     }
     
-    if (!selectedStore) {
-      alert("Please select a store first to edit purchases");
-      return;
-    }
-    
+    setIsLoading(true);
     try {
-      // Fetch purchase items for this purchase
-      const purchaseItems = await transactionsApi.getPurchaseItems(selectedStore.id, id);
-      
-      // Convert purchase items to the format expected by the form
-      const products = await Promise.all(
-        purchaseItems.map(async (item) => ({
-          id: item.product.id,
-          name: item.product.name,
-          quantity: parseInt(item.quantity, 10),
-          price: 0, // This needs to be fetched from somewhere
-          subtotal: 0 // This needs to be calculated
-        }))
-      );
-      
-      // Set the current purchase for editing
-      setCurrentPurchase({
-        id: purchaseToEdit.id,
-        date: new Date(purchaseToEdit.created_at).toISOString().split('T')[0],
-        supplier: purchaseToEdit.supplier.id,
-        status: purchaseToEdit.status,
-        products: products,
-        totalAmount: parseFloat(purchaseToEdit.total_amount),
-        paidAmount: 0, // This needs to be fetched from somewhere
-        dueAmount: parseFloat(purchaseToEdit.total_amount), // This needs to be calculated
-        paymentStatus: purchaseToEdit.is_credit ? 'Credit' : 'Paid',
-        store_id: purchaseToEdit.store.id,
-        currency_id: purchaseToEdit.currency.id,
-        payment_mode_id: purchaseToEdit.payment_mode.id,
-        is_credit: purchaseToEdit.is_credit
-      });
-      
+      // Set purchase to edit
+      const purchaseToEdit = await transactionsApi.getPurchase(currentStore.id, id);
+      setCurrentPurchase(purchaseToEdit);
       setIsPurchaseModalOpen(true);
     } catch (error) {
       console.error('Error fetching purchase details:', error);
       enqueueSnackbar('Failed to load purchase details', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -278,14 +245,14 @@ export default function PurchasesPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
-    if (!purchaseToDelete || !selectedStore) {
+    if (!purchaseToDelete || !currentStore) {
       enqueueSnackbar('No purchase selected or no store selected', { variant: 'error' });
       return;
     }
     
     setIsLoading(true);
     try {
-      await transactionsApi.deletePurchase(selectedStore.id, purchaseToDelete);
+      await transactionsApi.deletePurchase(currentStore.id, purchaseToDelete);
       
       // Remove the deleted purchase from the state
       setPurchases(purchases.filter(purchase => purchase.id !== purchaseToDelete));
@@ -302,7 +269,7 @@ export default function PurchasesPage(): React.JSX.Element {
   };
 
   const handleSavePurchase = async (purchaseData: any) => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('Please select a store first', { variant: 'warning' });
       return;
     }
@@ -310,7 +277,7 @@ export default function PurchasesPage(): React.JSX.Element {
     setIsLoading(true);
     try {
       const formattedData = {
-        store_id: selectedStore.id,
+        store_id: currentStore.id,
         supplier_id: purchaseData.supplier,
         total_amount: purchaseData.totalAmount.toString(),
         currency_id: purchaseData.currency_id,
@@ -324,11 +291,11 @@ export default function PurchasesPage(): React.JSX.Element {
       
       if (purchaseData.id) {
         // Update existing purchase
-        await transactionsApi.updatePurchase(selectedStore.id, purchaseData.id, formattedData);
+        await transactionsApi.updatePurchase(currentStore.id, purchaseData.id, formattedData);
         enqueueSnackbar('Purchase updated successfully', { variant: 'success' });
       } else {
         // Create new purchase
-        await transactionsApi.createPurchase(selectedStore.id, formattedData);
+        await transactionsApi.createPurchase(currentStore.id, formattedData);
         enqueueSnackbar('Purchase created successfully', { variant: 'success' });
       }
       

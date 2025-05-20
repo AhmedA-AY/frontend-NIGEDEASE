@@ -25,7 +25,7 @@ import {
 import { useCurrentUser } from '@/hooks/use-auth';
 import { companiesApi } from '@/services/api/companies';
 import { clothingsApi } from '@/services/api/clothings';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 
 interface ProductEditModalProps {
   open: boolean;
@@ -49,7 +49,7 @@ export default function ProductEditModal({
   const [collections, setCollections] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { userInfo } = useCurrentUser();
-  const { selectedStore } = useStore();
+  const { currentStore } = useStore();
   const [companies, setCompanies] = useState<any[]>([]);
   
   // Fetch required data
@@ -57,16 +57,16 @@ export default function ProductEditModal({
     async function fetchData() {
       setIsLoading(true);
       try {
-        if (!selectedStore) {
+        if (!currentStore) {
           console.error('No store selected');
           return;
         }
         
         const [companiesData, unitsData, colorsData, collectionsData] = await Promise.all([
           companiesApi.getCompanies(),
-          inventoryApi.getProductUnits(selectedStore.id),
-          clothingsApi.getColors(selectedStore.id),
-          clothingsApi.getCollections(selectedStore.id)
+          inventoryApi.getProductUnits(currentStore.id),
+          clothingsApi.getColors(currentStore.id),
+          clothingsApi.getCollections(currentStore.id)
         ]);
         setCompanies(companiesData);
         setProductUnits(unitsData);
@@ -80,29 +80,29 @@ export default function ProductEditModal({
     }
     
     fetchData();
-  }, [selectedStore]);
+  }, [currentStore]);
   
   // Reset form data when modal opens with new product data
   useEffect(() => {
     if (open) {
       console.log('Modal opened, userInfo:', userInfo);
-      console.log('Selected Store:', selectedStore);
+      console.log('Selected Store:', currentStore);
       
-      if (!selectedStore) {
+      if (!currentStore) {
         console.error('No store selected');
         return;
       }
       
       setFormData({
         ...product,
-        store_id: selectedStore.id,
+        store_id: currentStore.id,
         purchase_price: product.purchase_price || '',
         sale_price: product.sale_price || ''
       });
       
       setErrors({});
     }
-  }, [product, open, userInfo, selectedStore]);
+  }, [product, open, userInfo, currentStore]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -181,7 +181,7 @@ export default function ProductEditModal({
     if (validateForm()) {
       console.log('Form validation passed');
       
-      if (!selectedStore) {
+      if (!currentStore) {
         console.error('No store selected');
         setErrors(prev => ({
           ...prev,
@@ -192,7 +192,7 @@ export default function ProductEditModal({
       
       // Make sure we have all required fields before submitting
       const completeData: ProductCreateData & { id?: string } = {
-        store_id: selectedStore.id,
+        store_id: currentStore.id,
         name: formData.name || '',
         description: formData.description || '',
         product_category_id: formData.product_category_id || '',

@@ -88,7 +88,7 @@ export default function StoreSelector() {
     );
   }
 
-  // Always show dropdown for switching between stores, even if user has a selectedStore
+  // Always show dropdown for switching between stores, even if user has a currentStore
   return (
     <div className="flex items-center gap-2">
       <FormControl variant="outlined" size="small" sx={{ minWidth: 180 }}>

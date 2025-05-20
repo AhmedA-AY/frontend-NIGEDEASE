@@ -28,10 +28,10 @@ export const StoreSelector = () => {
   }
 
   const handleChange = (event: SelectChangeEvent<string>) => {
-    const selectedStoreId = event.target.value;
-    const selectedStore = stores.find(store => store.id === selectedStoreId);
-    if (selectedStore) {
-      selectStore(selectedStore);
+    const currentStoreId = event.target.value;
+    const currentStore = stores.find(store => store.id === currentStoreId);
+    if (currentStore) {
+      selectStore(currentStore);
     }
   };
 

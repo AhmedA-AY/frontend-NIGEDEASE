@@ -13,7 +13,7 @@ import { CircularProgress, Paper } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useCurrentUser } from '@/hooks/use-auth';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 import { format as formatDate } from 'date-fns';
 
 // Import the @phosphor-icons
@@ -24,7 +24,7 @@ import { ShoppingCart } from '@phosphor-icons/react/dist/ssr/ShoppingCart';
 
 export default function AdminDashboardPage() {
   const { userInfo } = useCurrentUser();
-  const { selectedStore, stores } = useStore();
+  const { currentStore, stores } = useStore();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [stats, setStats] = React.useState({
@@ -120,7 +120,7 @@ export default function AdminDashboardPage() {
             </Typography>
           </Box>
 
-          {selectedStore && (
+          {currentStore && (
             <Paper 
               elevation={0} 
               sx={{ 
@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
             >
               <Storefront size={24} weight="duotone" style={{ color: "#0ea5e9" }} />
               <Typography variant="subtitle1">
-                Currently managing: <strong>{selectedStore.name}</strong> ({selectedStore.location})
+                Currently managing: <strong>{currentStore.name}</strong> ({currentStore.location})
               </Typography>
             </Paper>
           )}

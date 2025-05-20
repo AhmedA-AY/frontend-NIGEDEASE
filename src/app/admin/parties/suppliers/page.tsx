@@ -34,7 +34,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import { Supplier, SupplierCreateData, transactionsApi } from '@/services/api/transactions';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 
 export default function SuppliersPage(): React.JSX.Element {
   const [selectedSuppliers, setSelectedSuppliers] = React.useState<string[]>([]);
@@ -46,11 +46,11 @@ export default function SuppliersPage(): React.JSX.Element {
   const { enqueueSnackbar } = useSnackbar();
   const [isLoading, setIsLoading] = useState(true);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const { selectedStore } = useStore();
+  const { currentStore } = useStore();
   
   // Fetch suppliers
   const fetchSuppliers = React.useCallback(async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'warning' });
       setIsLoading(false);
       return;
@@ -58,7 +58,7 @@ export default function SuppliersPage(): React.JSX.Element {
     
     setIsLoading(true);
     try {
-      const data = await transactionsApi.getSuppliers(selectedStore.id);
+      const data = await transactionsApi.getSuppliers(currentStore.id);
       setSuppliers(data);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
@@ -66,13 +66,13 @@ export default function SuppliersPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, selectedStore]);
+  }, [enqueueSnackbar, currentStore]);
 
   React.useEffect(() => {
-    if (selectedStore) {
+    if (currentStore) {
       fetchSuppliers();
     }
-  }, [fetchSuppliers, selectedStore]);
+  }, [fetchSuppliers, currentStore]);
 
   // Calculate total balance
   const totalBalance = suppliers.reduce((sum, supplier) => {
@@ -128,14 +128,14 @@ export default function SuppliersPage(): React.JSX.Element {
   };
   
   const handleSaveSupplier = async (supplierData: SupplierFormData) => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
     
     try {
       const supplierPayload: SupplierCreateData = {
-        store_id: selectedStore.id,
+        store_id: currentStore.id,
         name: supplierData.name,
         email: supplierData.email,
         phone: supplierData.phone,
@@ -146,11 +146,11 @@ export default function SuppliersPage(): React.JSX.Element {
 
       if (supplierData.id) {
         // Update existing supplier
-        await transactionsApi.updateSupplier(selectedStore.id, supplierData.id, supplierPayload);
+        await transactionsApi.updateSupplier(currentStore.id, supplierData.id, supplierPayload);
         enqueueSnackbar('Supplier updated successfully', { variant: 'success' });
       } else {
         // Add new supplier
-        await transactionsApi.createSupplier(selectedStore.id, supplierPayload);
+        await transactionsApi.createSupplier(currentStore.id, supplierPayload);
         enqueueSnackbar('Supplier added successfully', { variant: 'success' });
       }
       
@@ -174,14 +174,14 @@ export default function SuppliersPage(): React.JSX.Element {
   };
   
   const handleDeleteSupplier = async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
     
     if (supplierToDelete) {
       try {
-        await transactionsApi.deleteSupplier(selectedStore.id, supplierToDelete);
+        await transactionsApi.deleteSupplier(currentStore.id, supplierToDelete);
         enqueueSnackbar('Supplier deleted successfully', { variant: 'success' });
         // Refresh the supplier list
         fetchSuppliers();

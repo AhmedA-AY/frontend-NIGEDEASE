@@ -41,10 +41,10 @@ import DialogActions from '@mui/material/DialogActions';
 import ProductEditModal from '@/components/admin/product-manager/ProductEditModal';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { companiesApi } from '@/services/api/companies';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 
 export default function ProductsPage(): React.JSX.Element {
-  const { selectedStore } = useStore();
+  const { currentStore } = useStore();
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
@@ -72,7 +72,7 @@ export default function ProductsPage(): React.JSX.Element {
   
   // Fetch products and categories
   const fetchData = useCallback(async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
       setIsLoading(false);
       return;
@@ -81,10 +81,10 @@ export default function ProductsPage(): React.JSX.Element {
     setIsLoading(true);
     try {
       const [productsData, categoriesData, companiesData, unitsData] = await Promise.all([
-        inventoryApi.getProducts(selectedStore.id),
-        inventoryApi.getProductCategories(selectedStore.id),
+        inventoryApi.getProducts(currentStore.id),
+        inventoryApi.getProductCategories(currentStore.id),
         companiesApi.getCompanies(),
-        inventoryApi.getProductUnits(selectedStore.id)
+        inventoryApi.getProductUnits(currentStore.id)
       ]);
       setProducts(productsData);
       setCategories(categoriesData);
@@ -96,13 +96,13 @@ export default function ProductsPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, selectedStore]);
+  }, [enqueueSnackbar, currentStore]);
 
   useEffect(() => {
-    if (selectedStore) {
+    if (currentStore) {
       fetchData();
     }
-  }, [fetchData, selectedStore]);
+  }, [fetchData, currentStore]);
 
   // Filter products based on search term and filters
   const filteredProducts = products.filter(product => {
@@ -145,7 +145,7 @@ export default function ProductsPage(): React.JSX.Element {
   };
 
   const handleAddProduct = () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('Please select a store first', { variant: 'warning' });
       return;
     }
@@ -155,7 +155,7 @@ export default function ProductsPage(): React.JSX.Element {
     console.log('Product units available:', productUnits);
     
     // Use the selected store
-    const storeId = selectedStore.id;
+    const storeId = currentStore.id;
     
     // Use the first product unit by default if available
     const defaultUnitId = productUnits.length > 0 ? productUnits[0].id : '';
@@ -201,7 +201,7 @@ export default function ProductsPage(): React.JSX.Element {
   };
 
   const handleSaveProduct = async (productData: ProductCreateData & { id?: string }) => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('Please select a store first', { variant: 'warning' });
       return;
     }
@@ -211,12 +211,12 @@ export default function ProductsPage(): React.JSX.Element {
       if (productData.id) {
         // Update existing product
         console.log('Updating product with ID:', productData.id);
-        await inventoryApi.updateProduct(selectedStore.id, productData.id, productData);
+        await inventoryApi.updateProduct(currentStore.id, productData.id, productData);
         enqueueSnackbar('Product updated successfully', { variant: 'success' });
       } else {
         // Add new product
         console.log('Creating new product with data:', productData);
-        await inventoryApi.createProduct(selectedStore.id, productData);
+        await inventoryApi.createProduct(currentStore.id, productData);
         enqueueSnackbar('Product added successfully', { variant: 'success' });
       }
       fetchData();
@@ -245,14 +245,14 @@ export default function ProductsPage(): React.JSX.Element {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('Please select a store first', { variant: 'warning' });
       return;
     }
     
     if (productToDelete) {
       try {
-        await inventoryApi.deleteProduct(selectedStore.id, productToDelete);
+        await inventoryApi.deleteProduct(currentStore.id, productToDelete);
         enqueueSnackbar('Product deleted successfully', { variant: 'success' });
         fetchData();
         setDeleteConfirmOpen(false);

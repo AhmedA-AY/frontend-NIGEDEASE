@@ -38,7 +38,7 @@ export default function StoresPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = React.useState(true);
   const [stores, setStores] = React.useState<InventoryStore[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedStore, setSelectedStore] = React.useState<InventoryStore | null>(null);
+  const [currentStore, setSelectedStore] = React.useState<InventoryStore | null>(null);
   const [isStoreModalOpen, setIsStoreModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [storeToDelete, setStoreToDelete] = React.useState<string | null>(null);
@@ -289,7 +289,7 @@ export default function StoresPage(): React.JSX.Element {
           open={isStoreModalOpen}
           onClose={() => setIsStoreModalOpen(false)}
           onSave={handleSaveStore}
-          store={selectedStore || undefined}
+          store={currentStore || undefined}
         />
       )}
       

@@ -39,10 +39,10 @@ import { SelectChangeEvent } from '@mui/material/Select';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { financialsApi } from '@/services/api/financials';
 import { useSnackbar } from 'notistack';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 
 export default function SalesPage(): React.JSX.Element {
-  const { selectedStore } = useStore();
+  const { currentStore } = useStore();
   const { enqueueSnackbar } = useSnackbar();
   const [tabValue, setTabValue] = React.useState(0);
   const [selectedSales, setSelectedSales] = React.useState<string[]>([]);
@@ -68,7 +68,7 @@ export default function SalesPage(): React.JSX.Element {
   
   // Fetch sales and customers
   const fetchData = useCallback(async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
       setIsLoading(false);
       return;
@@ -84,12 +84,12 @@ export default function SalesPage(): React.JSX.Element {
         currenciesData, 
         paymentModesData
       ] = await Promise.all([
-        transactionsApi.getSales(selectedStore.id),
-        transactionsApi.getCustomers(selectedStore.id),
+        transactionsApi.getSales(currentStore.id),
+        transactionsApi.getCustomers(currentStore.id),
         companiesApi.getCompanies(),
         inventoryApi.getStores(),
         companiesApi.getCurrencies(),
-        transactionsApi.getPaymentModes(selectedStore.id)
+        transactionsApi.getPaymentModes(currentStore.id)
       ]);
       
       setSales(salesData);
@@ -112,7 +112,7 @@ export default function SalesPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, selectedStore, userInfo]);
+  }, [enqueueSnackbar, currentStore, userInfo]);
 
   useEffect(() => {
     if (!isLoadingUser) {
@@ -208,15 +208,15 @@ export default function SalesPage(): React.JSX.Element {
   };
 
   const handleEditSale = async (saleId: string) => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('Please select a store first to edit sales', { variant: 'warning' });
       return;
     }
     
     try {
       setEditModalLoading(true);
-      const saleToEdit = await transactionsApi.getSale(selectedStore.id, saleId);
-      const saleItems = await transactionsApi.getSaleItems(selectedStore.id, saleId);
+      const saleToEdit = await transactionsApi.getSale(currentStore.id, saleId);
+      const saleItems = await transactionsApi.getSaleItems(currentStore.id, saleId);
       
       // Convert sale items to the format expected by the form
       const products = await Promise.all(
@@ -261,14 +261,14 @@ export default function SalesPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
-    if (!saleToDelete || !selectedStore) {
+    if (!saleToDelete || !currentStore) {
       enqueueSnackbar('No sale selected or no store selected', { variant: 'error' });
       return;
     }
     
     setIsLoading(true);
     try {
-      await transactionsApi.deleteSale(selectedStore.id, saleToDelete);
+      await transactionsApi.deleteSale(currentStore.id, saleToDelete);
       
       // Remove the deleted sale from the state
       setSales(sales.filter(sale => sale.id !== saleToDelete));
@@ -285,7 +285,7 @@ export default function SalesPage(): React.JSX.Element {
   };
 
   const handleSaveSale = async (saleData: any) => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('Please select a store first', { variant: 'warning' });
       return;
     }
@@ -293,7 +293,7 @@ export default function SalesPage(): React.JSX.Element {
     setIsLoading(true);
     try {
       const formattedData = {
-        store_id: selectedStore.id,
+        store_id: currentStore.id,
         customer_id: saleData.customer,
         total_amount: saleData.totalAmount.toString(),
         currency_id: saleData.currency_id,
@@ -307,11 +307,11 @@ export default function SalesPage(): React.JSX.Element {
       
       if (saleData.id) {
         // Update existing sale
-        await transactionsApi.updateSale(selectedStore.id, saleData.id, formattedData);
+        await transactionsApi.updateSale(currentStore.id, saleData.id, formattedData);
         enqueueSnackbar('Sale updated successfully', { variant: 'success' });
       } else {
         // Create new sale
-        await transactionsApi.createSale(selectedStore.id, formattedData);
+        await transactionsApi.createSale(currentStore.id, formattedData);
         enqueueSnackbar('Sale created successfully', { variant: 'success' });
       }
       
@@ -327,13 +327,13 @@ export default function SalesPage(): React.JSX.Element {
 
   const fetchProductById = async (productId: string) => {
     try {
-      if (!selectedStore) {
+      if (!currentStore) {
         console.error('No store selected');
         enqueueSnackbar('Please select a store', { variant: 'error' });
         return null;
       }
       
-      const response = await inventoryApi.getProduct(selectedStore.id, productId);
+      const response = await inventoryApi.getProduct(currentStore.id, productId);
       return response;
     } catch (error) {
       console.error(`Error fetching product ${productId}:`, error);

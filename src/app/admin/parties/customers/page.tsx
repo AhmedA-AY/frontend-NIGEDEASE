@@ -34,7 +34,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import { Customer, CustomerCreateData, transactionsApi } from '@/services/api/transactions';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 
 export default function CustomersPage(): React.JSX.Element {
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([]);
@@ -46,11 +46,11 @@ export default function CustomersPage(): React.JSX.Element {
   const { enqueueSnackbar } = useSnackbar();
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const { selectedStore } = useStore();
+  const { currentStore } = useStore();
   
   // Fetch customers
   const fetchCustomers = React.useCallback(async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'warning' });
       setIsLoading(false);
       return;
@@ -58,7 +58,7 @@ export default function CustomersPage(): React.JSX.Element {
     
     setIsLoading(true);
     try {
-      const data = await transactionsApi.getCustomers(selectedStore.id);
+      const data = await transactionsApi.getCustomers(currentStore.id);
       setCustomers(data);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -66,13 +66,13 @@ export default function CustomersPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, selectedStore]);
+  }, [enqueueSnackbar, currentStore]);
 
   React.useEffect(() => {
-    if (selectedStore) {
+    if (currentStore) {
       fetchCustomers();
     }
-  }, [fetchCustomers, selectedStore]);
+  }, [fetchCustomers, currentStore]);
 
   // Calculate total balance
   const totalBalance = customers.reduce((sum, customer) => {
@@ -128,14 +128,14 @@ export default function CustomersPage(): React.JSX.Element {
   };
   
   const handleSaveCustomer = async (customerData: CustomerFormData) => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
     
     try {
       const customerPayload: CustomerCreateData = {
-        store_id: selectedStore.id,
+        store_id: currentStore.id,
         name: customerData.name,
         email: customerData.email,
         phone: customerData.phone,
@@ -145,11 +145,11 @@ export default function CustomersPage(): React.JSX.Element {
 
       if (customerData.id) {
         // Update existing customer
-        await transactionsApi.updateCustomer(selectedStore.id, customerData.id, customerPayload);
+        await transactionsApi.updateCustomer(currentStore.id, customerData.id, customerPayload);
         enqueueSnackbar('Customer updated successfully', { variant: 'success' });
       } else {
         // Add new customer
-        await transactionsApi.createCustomer(selectedStore.id, customerPayload);
+        await transactionsApi.createCustomer(currentStore.id, customerPayload);
         enqueueSnackbar('Customer added successfully', { variant: 'success' });
       }
       
@@ -173,14 +173,14 @@ export default function CustomersPage(): React.JSX.Element {
   };
   
   const handleDeleteCustomer = async () => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
     
     if (customerToDelete) {
       try {
-        await transactionsApi.deleteCustomer(selectedStore.id, customerToDelete);
+        await transactionsApi.deleteCustomer(currentStore.id, customerToDelete);
         enqueueSnackbar('Customer deleted successfully', { variant: 'success' });
         // Refresh the customer list
         fetchCustomers();

@@ -14,7 +14,7 @@ export type Store = {
 
 export type StoreContextType = {
   stores: Store[];
-  selectedStore: Store | null;
+  currentStore: Store | null;
   selectStore: (store: Store) => void;
   refreshStores: () => void;
   isLoading: boolean;
@@ -26,7 +26,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 // Store provider component
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [stores, setStores] = useState<Store[]>([]);
-  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [currentStore, setSelectedStore] = useState<Store | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadStores = () => {
@@ -85,7 +85,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return (
     <StoreContext.Provider value={{ 
       stores, 
-      selectedStore, 
+      currentStore, 
       selectStore, 
       refreshStores,
       isLoading 

@@ -27,7 +27,7 @@ import { financialsApi, ExpenseCategory, ExpenseCategoryCreateData, ExpenseCateg
 import { useCurrentUser } from '@/hooks/use-auth';
 import { paths } from '@/paths';
 import { companiesApi } from '@/services/api/companies';
-import { useStore } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 import ExpenseCategoryEditModal from '@/components/admin/expenses/ExpenseCategoryEditModal';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
 
@@ -65,7 +65,7 @@ const BreadcrumbsPath: React.FC<BreadcrumbsPathProps> = ({ items }) => {
 export default function ExpenseCategoriesPage(): React.JSX.Element {
   const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
-  const { selectedStore } = useStore();
+  const { currentStore } = useStore();
   
   // State
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
@@ -79,12 +79,12 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
 
   // Fetch categories
   const fetchCategories = useCallback(async () => {
-    if (!selectedStore) return;
+    if (!currentStore) return;
     
     setIsLoading(true);
     setError(null);
     try {
-      const data = await financialsApi.getExpenseCategories(selectedStore.id);
+      const data = await financialsApi.getExpenseCategories(currentStore.id);
       console.log("Categories data:", data);
       setCategories(data);
     } catch (err) {
@@ -94,13 +94,13 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, selectedStore]);
+  }, [enqueueSnackbar, currentStore]);
 
   useEffect(() => {
-    if (selectedStore) {
+    if (currentStore) {
       fetchCategories();
     }
-  }, [fetchCategories, selectedStore]);
+  }, [fetchCategories, currentStore]);
 
   // Handlers
   const handleAddNew = () => {
@@ -120,7 +120,7 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
   };
 
   const handleSave = async (data: Partial<ExpenseCategory>) => {
-    if (!selectedStore) {
+    if (!currentStore) {
       enqueueSnackbar('No store selected. Please select a store and try again.', { variant: 'error' });
       return;
     }
@@ -130,23 +130,23 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
       if (categoryToEdit?.id) {
         // Update existing category
         const updateData: ExpenseCategoryUpdateData = {
-          store_id: selectedStore.id,
+          store_id: currentStore.id,
           name: data.name || '',
           description: data.description || ''
         };
         console.log('Updating category with data:', updateData);
-        await financialsApi.updateExpenseCategory(selectedStore.id, categoryToEdit.id, updateData);
+        await financialsApi.updateExpenseCategory(currentStore.id, categoryToEdit.id, updateData);
         enqueueSnackbar('Category updated successfully', { variant: 'success' });
       } else {
         // Create new category
         const createData: ExpenseCategoryCreateData = {
-          store_id: selectedStore.id,
+          store_id: currentStore.id,
           name: data.name || '',
           description: data.description || ''
         };
         console.log('Creating new category with data:', createData);
         try {
-          const result = await financialsApi.createExpenseCategory(selectedStore.id, createData);
+          const result = await financialsApi.createExpenseCategory(currentStore.id, createData);
           console.log('Category creation result:', result);
           enqueueSnackbar('Category added successfully', { variant: 'success' });
         } catch (apiError: any) {
@@ -186,10 +186,10 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
-    if (!categoryToDelete || !selectedStore) return;
+    if (!categoryToDelete || !currentStore) return;
     
     try {
-      await financialsApi.deleteExpenseCategory(selectedStore.id, categoryToDelete);
+      await financialsApi.deleteExpenseCategory(currentStore.id, categoryToDelete);
       enqueueSnackbar('Category deleted successfully', { variant: 'success' });
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);
@@ -220,7 +220,7 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
             variant="contained"
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddNew}
-            disabled={!selectedStore}
+            disabled={!currentStore}
           >
             Add New Category
           </Button>
@@ -231,8 +231,8 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
           <Box sx={{ mt: 1, mb: 2 }}>
             {process.env.NODE_ENV === 'development' && (
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                Button state: {!selectedStore ? 'Disabled (no store)' : 'Enabled'}, 
-                Store ID: {selectedStore?.id || 'Not set'}, 
+                Button state: {!currentStore ? 'Disabled (no store)' : 'Enabled'}, 
+                Store ID: {currentStore?.id || 'Not set'}, 
                 Loading user: {isLoadingUser ? 'Yes' : 'No'}
               </Typography>
             )}
