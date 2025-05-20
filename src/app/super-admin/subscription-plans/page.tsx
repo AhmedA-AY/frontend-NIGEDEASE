@@ -57,7 +57,11 @@ const subscriptionPlanSchema = zod.object({
   billing_cycle: zod.enum(['monthly', 'yearly'], { required_error: 'Billing cycle is required' }),
   features: zod.string().min(1, 'Features are required'),
   is_active: zod.boolean(),
-  storage_limit_gb: zod.number().min(1, 'Storage limit is required')
+  storage_limit_gb: zod.number().min(1, 'Storage limit is required'),
+  duration_in_months: zod.number().optional(),
+  max_products: zod.number().optional(),
+  max_stores: zod.number().optional(),
+  max_users: zod.number().optional()
 });
 
 type SubscriptionPlanFormValues = zod.infer<typeof subscriptionPlanSchema>;
@@ -81,7 +85,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     billing_cycle: 'monthly',
     features: '',
     is_active: true,
-    storage_limit_gb: 10
+    storage_limit_gb: 10,
+    duration_in_months: 1,
+    max_products: 100,
+    max_stores: 5,
+    max_users: 10
   };
   
   const {
@@ -115,6 +123,10 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     setValue('features', plan.features);
     setValue('is_active', plan.is_active);
     setValue('storage_limit_gb', plan.storage_limit_gb);
+    setValue('duration_in_months', plan.duration_in_months || 1);
+    setValue('max_products', plan.max_products || 100);
+    setValue('max_stores', plan.max_stores || 5);
+    setValue('max_users', plan.max_users || 10);
     setEditDialogOpen(true);
   };
   
@@ -127,12 +139,32 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
   const handleCreateSubmit = async (data: SubscriptionPlanFormValues) => {
     try {
       const { id, ...planData } = data;
-      await createPlanMutation.mutateAsync(planData as SubscriptionPlanData);
+      
+      // Format the data to match API expectations
+      const formattedData = {
+        ...planData,
+        // Ensure numeric fields are sent as proper data types
+        storage_limit_gb: Number(planData.storage_limit_gb),
+        price: String(planData.price), // Ensure price is a string
+        duration_in_months: Number(planData.duration_in_months || 1),
+        max_products: planData.max_products ? Number(planData.max_products) : undefined,
+        max_stores: planData.max_stores ? Number(planData.max_stores) : undefined,
+        max_users: planData.max_users ? Number(planData.max_users) : undefined,
+      };
+      
+      console.log('Sending data to create subscription plan:', formattedData);
+      
+      await createPlanMutation.mutateAsync(formattedData as SubscriptionPlanData);
       setCreateDialogOpen(false);
       setSuccessMessage('Subscription plan created successfully');
       reset(defaultValues);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating subscription plan:', error);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.message || 
+                          'Failed to create subscription plan';
+      setSuccessMessage('');
+      alert(`Error: ${errorMessage}`);
     }
   };
   
@@ -140,16 +172,38 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     try {
       if (data.id) {
         const { id, ...planData } = data;
-        await updatePlanMutation.mutateAsync({
+        
+        // Format the data to match API expectations
+        const formattedData = {
+          ...planData,
+          // Ensure numeric fields are sent as proper data types
+          storage_limit_gb: Number(planData.storage_limit_gb),
+          price: String(planData.price), // Ensure price is a string
+          duration_in_months: Number(planData.duration_in_months || 1),
+          max_products: planData.max_products ? Number(planData.max_products) : undefined,
+          max_stores: planData.max_stores ? Number(planData.max_stores) : undefined,
+          max_users: planData.max_users ? Number(planData.max_users) : undefined,
+        };
+        
+        console.log('Sending data to update subscription plan:', formattedData);
+        
+        // Use PATCH instead of PUT to handle partial updates better
+        await patchPlanMutation.mutateAsync({
           id,
-          data: planData as SubscriptionPlanData
+          data: formattedData as SubscriptionPlanData
         });
-    setEditDialogOpen(false);
-    setSuccessMessage('Subscription plan updated successfully');
+        
+        setEditDialogOpen(false);
+        setSuccessMessage('Subscription plan updated successfully');
         reset(defaultValues);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating subscription plan:', error);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.message || 
+                          'Failed to update subscription plan';
+      setSuccessMessage('');
+      alert(`Error: ${errorMessage}`);
     }
   };
   
@@ -412,44 +466,103 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       <Controller
                         name="storage_limit_gb"
                         control={control}
-                        render={({ field: { onChange, value, ...field } }) => (
-              <TextField
+                        render={({ field }) => (
+                          <TextField
                             {...field}
                             label="Storage Limit (GB)"
                             type="number"
-                            value={value}
-                            onChange={(e) => onChange(Number(e.target.value))}
                             error={!!errors.storage_limit_gb}
                             helperText={errors.storage_limit_gb?.message}
-                fullWidth
-                required
-                            inputProps={{ min: 1 }}
+                            fullWidth
+                            required
                           />
                         )}
                       />
                       
                       <Controller
-                        name="is_active"
+                        name="duration_in_months"
                         control={control}
-                        render={({ field: { value, onChange, ...field } }) => (
-              <FormControl fullWidth>
-                            <Typography variant="body2" gutterBottom>
-                              Status
-                            </Typography>
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  {...field}
-                                  checked={value}
-                                  onChange={(e) => onChange(e.target.checked)}
-                                />
-                              }
-                              label={value ? "Active" : "Inactive"}
-                            />
-                          </FormControl>
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Duration (months)"
+                            type="number"
+                            error={!!errors.duration_in_months}
+                            helperText={errors.duration_in_months?.message}
+                            fullWidth
+                          />
                         )}
                       />
                     </Box>
+                    
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Controller
+                        name="max_products"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Max Products"
+                            type="number"
+                            error={!!errors.max_products}
+                            helperText={errors.max_products?.message}
+                            fullWidth
+                          />
+                        )}
+                      />
+                      
+                      <Controller
+                        name="max_stores"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Max Stores"
+                            type="number"
+                            error={!!errors.max_stores}
+                            helperText={errors.max_stores?.message}
+                            fullWidth
+                          />
+                        )}
+                      />
+                      
+                      <Controller
+                        name="max_users"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Max Users"
+                            type="number"
+                            error={!!errors.max_users}
+                            helperText={errors.max_users?.message}
+                            fullWidth
+                          />
+                        )}
+                      />
+                    </Box>
+                    
+                    <Controller
+                      name="is_active"
+                      control={control}
+                      render={({ field: { value, onChange, ...field } }) => (
+                        <FormControl fullWidth>
+                          <Typography variant="body2" gutterBottom>
+                            Status
+                          </Typography>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                {...field}
+                                checked={value}
+                                onChange={(e) => onChange(e.target.checked)}
+                              />
+                            }
+                            label={value ? "Active" : "Inactive"}
+                          />
+                        </FormControl>
+                      )}
+                    />
                   </Stack>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>

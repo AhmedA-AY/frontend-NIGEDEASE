@@ -182,9 +182,9 @@ export interface SubscriptionPlanData {
   features: string;
   is_active: boolean;
   storage_limit_gb: number;
-  max_products?: number;
-  max_stores?: number;
-  max_users?: number;
+  max_products: number;
+  max_stores: number;
+  max_users: number;
 }
 
 export function useCreateSubscriptionPlan() {
