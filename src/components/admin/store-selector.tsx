@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useStore, Store } from '@/contexts/store-context';
+import { useStore } from '@/providers/store-provider';
 import { FormControl, InputLabel, Select, MenuItem, Box, Tooltip, Typography, SelectChangeEvent, IconButton, CircularProgress, Alert } from '@mui/material';
 import { Storefront, ArrowsClockwise } from '@phosphor-icons/react/dist/ssr';
 
 export default function StoreSelector() {
-  const { stores, selectedStore, selectStore, refreshStores, isLoading } = useStore();
+  const { stores, currentStore, selectStore, refreshStores, isLoading } = useStore();
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,7 +15,7 @@ export default function StoreSelector() {
     const loadStores = async () => {
       try {
         setError(null);
-        await refreshStores();
+        refreshStores();
       } catch (err) {
         setError('Failed to load stores. Please try again.');
         console.error('Error loading stores:', err);
@@ -38,7 +38,7 @@ export default function StoreSelector() {
     setError(null);
     
     try {
-      await refreshStores();
+      refreshStores();
     } catch (err) {
       setError('Failed to refresh stores. Please try again.');
       console.error('Error refreshing stores:', err);
@@ -93,7 +93,7 @@ export default function StoreSelector() {
     <div className="flex items-center gap-2">
       <FormControl variant="outlined" size="small" sx={{ minWidth: 180 }}>
         <Select
-          value={selectedStore?.id || ''}
+          value={currentStore?.id || ''}
           onChange={handleStoreChange}
           displayEmpty
           className="text-sm"
