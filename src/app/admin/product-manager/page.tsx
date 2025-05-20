@@ -34,6 +34,14 @@ export default function ProductManagerPage(): React.JSX.Element {
       link: paths.admin.products,
     },
     {
+      id: 'product-units',
+      title: 'Product Units',
+      description: 'Manage measurement units for products',
+      icon: <TagIcon size={52} weight="bold" />,
+      color: '#0ea5e9',
+      link: paths.admin.productUnits,
+    },
+    {
       id: 'clothings',
       title: 'Clothings',
       description: 'Manage clothing attributes like colors, sizes, and materials',
