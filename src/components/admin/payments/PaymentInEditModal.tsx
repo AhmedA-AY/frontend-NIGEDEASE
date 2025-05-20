@@ -16,7 +16,7 @@ import FormHelperText from '@mui/material/FormHelperText';
 import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 import { PaymentInCreateData, Receivable, financialsApi } from '@/services/api/financials';
-import { Sale, transactionsApi, TransactionPaymentMode } from '@/services/api/transactions';
+import { Sale, transactionsApi, PaymentMode } from '@/services/api/transactions';
 import { Company, companiesApi, Currency } from '@/services/api/companies';
 
 interface PaymentInEditModalProps {
@@ -35,7 +35,7 @@ export default function PaymentInEditModal({
   const [formData, setFormData] = useState<PaymentInCreateData & { id?: string }>(payment);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
+  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
   const [receivables, setReceivables] = useState<Receivable[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
@@ -46,18 +46,43 @@ export default function PaymentInEditModal({
     async function fetchData() {
       setIsLoading(true);
       try {
-        const [companiesData, paymentModesData, receivablesData, salesData, currenciesData] = await Promise.all([
-          companiesApi.getCompanies(),
-          transactionsApi.getPaymentModes(),
-          financialsApi.getReceivables(),
-          transactionsApi.getSales(),
-          companiesApi.getCurrencies()
-        ]);
+        // Get companies first to get the store ID
+        const companiesData = await companiesApi.getCompanies();
         setCompanies(companiesData);
-        setPaymentModes(paymentModesData);
-        setReceivables(receivablesData);
-        setSales(salesData);
-        setCurrencies(currenciesData);
+        
+        // Find a company to use for store ID
+        let companyId = '';
+        if (companiesData.length > 0) {
+          companyId = companiesData[0].id;
+        }
+        
+        if (companyId) {
+          // Get stores for the company
+          const stores = await companiesApi.getStores(companyId);
+          
+          if (stores.length > 0) {
+            const storeId = stores[0].id;
+            
+            // Now get payment modes, receivables, sales and currencies
+            const [paymentModesData, receivablesData, salesData, currenciesData] = await Promise.all([
+              transactionsApi.getPaymentModes(storeId),
+              financialsApi.getReceivables(storeId),
+              transactionsApi.getSales(storeId),
+              companiesApi.getCurrencies()
+            ]);
+            
+            // Update form data with store_id
+            setFormData(prev => ({
+              ...prev,
+              store_id: storeId
+            }));
+            
+            setPaymentModes(paymentModesData);
+            setReceivables(receivablesData);
+            setSales(salesData);
+            setCurrencies(currenciesData);
+          }
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -107,8 +132,8 @@ export default function PaymentInEditModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.company) {
-      newErrors.company = 'Company is required';
+    if (!formData.store_id) {
+      newErrors.store_id = 'Store is required';
     }
     
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
@@ -149,24 +174,20 @@ export default function PaymentInEditModal({
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth error={!!errors.company}>
-              <InputLabel id="company-select-label">Company</InputLabel>
+            <FormControl fullWidth error={!!errors.store_id}>
+              <InputLabel id="store-select-label">Store</InputLabel>
               <Select
-                labelId="company-select-label"
-                id="company"
-                name="company"
-                value={formData.company || ''}
-                label="Company"
+                labelId="store-select-label"
+                id="store_id"
+                name="store_id"
+                value={formData.store_id || ''}
+                label="Store"
                 onChange={handleSelectChange}
+                disabled={true} // Disable since we're setting it automatically
               >
-                <MenuItem value="">Select a Company</MenuItem>
-                {companies.map(company => (
-                  <MenuItem key={company.id} value={company.id}>
-                    {company.name}
-                  </MenuItem>
-                ))}
+                <MenuItem value={formData.store_id || ''}>Current Store</MenuItem>
               </Select>
-              {errors.company && <FormHelperText>{errors.company}</FormHelperText>}
+              {errors.store_id && <FormHelperText>{errors.store_id}</FormHelperText>}
             </FormControl>
           </Grid>
           

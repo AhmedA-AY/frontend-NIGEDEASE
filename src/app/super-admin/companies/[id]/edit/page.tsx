@@ -17,6 +17,7 @@ import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { useRouter } from 'next/navigation';
+import { FormControl, InputLabel, Select, SelectChangeEvent } from '@mui/material';
 
 import { useUpdateCompany, useCompany, useCurrencies, useSubscriptionPlans } from '@/hooks/use-companies';
 import { paths } from '@/paths';
@@ -32,10 +33,9 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
   const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [formData, setFormData] = React.useState({
     name: '',
-    short_name: '',
-    address: '',
-    subscription_plan_id: '',
-    currency_id: ''
+    description: '',
+    is_active: true,
+    subscription_plan: ''
   });
   const [formErrors, setFormErrors] = React.useState<Record<string, string>>({});
 
@@ -44,15 +44,16 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
     if (company) {
       setFormData({
         name: company.name,
-        short_name: company.short_name,
-        address: company.address,
-        subscription_plan_id: company.subscription_plan.id,
-        currency_id: company.currency.id
+        description: company.description || '',
+        is_active: company.is_active,
+        subscription_plan: company.subscription_plan || ''
       });
     }
   }, [company]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent<boolean>
+  ) => {
     const { name, value } = e.target;
     if (name) {
       setFormData({
@@ -77,20 +78,12 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
       errors.name = 'Company name is required';
     }
     
-    if (!formData.short_name.trim()) {
-      errors.short_name = 'Short name is required';
+    if (!formData.description.trim()) {
+      errors.description = 'Description is required';
     }
     
-    if (!formData.address.trim()) {
-      errors.address = 'Address is required';
-    }
-    
-    if (!formData.subscription_plan_id) {
-      errors.subscription_plan_id = 'Subscription plan is required';
-    }
-    
-    if (!formData.currency_id) {
-      errors.currency_id = 'Currency is required';
+    if (!formData.subscription_plan) {
+      errors.subscription_plan = 'Subscription plan is required';
     }
     
     setFormErrors(errors);
@@ -203,27 +196,13 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
-                      label="Short Name"
-                      name="short_name"
+                      label="Description"
+                      name="description"
                       onChange={handleChange}
                       required
-                      value={formData.short_name}
-                      error={!!formErrors.short_name}
-                      helperText={formErrors.short_name}
-                      disabled={isLoading}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Address"
-                      name="address"
-                      onChange={handleChange}
-                      required
-                      value={formData.address}
-                      error={!!formErrors.address}
-                      helperText={formErrors.address}
+                      value={formData.description}
+                      error={!!formErrors.description}
+                      helperText={formErrors.description}
                       disabled={isLoading}
                     />
                   </Grid>
@@ -232,13 +211,13 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
                     <TextField
                       fullWidth
                       label="Subscription Plan"
-                      name="subscription_plan_id"
+                      name="subscription_plan"
                       onChange={handleChange}
                       required
                       select
-                      value={formData.subscription_plan_id}
-                      error={!!formErrors.subscription_plan_id}
-                      helperText={formErrors.subscription_plan_id || 'Select a subscription plan'}
+                      value={formData.subscription_plan}
+                      error={!!formErrors.subscription_plan}
+                      helperText={formErrors.subscription_plan || 'Select a subscription plan'}
                       disabled={isLoading || isLoadingSubscriptionPlans}
                     >
                       {isLoadingSubscriptionPlans ? (
@@ -254,28 +233,24 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
                   </Grid>
                   
                   <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Currency"
-                      name="currency_id"
-                      onChange={handleChange}
-                      required
-                      select
-                      value={formData.currency_id}
-                      error={!!formErrors.currency_id}
-                      helperText={formErrors.currency_id || 'Select a currency'}
-                      disabled={isLoading || isLoadingCurrencies}
-                    >
-                      {isLoadingCurrencies ? (
-                        <MenuItem disabled>Loading currencies...</MenuItem>
-                      ) : (
-                        currencies?.map((currency) => (
-                          <MenuItem key={currency.id} value={currency.id}>
-                            {currency.name} ({currency.code})
-                          </MenuItem>
-                        ))
-                      )}
-                    </TextField>
+                    <FormControl fullWidth>
+                      <InputLabel>Status</InputLabel>
+                      <Select
+                        name="is_active"
+                        value={formData.is_active ? "true" : "false"}
+                        label="Status"
+                        onChange={(e) => {
+                          const value = e.target.value === "true";
+                          setFormData({
+                            ...formData,
+                            is_active: value
+                          });
+                        }}
+                      >
+                        <MenuItem value="true">Active</MenuItem>
+                        <MenuItem value="false">Inactive</MenuItem>
+                      </Select>
+                    </FormControl>
                   </Grid>
                   
                   <Grid item xs={12}>

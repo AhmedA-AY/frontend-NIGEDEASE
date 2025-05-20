@@ -38,8 +38,8 @@ interface ColorFormData {
   is_active: boolean;
 }
 
-export const ColorsList = () => {
-  const { data: colors, isLoading } = useColors();
+export const ColorsList = ({ storeId }: { storeId: string }) => {
+  const { data: colors, isLoading } = useColors(storeId);
   const createColor = useCreateColor();
   const updateColor = useUpdateColor();
   const deleteColor = useDeleteColor();
@@ -133,9 +133,10 @@ export const ColorsList = () => {
       name: formData.name,
       color_code: formData.color_code,
       is_active: formData.is_active,
+      store_id: storeId
     };
     
-    await createColor.mutateAsync(data);
+    await createColor.mutateAsync({ storeId, data });
     handleCloseDialog();
   };
 
@@ -146,15 +147,16 @@ export const ColorsList = () => {
       name: formData.name,
       color_code: formData.color_code,
       is_active: formData.is_active,
+      store_id: storeId
     };
     
-    await updateColor.mutateAsync({ id: selectedColorId, data });
+    await updateColor.mutateAsync({ storeId, id: selectedColorId, data });
     handleCloseDialog();
   };
 
   const handleDeleteColor = async () => {
     if (selectedColorId) {
-      await deleteColor.mutateAsync(selectedColorId);
+      await deleteColor.mutateAsync({ storeId, id: selectedColorId });
       handleCloseDialog();
     }
   };

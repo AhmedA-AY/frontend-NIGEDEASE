@@ -3,18 +3,19 @@ import { clothingsApi, Color, ColorCreateData, ColorUpdateData, Collection, Coll
 import { toast } from 'sonner';
 
 // Colors hooks
-export const useColors = () => {
+export const useColors = (storeId: string) => {
   return useQuery({
-    queryKey: ['colors'],
-    queryFn: clothingsApi.getColors,
+    queryKey: ['colors', storeId],
+    queryFn: () => clothingsApi.getColors(storeId),
+    enabled: !!storeId
   });
 };
 
-export const useColor = (id: string) => {
+export const useColor = (storeId: string, id: string) => {
   return useQuery({
-    queryKey: ['colors', id],
-    queryFn: () => clothingsApi.getColor(id),
-    enabled: !!id,
+    queryKey: ['colors', storeId, id],
+    queryFn: () => clothingsApi.getColor(storeId, id),
+    enabled: !!storeId && !!id,
   });
 };
 
@@ -22,9 +23,10 @@ export const useCreateColor = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: ColorCreateData) => clothingsApi.createColor(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['colors'] });
+    mutationFn: ({ storeId, data }: { storeId: string, data: ColorCreateData }) => 
+      clothingsApi.createColor(storeId, data),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['colors', storeId] });
       toast.success('Color created successfully');
     },
     onError: (error: any) => {
@@ -38,10 +40,11 @@ export const useUpdateColor = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ColorUpdateData }) => clothingsApi.updateColor(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['colors'] });
-      queryClient.invalidateQueries({ queryKey: ['colors', id] });
+    mutationFn: ({ storeId, id, data }: { storeId: string, id: string; data: ColorUpdateData }) => 
+      clothingsApi.updateColor(storeId, id, data),
+    onSuccess: (_, { storeId, id }) => {
+      queryClient.invalidateQueries({ queryKey: ['colors', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['colors', storeId, id] });
       toast.success('Color updated successfully');
     },
     onError: (error: any) => {
@@ -55,9 +58,10 @@ export const useDeleteColor = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => clothingsApi.deleteColor(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['colors'] });
+    mutationFn: ({ storeId, id }: { storeId: string, id: string }) => 
+      clothingsApi.deleteColor(storeId, id),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['colors', storeId] });
       toast.success('Color deleted successfully');
     },
     onError: (error: any) => {
@@ -68,18 +72,19 @@ export const useDeleteColor = () => {
 };
 
 // Seasons hooks
-export const useSeasons = () => {
+export const useSeasons = (storeId: string) => {
   return useQuery({
-    queryKey: ['seasons'],
-    queryFn: clothingsApi.getSeasons,
+    queryKey: ['seasons', storeId],
+    queryFn: () => clothingsApi.getSeasons(storeId),
+    enabled: !!storeId
   });
 };
 
-export const useSeason = (id: string) => {
+export const useSeason = (storeId: string, id: string) => {
   return useQuery({
-    queryKey: ['seasons', id],
-    queryFn: () => clothingsApi.getSeason(id),
-    enabled: !!id,
+    queryKey: ['seasons', storeId, id],
+    queryFn: () => clothingsApi.getSeason(storeId, id),
+    enabled: !!storeId && !!id,
   });
 };
 
@@ -87,9 +92,10 @@ export const useCreateSeason = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: SeasonCreateData) => clothingsApi.createSeason(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['seasons'] });
+    mutationFn: ({ storeId, data }: { storeId: string, data: SeasonCreateData }) => 
+      clothingsApi.createSeason(storeId, data),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['seasons', storeId] });
       toast.success('Season created successfully');
     },
     onError: (error: any) => {
@@ -103,10 +109,11 @@ export const useUpdateSeason = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: SeasonUpdateData }) => clothingsApi.updateSeason(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['seasons'] });
-      queryClient.invalidateQueries({ queryKey: ['seasons', id] });
+    mutationFn: ({ storeId, id, data }: { storeId: string, id: string; data: SeasonUpdateData }) => 
+      clothingsApi.updateSeason(storeId, id, data),
+    onSuccess: (_, { storeId, id }) => {
+      queryClient.invalidateQueries({ queryKey: ['seasons', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['seasons', storeId, id] });
       toast.success('Season updated successfully');
     },
     onError: (error: any) => {
@@ -120,9 +127,10 @@ export const useDeleteSeason = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => clothingsApi.deleteSeason(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['seasons'] });
+    mutationFn: ({ storeId, id }: { storeId: string, id: string }) => 
+      clothingsApi.deleteSeason(storeId, id),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['seasons', storeId] });
       toast.success('Season deleted successfully');
     },
     onError: (error: any) => {
@@ -133,18 +141,19 @@ export const useDeleteSeason = () => {
 };
 
 // Collections hooks
-export const useCollections = () => {
+export const useCollections = (storeId: string) => {
   return useQuery({
-    queryKey: ['collections'],
-    queryFn: clothingsApi.getCollections,
+    queryKey: ['collections', storeId],
+    queryFn: () => clothingsApi.getCollections(storeId),
+    enabled: !!storeId
   });
 };
 
-export const useCollection = (id: string) => {
+export const useCollection = (storeId: string, id: string) => {
   return useQuery({
-    queryKey: ['collections', id],
-    queryFn: () => clothingsApi.getCollection(id),
-    enabled: !!id,
+    queryKey: ['collections', storeId, id],
+    queryFn: () => clothingsApi.getCollection(storeId, id),
+    enabled: !!storeId && !!id,
   });
 };
 
@@ -152,9 +161,10 @@ export const useCreateCollection = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: CollectionCreateData) => clothingsApi.createCollection(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['collections'] });
+    mutationFn: ({ storeId, data }: { storeId: string, data: CollectionCreateData }) => 
+      clothingsApi.createCollection(storeId, data),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['collections', storeId] });
       toast.success('Collection created successfully');
     },
     onError: (error: any) => {
@@ -168,10 +178,11 @@ export const useUpdateCollection = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CollectionUpdateData }) => clothingsApi.updateCollection(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['collections'] });
-      queryClient.invalidateQueries({ queryKey: ['collections', id] });
+    mutationFn: ({ storeId, id, data }: { storeId: string, id: string; data: CollectionUpdateData }) => 
+      clothingsApi.updateCollection(storeId, id, data),
+    onSuccess: (_, { storeId, id }) => {
+      queryClient.invalidateQueries({ queryKey: ['collections', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['collections', storeId, id] });
       toast.success('Collection updated successfully');
     },
     onError: (error: any) => {
@@ -185,9 +196,10 @@ export const useDeleteCollection = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => clothingsApi.deleteCollection(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['collections'] });
+    mutationFn: ({ storeId, id }: { storeId: string, id: string }) => 
+      clothingsApi.deleteCollection(storeId, id),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['collections', storeId] });
       toast.success('Collection deleted successfully');
     },
     onError: (error: any) => {
@@ -198,18 +210,19 @@ export const useDeleteCollection = () => {
 };
 
 // Sizes hooks
-export const useSizes = () => {
+export const useSizes = (storeId: string) => {
   return useQuery({
-    queryKey: ['sizes'],
-    queryFn: clothingsApi.getSizes,
+    queryKey: ['sizes', storeId],
+    queryFn: () => clothingsApi.getSizes(storeId),
+    enabled: !!storeId
   });
 };
 
-export const useSize = (id: string) => {
+export const useSize = (storeId: string, id: string) => {
   return useQuery({
-    queryKey: ['sizes', id],
-    queryFn: () => clothingsApi.getSize(id),
-    enabled: !!id,
+    queryKey: ['sizes', storeId, id],
+    queryFn: () => clothingsApi.getSize(storeId, id),
+    enabled: !!storeId && !!id,
   });
 };
 
@@ -217,9 +230,10 @@ export const useCreateSize = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: SizeCreateData) => clothingsApi.createSize(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sizes'] });
+    mutationFn: ({ storeId, data }: { storeId: string, data: SizeCreateData }) => 
+      clothingsApi.createSize(storeId, data),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['sizes', storeId] });
       toast.success('Size created successfully');
     },
     onError: (error: any) => {
@@ -233,10 +247,11 @@ export const useUpdateSize = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: SizeUpdateData }) => clothingsApi.updateSize(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['sizes'] });
-      queryClient.invalidateQueries({ queryKey: ['sizes', id] });
+    mutationFn: ({ storeId, id, data }: { storeId: string, id: string; data: SizeUpdateData }) => 
+      clothingsApi.updateSize(storeId, id, data),
+    onSuccess: (_, { storeId, id }) => {
+      queryClient.invalidateQueries({ queryKey: ['sizes', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['sizes', storeId, id] });
       toast.success('Size updated successfully');
     },
     onError: (error: any) => {
@@ -250,9 +265,10 @@ export const useDeleteSize = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => clothingsApi.deleteSize(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sizes'] });
+    mutationFn: ({ storeId, id }: { storeId: string, id: string }) => 
+      clothingsApi.deleteSize(storeId, id),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['sizes', storeId] });
       toast.success('Size deleted successfully');
     },
     onError: (error: any) => {
@@ -263,18 +279,19 @@ export const useDeleteSize = () => {
 };
 
 // Materials hooks
-export const useMaterials = () => {
+export const useMaterials = (storeId: string) => {
   return useQuery({
-    queryKey: ['materials'],
-    queryFn: clothingsApi.getMaterials,
+    queryKey: ['materials', storeId],
+    queryFn: () => clothingsApi.getMaterials(storeId),
+    enabled: !!storeId
   });
 };
 
-export const useMaterial = (id: string) => {
+export const useMaterial = (storeId: string, id: string) => {
   return useQuery({
-    queryKey: ['materials', id],
-    queryFn: () => clothingsApi.getMaterial(id),
-    enabled: !!id,
+    queryKey: ['materials', storeId, id],
+    queryFn: () => clothingsApi.getMaterial(storeId, id),
+    enabled: !!storeId && !!id,
   });
 };
 
@@ -282,9 +299,10 @@ export const useCreateMaterial = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: MaterialCreateData) => clothingsApi.createMaterial(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['materials'] });
+    mutationFn: ({ storeId, data }: { storeId: string, data: MaterialCreateData }) => 
+      clothingsApi.createMaterial(storeId, data),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['materials', storeId] });
       toast.success('Material created successfully');
     },
     onError: (error: any) => {
@@ -298,10 +316,11 @@ export const useUpdateMaterial = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: MaterialUpdateData }) => clothingsApi.updateMaterial(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['materials'] });
-      queryClient.invalidateQueries({ queryKey: ['materials', id] });
+    mutationFn: ({ storeId, id, data }: { storeId: string, id: string; data: MaterialUpdateData }) => 
+      clothingsApi.updateMaterial(storeId, id, data),
+    onSuccess: (_, { storeId, id }) => {
+      queryClient.invalidateQueries({ queryKey: ['materials', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['materials', storeId, id] });
       toast.success('Material updated successfully');
     },
     onError: (error: any) => {
@@ -315,9 +334,10 @@ export const useDeleteMaterial = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => clothingsApi.deleteMaterial(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['materials'] });
+    mutationFn: ({ storeId, id }: { storeId: string, id: string }) => 
+      clothingsApi.deleteMaterial(storeId, id),
+    onSuccess: (_, { storeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['materials', storeId] });
       toast.success('Material deleted successfully');
     },
     onError: (error: any) => {

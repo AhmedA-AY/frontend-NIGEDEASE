@@ -30,7 +30,7 @@ import { paths } from '@/paths';
 import SaleEditModal from '@/components/admin/sales/SaleEditModal';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
 import { useState, useEffect, useCallback } from 'react';
-import { Sale, Customer, SaleCreateData, SaleUpdateData, transactionsApi, TransactionPaymentMode } from '@/services/api/transactions';
+import { Sale, Customer, SaleCreateData, SaleUpdateData, transactionsApi, PaymentMode } from '@/services/api/transactions';
 import { inventoryApi, InventoryStore } from '@/services/api/inventory';
 import { companiesApi, Company, Currency } from '@/services/api/companies';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -59,7 +59,7 @@ export default function SalesPage(): React.JSX.Element {
   const [stores, setStores] = useState<InventoryStore[]>([]);
   const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
+  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
   const [selectedSaleDetails, setSelectedSaleDetails] = useState<Sale | null>(null);
   
@@ -68,15 +68,28 @@ export default function SalesPage(): React.JSX.Element {
   
   // Fetch sales and customers
   const fetchData = useCallback(async () => {
+    if (!selectedStore) {
+      enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      const [salesData, customersData, companiesData, storesData, currenciesData, paymentModesData] = await Promise.all([
-        transactionsApi.getSales(),
-        transactionsApi.getCustomers(),
+      const [
+        salesData, 
+        customersData, 
+        companiesData, 
+        storesData, 
+        currenciesData, 
+        paymentModesData
+      ] = await Promise.all([
+        transactionsApi.getSales(selectedStore.id),
+        transactionsApi.getCustomers(selectedStore.id),
         companiesApi.getCompanies(),
         inventoryApi.getStores(),
         companiesApi.getCurrencies(),
-        transactionsApi.getPaymentModes()
+        transactionsApi.getPaymentModes(selectedStore.id)
       ]);
       
       setSales(salesData);
@@ -93,19 +106,13 @@ export default function SalesPage(): React.JSX.Element {
         );
         setFilteredStores(storesForCompany);
       }
-      
-      console.log('Fetched data:', {
-        companies: companiesData,
-        stores: storesData,
-        currencies: currenciesData,
-        paymentModes: paymentModesData
-      });
     } catch (error) {
       console.error('Error fetching data:', error);
+      enqueueSnackbar('Failed to load data', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo]);
+  }, [enqueueSnackbar, selectedStore, userInfo]);
 
   useEffect(() => {
     if (!isLoadingUser) {
@@ -130,7 +137,11 @@ export default function SalesPage(): React.JSX.Element {
     
   // Further filter sales by user's company if available
   const companySales = userInfo?.company_id
-    ? filteredSales.filter(sale => sale.company.id === userInfo.company_id)
+    ? filteredSales.filter(sale => 
+        sale.store && 
+        sale.store.company && 
+        sale.store.company.id === userInfo.company_id
+      )
     : filteredSales;
 
   // Calculate total amounts
@@ -197,57 +208,48 @@ export default function SalesPage(): React.JSX.Element {
   };
 
   const handleEditSale = async (saleId: string) => {
+    if (!selectedStore) {
+      enqueueSnackbar('Please select a store first to edit sales', { variant: 'warning' });
+      return;
+    }
+    
     try {
-      if (!selectedStore) {
-        enqueueSnackbar('Please select a store', { variant: 'error' });
-        return;
-      }
-      
       setEditModalLoading(true);
-      const saleToEdit = await transactionsApi.getSale(saleId);
-      const saleItems = await transactionsApi.getSaleItems(saleId);
+      const saleToEdit = await transactionsApi.getSale(selectedStore.id, saleId);
+      const saleItems = await transactionsApi.getSaleItems(selectedStore.id, saleId);
       
       // Convert sale items to the format expected by the form
       const products = await Promise.all(
-        saleItems.map(async (item) => {
-          // Get product details
-          let product;
-          try {
-            product = await inventoryApi.getProduct(selectedStore.id, item.product.id);
-          } catch (err) {
-            console.error(`Error fetching product ${item.product.id}:`, err);
-            product = item.product;
-          }
-          
-          return {
-            id: item.product.id,
-            name: product.name,
-            quantity: parseInt(item.quantity),
-            unitPrice: product.sale_price ? parseFloat(product.sale_price) : 0,
-            discount: 0, // Not available from API, default to 0
-            tax: 0, // Not available from API, default to 0
-            subtotal: parseFloat(item.quantity) * (product.sale_price ? parseFloat(product.sale_price) : 0)
-          };
-        })
+        saleItems.map(async (item) => ({
+          id: item.product.id,
+          name: item.product.name,
+          quantity: parseInt(item.quantity, 10),
+          price: 0, // This needs to be fetched from somewhere
+          subtotal: 0 // This needs to be calculated
+        }))
       );
       
+      // Set the current sale for editing
       setCurrentSale({
         id: saleToEdit.id,
+        date: new Date(saleToEdit.created_at).toISOString().split('T')[0],
         customer: saleToEdit.customer.id,
-        company_id: saleToEdit.company.id,
+        status: saleToEdit.status,
+        products: products,
+        totalAmount: parseFloat(saleToEdit.total_amount),
+        paidAmount: 0, // This needs to be fetched from somewhere
+        dueAmount: parseFloat(saleToEdit.total_amount), // This needs to be calculated
+        paymentStatus: saleToEdit.is_credit ? 'Credit' : 'Paid',
         store_id: saleToEdit.store.id,
         currency_id: saleToEdit.currency.id,
         payment_mode_id: saleToEdit.payment_mode.id,
-        totalAmount: parseFloat(saleToEdit.total_amount),
-        is_credit: saleToEdit.is_credit,
-        products: products
+        is_credit: saleToEdit.is_credit
       });
       
       setIsSaleModalOpen(true);
-      handleMenuClose(saleId);
     } catch (error) {
-      console.error('Error fetching sale items:', error);
-      alert('Failed to fetch sale details. Please try again.');
+      console.error('Error fetching sale details:', error);
+      enqueueSnackbar('Failed to load sale details', { variant: 'error' });
     } finally {
       setEditModalLoading(false);
     }
@@ -256,121 +258,70 @@ export default function SalesPage(): React.JSX.Element {
   const handleDeleteSale = (id: string) => {
     setSaleToDelete(id);
     setIsDeleteModalOpen(true);
-    handleMenuClose(id);
   };
 
   const handleConfirmDelete = async () => {
-    if (saleToDelete) {
-      try {
-        await transactionsApi.deleteSale(saleToDelete);
-        console.log(`Deleted sale with ID: ${saleToDelete}`);
-        // Refresh data
-        fetchData();
-        setIsDeleteModalOpen(false);
-        setSaleToDelete(null);
-      } catch (error) {
-        console.error('Error deleting sale:', error);
-      }
+    if (!saleToDelete || !selectedStore) {
+      enqueueSnackbar('No sale selected or no store selected', { variant: 'error' });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await transactionsApi.deleteSale(selectedStore.id, saleToDelete);
+      
+      // Remove the deleted sale from the state
+      setSales(sales.filter(sale => sale.id !== saleToDelete));
+      
+      enqueueSnackbar('Sale deleted successfully', { variant: 'success' });
+      setIsDeleteModalOpen(false);
+      setSaleToDelete(null);
+    } catch (error) {
+      console.error('Error deleting sale:', error);
+      enqueueSnackbar('Failed to delete sale', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSaveSale = async (saleData: any) => {
+    if (!selectedStore) {
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      return;
+    }
+    
+    setIsLoading(true);
     try {
-      // Log data before creating/updating
-      console.log('Sale data to save:', saleData);
-      
-      // Ensure company_id is set from userInfo
-      const company_id = userInfo?.company_id || '';
-      
-      // Verify company_id is available
-      if (!company_id) {
-        alert("Company information is not available. Please refresh the page or log in again.");
-        return;
-      }
-      
-      // For other fields, use the form values or defaults
-      const store_id = saleData.store_id || (filteredStores.length > 0 ? filteredStores[0].id : '');
-      const currency_id = saleData.currency_id || (currencies.length > 0 ? currencies[0].id : '');
-      const payment_mode_id = saleData.payment_mode_id || (paymentModes.length > 0 ? paymentModes[0].id : '');
-      
-      // Log IDs being used
-      console.log('Using IDs:', {
-        company_id,
-        store_id,
-        currency_id,
-        payment_mode_id
-      });
-      
-      // Convert product items to the format expected by the API
-      const items = (saleData.products || []).map((product: {id: string; quantity: number}) => ({
-        product_id: product.id,
-        quantity: String(product.quantity) // Ensure quantity is a string
-      }));
-      
-      // Make sure we have at least one item
-      if (items.length === 0) {
-        alert("You must add at least one product to create a sale.");
-        return;
-      }
-      
-      const salePayload: SaleCreateData = {
-        company_id: company_id,
-        store_id: store_id,
+      const formattedData = {
+        store_id: selectedStore.id,
         customer_id: saleData.customer,
         total_amount: saleData.totalAmount.toString(),
-        currency_id: currency_id,
-        payment_mode_id: payment_mode_id,
-        is_credit: Boolean(saleData.is_credit),
-        items: items
+        currency_id: saleData.currency_id,
+        payment_mode_id: saleData.payment_mode_id,
+        is_credit: saleData.is_credit,
+        items: saleData.products.map((product: any) => ({
+          product_id: product.id,
+          quantity: product.quantity.toString()
+        }))
       };
-
-      // Show final payload
-      console.log('Final sale payload:', salePayload);
-
-      let responseData;
       
       if (saleData.id) {
         // Update existing sale
-        responseData = await transactionsApi.updateSale(saleData.id, salePayload);
-        console.log(`Updated sale: ${JSON.stringify(salePayload)}`);
+        await transactionsApi.updateSale(selectedStore.id, saleData.id, formattedData);
+        enqueueSnackbar('Sale updated successfully', { variant: 'success' });
       } else {
-        // Add new sale
-        responseData = await transactionsApi.createSale(salePayload);
-        console.log(`Added new sale: ${JSON.stringify(salePayload)}`);
+        // Create new sale
+        await transactionsApi.createSale(selectedStore.id, formattedData);
+        enqueueSnackbar('Sale created successfully', { variant: 'success' });
       }
       
-      // Create receivable automatically
-      if (responseData) {
-        try {
-          console.log('Creating receivable for sale:', responseData.id);
-          
-          const receivablePayload = {
-            company: company_id,
-            sale: responseData.id,
-            amount: saleData.totalAmount.toString(),
-            currency: currency_id
-          };
-          
-          await financialsApi.createReceivable(receivablePayload);
-          console.log('Receivable created successfully');
-        } catch (receivableError) {
-          console.error('Error creating receivable:', receivableError);
-          alert("Sale was saved, but there was an error creating the receivable. Please create it manually.");
-        }
-      }
-      
-      // Refresh the data
-      fetchData();
       setIsSaleModalOpen(false);
-    } catch (error: any) {
+      fetchData();
+    } catch (error) {
       console.error('Error saving sale:', error);
-      // Display the error details if available
-      if (error.response && error.response.data) {
-        console.error('API error details:', error.response.data);
-        alert(`Error: ${JSON.stringify(error.response.data)}`);
-      } else {
-        alert("An error occurred while saving the sale.");
-      }
+      enqueueSnackbar('Failed to save sale', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   };
 

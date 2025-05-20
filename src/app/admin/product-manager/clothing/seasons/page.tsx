@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -35,12 +35,14 @@ import { format, parseISO } from 'date-fns';
 
 import { PageHeading } from '@/components/page-heading';
 import { Season, SeasonCreateData } from '@/services/api/clothings';
+import { companiesApi } from '@/services/api/companies';
 import { useSnackbar } from 'notistack';
 import { useSeasons, useCreateSeason, useUpdateSeason, useDeleteSeason } from '@/hooks/use-clothings';
 import { useCurrentUser } from '@/hooks/use-auth';
 
 export default function SeasonsPage(): React.JSX.Element {
-  const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons();
+  const [currentStoreId, setCurrentStoreId] = useState<string>('');
+  const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons(currentStoreId);
   const { mutate: createSeason, isPending: isCreating } = useCreateSeason();
   const { mutate: updateSeason, isPending: isUpdating } = useUpdateSeason();
   const { mutate: deleteSeason, isPending: isDeleting } = useDeleteSeason();
@@ -49,7 +51,7 @@ export default function SeasonsPage(): React.JSX.Element {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentSeason, setCurrentSeason] = useState<Season | null>(null);
-  const [newSeason, setNewSeason] = useState<Partial<SeasonCreateData>>({
+  const [newSeason, setNewSeason] = useState({
     name: '',
     description: '',
     start_date: format(new Date(), 'yyyy-MM-dd'),
@@ -58,8 +60,42 @@ export default function SeasonsPage(): React.JSX.Element {
   
   const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
+  const [isLoadingStore, setIsLoadingStore] = useState(true);
   
-  const isLoading = isLoadingSeasons || isCreating || isUpdating || isDeleting;
+  useEffect(() => {
+    const fetchStoreId = async () => {
+      try {
+        // Get companies to find the user's company
+        const companiesData = await companiesApi.getCompanies();
+        const companyId = userInfo?.company_id || (companiesData.length > 0 ? companiesData[0].id : '');
+        
+        if (!companyId) {
+          enqueueSnackbar('No company information found', { variant: 'error' });
+          setIsLoadingStore(false);
+          return;
+        }
+        
+        // Get stores for the company
+        const stores = await companiesApi.getStores(companyId);
+        
+        if (stores.length > 0) {
+          const storeId = stores[0].id;
+          setCurrentStoreId(storeId);
+        } else {
+          enqueueSnackbar('No stores found for your company', { variant: 'warning' });
+        }
+        setIsLoadingStore(false);
+      } catch (error) {
+        console.error('Error fetching store ID:', error);
+        enqueueSnackbar('Failed to load store information', { variant: 'error' });
+        setIsLoadingStore(false);
+      }
+    };
+    
+    fetchStoreId();
+  }, [userInfo, enqueueSnackbar]);
+  
+  const isLoading = isLoadingStore || isLoadingSeasons || isCreating || isUpdating || isDeleting;
   
   const handleOpenAddDialog = () => {
     setNewSeason({
@@ -88,8 +124,8 @@ export default function SeasonsPage(): React.JSX.Element {
   };
   
   const handleAddSeason = () => {
-    if (!userInfo?.company_id) {
-      enqueueSnackbar('Company information is required', { variant: 'error' });
+    if (!currentStoreId) {
+      enqueueSnackbar('Store information is required', { variant: 'error' });
       return;
     }
     
@@ -98,12 +134,15 @@ export default function SeasonsPage(): React.JSX.Element {
       return;
     }
     
-    const createData = {
+    const seasonData = {
       ...newSeason,
-      company_id: userInfo.company_id
-    } as SeasonCreateData;
+      store_id: currentStoreId
+    };
     
-    createSeason(createData, {
+    createSeason({ 
+      storeId: currentStoreId, 
+      data: seasonData 
+    }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
         enqueueSnackbar('Season created successfully', { variant: 'success' });
@@ -112,19 +151,23 @@ export default function SeasonsPage(): React.JSX.Element {
   };
   
   const handleEditSeason = () => {
-    if (!currentSeason) return;
+    if (!currentSeason || !currentStoreId) return;
     
     if (!newSeason.name) {
       enqueueSnackbar('Season name is required', { variant: 'error' });
       return;
     }
     
-    const updateData = {
+    const seasonData = {
       ...newSeason,
-      company_id: currentSeason.company_id
-    } as SeasonCreateData;
+      store_id: currentStoreId
+    };
     
-    updateSeason({ id: currentSeason.id, data: updateData }, {
+    updateSeason({ 
+      storeId: currentStoreId,
+      id: currentSeason.id, 
+      data: seasonData 
+    }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
         enqueueSnackbar('Season updated successfully', { variant: 'success' });
@@ -133,9 +176,12 @@ export default function SeasonsPage(): React.JSX.Element {
   };
   
   const handleDeleteSeason = () => {
-    if (!currentSeason) return;
+    if (!currentSeason || !currentStoreId) return;
     
-    deleteSeason(currentSeason.id, {
+    deleteSeason({ 
+      storeId: currentStoreId, 
+      id: currentSeason.id 
+    }, {
       onSuccess: () => {
         setIsDeleteDialogOpen(false);
         setCurrentSeason(null);

@@ -173,25 +173,25 @@ export default function PurchasesPage(): React.JSX.Element {
       let responseData;
       if (purchaseData.id) {
         // Update existing purchase
-        responseData = await transactionsApi.updatePurchase(purchaseData.id, purchasePayload);
+        responseData = await transactionsApi.updatePurchase(store_id, purchaseData.id, purchasePayload);
         console.log(`Updated purchase: ${JSON.stringify(purchasePayload)}`);
         alert("Purchase updated successfully");
       } else {
         // Add new purchase
-        responseData = await transactionsApi.createPurchase(purchasePayload);
+        responseData = await transactionsApi.createPurchase(store_id, purchasePayload);
         console.log(`Added new purchase: ${JSON.stringify(purchasePayload)}`);
         
         // Create payable automatically if purchase creation was successful
         if (responseData && responseData.id) {
           try {
             const payablePayload = {
-              company: company_id,
+              store_id: store_id,
               purchase: responseData.id,
               amount: purchaseData.totalAmount.toString(),
               currency: currency_id
             };
             
-            await financialsApi.createPayable(payablePayload);
+            await financialsApi.createPayable(store_id, payablePayload);
             console.log('Payable created successfully');
           } catch (payableError) {
             console.error('Error creating payable:', payableError);

@@ -5,6 +5,6 @@ export * from './companies';
 export * from './clothings';
 export * from './financials';
 export * from './inventory';
-export * from './stores';
+export { storesApi } from './stores';
 export * from './transactions';
 export * from './dashboard'; 

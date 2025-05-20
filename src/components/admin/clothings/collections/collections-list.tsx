@@ -45,9 +45,9 @@ interface CollectionFormData {
   description: string;
 }
 
-export const CollectionsList = () => {
-  const { data: collections, isLoading } = useCollections();
-  const { data: seasons } = useSeasons();
+export const CollectionsList = ({ storeId }: { storeId: string }) => {
+  const { data: collections, isLoading } = useCollections(storeId);
+  const { data: seasons } = useSeasons(storeId);
   const createCollection = useCreateCollection();
   const updateCollection = useUpdateCollection();
   const deleteCollection = useDeleteCollection();
@@ -159,38 +159,38 @@ export const CollectionsList = () => {
   };
 
   const handleAddCollection = async () => {
-    if (!validateForm() || !userInfo?.company_id) return;
+    if (!validateForm()) return;
     
     const data: CollectionCreateData = {
-      company_id: userInfo.company_id,
+      store_id: storeId,
       season_id: formData.season_id,
       name: formData.name,
       release_date: formData.release_date,
       description: formData.description,
     };
     
-    await createCollection.mutateAsync(data);
+    await createCollection.mutateAsync({ storeId, data });
     handleCloseDialog();
   };
 
   const handleUpdateCollection = async () => {
-    if (!validateForm() || !selectedCollectionId || !userInfo?.company_id) return;
+    if (!validateForm() || !selectedCollectionId) return;
     
     const data: CollectionUpdateData = {
-      company_id: userInfo.company_id,
+      store_id: storeId,
       season_id: formData.season_id,
       name: formData.name,
       release_date: formData.release_date,
       description: formData.description,
     };
     
-    await updateCollection.mutateAsync({ id: selectedCollectionId, data });
+    await updateCollection.mutateAsync({ storeId, id: selectedCollectionId, data });
     handleCloseDialog();
   };
 
   const handleDeleteCollection = async () => {
     if (selectedCollectionId) {
-      await deleteCollection.mutateAsync(selectedCollectionId);
+      await deleteCollection.mutateAsync({ storeId, id: selectedCollectionId });
       handleCloseDialog();
     }
   };

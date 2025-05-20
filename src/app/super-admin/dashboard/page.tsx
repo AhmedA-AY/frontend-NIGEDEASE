@@ -40,6 +40,7 @@ import { useCompanies } from '@/hooks/use-companies';
 import { useCurrencies } from '@/hooks/use-companies';
 import { useSubscriptionPlans } from '@/hooks/use-companies';
 import { Company } from '@/services/api/companies';
+import { format } from 'date-fns';
 
 // Component to render stat cards
 const StatCard = ({ 
@@ -150,7 +151,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
     let inactive = 0;
     
     companies.forEach(company => {
-      if (company.subscription_plan.is_active) {
+      if (company.is_active) {
         active++;
       } else {
         inactive++;
@@ -275,11 +276,10 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>Company Name</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>Short Name</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>Address</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>Description</TableCell>
                         <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>Subscription</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>Currency</TableCell>
                         <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>Status</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>Created At</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -291,20 +291,21 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                             sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                           >
                             <TableCell sx={{ py: 2 }}>{company.name}</TableCell>
-                            <TableCell sx={{ py: 2 }}>{company.short_name}</TableCell>
-                            <TableCell sx={{ py: 2 }}>{company.address}</TableCell>
-                            <TableCell sx={{ py: 2 }}>{company.subscription_plan.name}</TableCell>
-                            <TableCell sx={{ py: 2 }}>{company.currency.code}</TableCell>
+                            <TableCell sx={{ py: 2 }}>{company.description}</TableCell>
+                            <TableCell sx={{ py: 2 }}>{company.subscription_plan || 'None'}</TableCell>
                             <TableCell sx={{ py: 2 }}>
                               <Chip
-                                {...getStatusChipProps(company.subscription_plan.is_active)}
+                                {...getStatusChipProps(company.is_active)}
                               />
+                            </TableCell>
+                            <TableCell sx={{ py: 2 }}>
+                              {format(new Date(company.created_at), 'MMM dd, yyyy')}
                             </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} align="center">
+                          <TableCell colSpan={5} align="center">
                             <Typography variant="body2">
                               No companies found
                             </Typography>

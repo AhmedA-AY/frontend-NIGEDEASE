@@ -11,13 +11,13 @@ import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useSnackbar } from 'notistack';
 import { useCurrentUser } from '@/hooks/use-auth';
-import { companiesApi } from '@/services/api/companies';
+import { useStore } from '@/contexts/store-context';
 
 interface CategoryData {
   id?: string;
   name: string;
   description?: string;
-  company_id?: string;
+  store_id?: string;
 }
 
 interface CategoryEditModalProps {
@@ -38,48 +38,27 @@ export default function CategoryEditModal({
   const [formData, setFormData] = React.useState<CategoryData>({ name: '', description: '' });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const { userInfo } = useCurrentUser();
+  const { selectedStore } = useStore();
   const { enqueueSnackbar } = useSnackbar();
-  const [companies, setCompanies] = React.useState<any[]>([]);
-  
-  // Fetch companies if needed
-  useEffect(() => {
-    if (open && !category.company_id) {
-      const fetchCompanies = async () => {
-        try {
-          const companiesData = await companiesApi.getCompanies();
-          setCompanies(companiesData);
-        } catch (error) {
-          console.error('Error fetching companies:', error);
-        }
-      };
-      
-      fetchCompanies();
-    }
-  }, [open, category.company_id]);
   
   // Reset form data when modal opens with new category data
   React.useEffect(() => {
     if (open) {
-      // If company_id isn't provided, try to get it from userInfo or fetch it
-      let companyId = category.company_id;
+      // If store_id isn't provided, try to get it from selectedStore
+      let storeId = category.store_id;
       
-      if (!companyId) {
-        if (userInfo?.company_id) {
-          companyId = userInfo.company_id;
-        } else if (companies.length > 0) {
-          companyId = companies[0].id;
-        }
+      if (!storeId && selectedStore) {
+        storeId = selectedStore.id;
       }
       
       setFormData({
         ...category,
-        company_id: companyId
+        store_id: storeId
       });
       setErrors({});
       setIsSubmitting(false);
     }
-  }, [category, open, userInfo, companies]);
+  }, [category, open, selectedStore]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -102,8 +81,8 @@ export default function CategoryEditModal({
       newErrors.name = 'Category name is required';
     }
     
-    if (!formData.company_id) {
-      newErrors.company_id = 'Company ID is required';
+    if (!formData.store_id) {
+      newErrors.store_id = 'Store ID is required';
     }
     
     setErrors(newErrors);
@@ -116,14 +95,12 @@ export default function CategoryEditModal({
     if (validateForm()) {
       setIsSubmitting(true);
       try {
-        // Make sure we have a company_id
-        if (!formData.company_id) {
-          if (userInfo?.company_id) {
-            formData.company_id = userInfo.company_id;
-          } else if (companies.length > 0) {
-            formData.company_id = companies[0].id;
+        // Make sure we have a store_id
+        if (!formData.store_id) {
+          if (selectedStore) {
+            formData.store_id = selectedStore.id;
           } else {
-            throw new Error('Company ID is required');
+            throw new Error('Store ID is required');
           }
         }
         
@@ -137,7 +114,7 @@ export default function CategoryEditModal({
           id: formData.id,
           name: formData.name.trim(),
           description: formData.description,
-          company_id: formData.company_id
+          store_id: formData.store_id
         });
         
         console.log('Category saved successfully');
@@ -185,9 +162,9 @@ export default function CategoryEditModal({
           disabled={isSubmitting}
         />
         
-        {errors.company_id && (
+        {errors.store_id && (
           <Box sx={{ color: 'error.main', mb: 2, fontSize: '0.75rem' }}>
-            {errors.company_id}
+            {errors.store_id}
           </Box>
         )}
       </DialogContent>

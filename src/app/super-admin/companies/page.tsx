@@ -120,35 +120,45 @@ export default function CompaniesPage(): React.JSX.Element {
               <Table>
               <TableHead>
                 <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Short Name</TableCell>
-                    <TableCell>Address</TableCell>
-                    <TableCell>Subscription Plan</TableCell>
-                    <TableCell>Currency</TableCell>
-                    <TableCell>Created</TableCell>
-                    <TableCell align="right">Actions</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Subscription Plan</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Created</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                   {paginatedCompanies.map((company) => {
                     return (
                       <TableRow key={company.id} hover>
-                    <TableCell>
+                        <TableCell>
                           <Typography variant="subtitle2">{company.name}</Typography>
-                    </TableCell>
-                        <TableCell>{company.short_name}</TableCell>
-                        <TableCell>{company.address}</TableCell>
-                    <TableCell>
+                        </TableCell>
+                        <TableCell>{company.description}</TableCell>
+                        <TableCell>
+                          {company.subscription_plan ? (
+                            <Chip 
+                              label={company.subscription_plan} 
+                              color="primary" 
+                              size="small"
+                            />
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              No plan
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <Chip 
-                            label={company.subscription_plan.name} 
-                            color={company.subscription_plan.is_active ? 'success' : 'default'} 
+                            label={company.is_active ? 'Active' : 'Inactive'} 
+                            color={company.is_active ? 'success' : 'default'} 
                             size="small"
                           />
-                    </TableCell>
-                        <TableCell>{company.currency.name} ({company.currency.code})</TableCell>
-                    <TableCell>
+                        </TableCell>
+                        <TableCell>
                           {format(new Date(company.created_at), 'MMM dd, yyyy')}
-                    </TableCell>
+                        </TableCell>
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
                             <Tooltip title="Edit company">
@@ -162,14 +172,14 @@ export default function CompaniesPage(): React.JSX.Element {
                             <Tooltip title="Delete company">
                               <IconButton 
                                 onClick={() => router.push(`${paths.superAdmin.companies}/${company.id}/delete`)}
-                          size="small" 
+                                size="small" 
                                 color="error"
-                        >
+                              >
                                 <TrashIcon />
                               </IconButton>
                             </Tooltip>
-                      </Stack>
-                    </TableCell>
+                          </Stack>
+                        </TableCell>
                       </TableRow>
                     );
                   })}

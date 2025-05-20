@@ -46,10 +46,10 @@ export default function ExpensesPage(): React.JSX.Element {
 
   // Add mock categories
   const categories = [
-    { id: '1', company: 'company1', name: 'Travel', description: 'Travel expenses', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '2', company: 'company1', name: 'Utilities', description: 'Utility bills', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '3', company: 'company1', name: 'Office Supplies', description: 'Office supplies and equipment', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '4', company: 'company1', name: 'Marketing', description: 'Marketing and advertising', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '1', store_id: 'store1', name: 'Travel', description: 'Travel expenses', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '2', store_id: 'store1', name: 'Utilities', description: 'Utility bills', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '3', store_id: 'store1', name: 'Office Supplies', description: 'Office supplies and equipment', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '4', store_id: 'store1', name: 'Marketing', description: 'Marketing and advertising', created_at: '2023-01-01', updated_at: '2023-01-01' },
   ];
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {

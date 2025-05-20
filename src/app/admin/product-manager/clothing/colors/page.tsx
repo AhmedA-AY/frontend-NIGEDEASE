@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -32,11 +32,14 @@ import { HexColorPicker } from 'react-colorful';
 
 import { PageHeading } from '@/components/page-heading';
 import { Color, ColorCreateData, ColorUpdateData } from '@/services/api/clothings';
+import { companiesApi } from '@/services/api/companies';
 import { useSnackbar } from 'notistack';
 import { useColors, useCreateColor, useUpdateColor, useDeleteColor } from '@/hooks/use-clothings';
+import { useCurrentUser } from '@/hooks/use-auth';
 
 export default function ColorsPage(): React.JSX.Element {
-  const { isLoading: isLoadingColors, data: colors = [] } = useColors();
+  const [currentStoreId, setCurrentStoreId] = useState<string>('');
+  const { isLoading: isLoadingColors, data: colors = [] } = useColors(currentStoreId);
   const { mutate: createColor, isPending: isCreating } = useCreateColor();
   const { mutate: updateColor, isPending: isUpdating } = useUpdateColor();
   const { mutate: deleteColor, isPending: isDeleting } = useDeleteColor();
@@ -46,14 +49,50 @@ export default function ColorsPage(): React.JSX.Element {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [colorToDelete, setColorToDelete] = useState<Color | null>(null);
-  const [currentColor, setCurrentColor] = useState<ColorCreateData>({
+  const [currentColor, setCurrentColor] = useState({
     name: '',
     color_code: '#3b82f6',
     is_active: true
   });
 
-  const isLoading = isLoadingColors || isCreating || isUpdating || isDeleting;
+  const [isLoadingStore, setIsLoadingStore] = useState(true);
+  const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    const fetchStoreId = async () => {
+      try {
+        // Get companies to find the user's company
+        const companiesData = await companiesApi.getCompanies();
+        const companyId = userInfo?.company_id || (companiesData.length > 0 ? companiesData[0].id : '');
+        
+        if (!companyId) {
+          enqueueSnackbar('No company information found', { variant: 'error' });
+          setIsLoadingStore(false);
+          return;
+        }
+        
+        // Get stores for the company
+        const stores = await companiesApi.getStores(companyId);
+        
+        if (stores.length > 0) {
+          const storeId = stores[0].id;
+          setCurrentStoreId(storeId);
+        } else {
+          enqueueSnackbar('No stores found for your company', { variant: 'warning' });
+        }
+        setIsLoadingStore(false);
+      } catch (error) {
+        console.error('Error fetching store ID:', error);
+        enqueueSnackbar('Failed to load store information', { variant: 'error' });
+        setIsLoadingStore(false);
+      }
+    };
+    
+    fetchStoreId();
+  }, [userInfo, enqueueSnackbar]);
+
+  const isLoading = isLoadingStore || isLoadingColors || isCreating || isUpdating || isDeleting;
 
   // Filter colors by search term
   const filteredColors = colors.filter(color => 
@@ -84,12 +123,25 @@ export default function ColorsPage(): React.JSX.Element {
   };
 
   const handleAddColor = () => {
+    if (!currentStoreId) {
+      enqueueSnackbar('Store information is required', { variant: 'error' });
+      return;
+    }
+
     if (!currentColor.name) {
       enqueueSnackbar('Color name is required', { variant: 'error' });
       return;
     }
 
-    createColor(currentColor, {
+    const colorData = {
+      ...currentColor,
+      store_id: currentStoreId
+    };
+
+    createColor({ 
+      storeId: currentStoreId, 
+      data: colorData 
+    }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
         enqueueSnackbar('Color created successfully', { variant: 'success' });
@@ -98,14 +150,25 @@ export default function ColorsPage(): React.JSX.Element {
   };
 
   const handleEditColor = (color: Color) => {
+    if (!currentStoreId) {
+      enqueueSnackbar('Store information is required', { variant: 'error' });
+      return;
+    }
+
     if (!currentColor.name) {
       enqueueSnackbar('Color name is required', { variant: 'error' });
       return;
     }
 
+    const colorData = {
+      ...currentColor,
+      store_id: currentStoreId
+    };
+
     updateColor({ 
+      storeId: currentStoreId,
       id: color.id, 
-      data: currentColor 
+      data: colorData 
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
@@ -115,9 +178,12 @@ export default function ColorsPage(): React.JSX.Element {
   };
 
   const handleDeleteColor = () => {
-    if (!colorToDelete) return;
+    if (!colorToDelete || !currentStoreId) return;
 
-    deleteColor(colorToDelete.id, {
+    deleteColor({ 
+      storeId: currentStoreId, 
+      id: colorToDelete.id 
+    }, {
       onSuccess: () => {
         setIsDeleteDialogOpen(false);
         setColorToDelete(null);

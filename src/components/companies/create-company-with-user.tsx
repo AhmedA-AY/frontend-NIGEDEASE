@@ -26,12 +26,14 @@ import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/Arrow
 import { useCreateCompany, useCurrencies, useSubscriptionPlans } from '@/hooks/use-companies';
 import { inventoryApi } from '@/services/api/inventory';
 import { paths } from '@/paths';
+import { companiesApi, Company, CompanyCreateData } from '@/services/api/companies';
 import { CreateCompanyUserForm } from './create-company-user-form';
 
 interface CompanyFormData {
   name: string;
   short_name: string;
   address: string;
+  description: string;
   subscription_plan_id: string;
   currency_id: string;
 }
@@ -58,6 +60,7 @@ export const CreateCompanyWithUser: React.FC = () => {
     name: '',
     short_name: '',
     address: '',
+    description: '',
     subscription_plan_id: '',
     currency_id: ''
   });
@@ -173,7 +176,13 @@ export const CreateCompanyWithUser: React.FC = () => {
     }
     
     try {
-      const companyResponse = await createCompanyMutation.mutateAsync(companyFormData);
+      const companyData: CompanyCreateData = {
+        name: companyFormData.name,
+        description: companyFormData.description || companyFormData.short_name, // Use short_name as fallback
+        subscription_plan: companyFormData.subscription_plan_id
+      };
+      
+      const companyResponse = await createCompanyMutation.mutateAsync(companyData);
       setCreatedCompany(companyResponse);
       setActiveStep(1); // Move to store creation step
     } catch (error) {
@@ -282,6 +291,19 @@ export const CreateCompanyWithUser: React.FC = () => {
                         value={companyFormData.address}
                         error={!!formErrors.address}
                         helperText={formErrors.address}
+                        disabled={isLoading}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Description"
+                        name="description"
+                        onChange={handleCompanyFormChange}
+                        value={companyFormData.description}
+                        error={!!formErrors.description}
+                        helperText={formErrors.description}
                         disabled={isLoading}
                       />
                     </Grid>

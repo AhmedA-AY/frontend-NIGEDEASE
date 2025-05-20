@@ -15,7 +15,7 @@ import Grid from '@mui/material/Grid';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputAdornment from '@mui/material/InputAdornment';
 import { ExpenseCreateData, ExpenseCategory } from '@/services/api/financials';
-import { TransactionPaymentMode, transactionsApi } from '@/services/api/transactions';
+import { PaymentMode, transactionsApi } from '@/services/api/transactions';
 import { useCurrentUser } from '@/hooks/use-auth';
 import CircularProgress from '@mui/material/CircularProgress';
 import { companiesApi, Currency, Company } from '@/services/api/companies';
@@ -37,9 +37,10 @@ export default function ExpenseEditModal({
 }: ExpenseEditModalProps): React.JSX.Element {
   const [formData, setFormData] = useState<Partial<ExpenseCreateData> & { id?: string }>(expense);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
+  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [currentStoreId, setCurrentStoreId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const { userInfo, isLoading: isUserLoading } = useCurrentUser();
   
@@ -48,14 +49,36 @@ export default function ExpenseEditModal({
     async function fetchData() {
       setIsLoading(true);
       try {
-        const [modesData, currencyData, companiesData] = await Promise.all([
-          transactionsApi.getPaymentModes(),
-          companiesApi.getCurrencies(),
-          companiesApi.getCompanies(),
-        ]);
-        setPaymentModes(modesData);
-        setCurrencies(currencyData);
+        // Get companies first to get the store ID
+        const companiesData = await companiesApi.getCompanies();
         setCompanies(companiesData);
+        
+        // Find a company to use for store ID
+        let companyId = '';
+        if (userInfo && userInfo.company_id) {
+          companyId = userInfo.company_id;
+        } else if (companiesData.length > 0) {
+          companyId = companiesData[0].id;
+        }
+        
+        if (companyId) {
+          // Get stores for the company
+          const stores = await companiesApi.getStores(companyId);
+          
+          if (stores.length > 0) {
+            const storeId = stores[0].id;
+            setCurrentStoreId(storeId);
+            
+            // Now get payment modes and currencies
+            const [modesData, currencyData] = await Promise.all([
+              transactionsApi.getPaymentModes(storeId),
+              companiesApi.getCurrencies(),
+            ]);
+            
+            setPaymentModes(modesData);
+            setCurrencies(currencyData);
+          }
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -64,7 +87,7 @@ export default function ExpenseEditModal({
     }
     
     fetchData();
-  }, []);
+  }, [userInfo]);
   
   // Reset form data when modal opens with new expense data
   useEffect(() => {
@@ -72,28 +95,17 @@ export default function ExpenseEditModal({
       console.log('Modal opened, userInfo:', userInfo);
       console.log('Companies:', companies);
       
-      let companyId = '';
-      
-      // Try to get company ID from various sources
-      if (userInfo && userInfo.company_id) {
-        console.log('Setting company ID from userInfo:', userInfo.company_id);
-        companyId = userInfo.company_id;
-      } else if (expense.company) {
-        console.log('Using expense.company:', expense.company);
-        companyId = expense.company;
-      } else if (companies.length > 0) {
-        console.log('Using first company ID:', companies[0].id);
-        companyId = companies[0].id;
-      }
+      // Use the current store ID or keep the existing one from the expense
+      const storeId = currentStoreId || formData.store_id || '';
       
       setFormData({
         ...expense,
-        company: companyId
+        store_id: storeId
       });
       
       setErrors({});
     }
-  }, [expense, open, userInfo, companies]);
+  }, [expense, open, userInfo, companies, currentStoreId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -155,6 +167,11 @@ export default function ExpenseEditModal({
       newErrors.payment_mode = 'Payment method is required';
     }
     
+    if (!formData.store_id && !currentStoreId) {
+      console.log('Validation failed: store_id is missing');
+      newErrors.store_id = 'Store is required';
+    }
+    
     setErrors(newErrors);
     const isValid = Object.keys(newErrors).length === 0;
     console.log('Validation result:', isValid ? 'PASSED' : 'FAILED', newErrors);
@@ -166,29 +183,21 @@ export default function ExpenseEditModal({
     if (validateForm()) {
       console.log('Form validation passed');
       
-      let companyId = formData.company;
+      // Use the current store ID if available
+      const storeId = formData.store_id || currentStoreId;
       
-      // If company ID is missing, try to find it
-      if (!companyId) {
-        if (userInfo && userInfo.company_id) {
-          companyId = userInfo.company_id;
-        } else if (companies.length > 0) {
-          companyId = companies[0].id;
-        }
-      }
-      
-      if (!companyId) {
-        console.log('Company ID missing');
+      if (!storeId) {
+        console.log('Store ID missing');
         setErrors(prev => ({
           ...prev,
-          company: "Unable to determine company ID. Please try again later."
+          store_id: "Unable to determine store ID. Please try again later."
         }));
         return;
       }
       
       // Make sure we have all required fields before submitting
       const completeData: ExpenseCreateData & { id?: string } = {
-        company: companyId,
+        store_id: storeId,
         expense_category: formData.expense_category || '',
         amount: formData.amount || '',
         description: formData.description || '',

@@ -39,8 +39,8 @@ interface SeasonFormData {
   description: string;
 }
 
-export const SeasonsList = () => {
-  const { data: seasons, isLoading } = useSeasons();
+export const SeasonsList = ({ storeId }: { storeId: string }) => {
+  const { data: seasons, isLoading } = useSeasons(storeId);
   const createSeason = useCreateSeason();
   const updateSeason = useUpdateSeason();
   const deleteSeason = useDeleteSeason();
@@ -136,38 +136,38 @@ export const SeasonsList = () => {
   };
 
   const handleAddSeason = async () => {
-    if (!validateForm() || !userInfo?.company_id) return;
+    if (!validateForm()) return;
     
     const data: SeasonCreateData = {
-      company_id: userInfo.company_id,
+      store_id: storeId,
       name: formData.name,
       start_date: formData.start_date,
       end_date: formData.end_date,
       description: formData.description,
     };
     
-    await createSeason.mutateAsync(data);
+    await createSeason.mutateAsync({ storeId, data });
     handleCloseDialog();
   };
 
   const handleUpdateSeason = async () => {
-    if (!validateForm() || !selectedSeasonId || !userInfo?.company_id) return;
+    if (!validateForm() || !selectedSeasonId) return;
     
     const data: SeasonUpdateData = {
-      company_id: userInfo.company_id,
+      store_id: storeId,
       name: formData.name,
       start_date: formData.start_date,
       end_date: formData.end_date,
       description: formData.description,
     };
     
-    await updateSeason.mutateAsync({ id: selectedSeasonId, data });
+    await updateSeason.mutateAsync({ storeId, id: selectedSeasonId, data });
     handleCloseDialog();
   };
 
   const handleDeleteSeason = async () => {
     if (selectedSeasonId) {
-      await deleteSeason.mutateAsync(selectedSeasonId);
+      await deleteSeason.mutateAsync({ storeId, id: selectedSeasonId });
       handleCloseDialog();
     }
   };

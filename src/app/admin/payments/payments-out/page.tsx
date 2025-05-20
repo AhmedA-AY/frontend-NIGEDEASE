@@ -26,28 +26,36 @@ import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/di
 import { paths } from '@/paths';
 import PaymentOutEditModal from '@/components/admin/payments/PaymentOutEditModal';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
-import { PaymentOut, financialsApi } from '@/services/api/financials';
-import { Supplier, transactionsApi } from '@/services/api/transactions';
+import { financialsApi, PaymentOut } from '@/services/api/financials';
+import { transactionsApi, Supplier } from '@/services/api/transactions';
 import { useSnackbar } from 'notistack';
+import { useStore } from '@/contexts/store-context';
 
 export default function PaymentOutPage(): React.JSX.Element {
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [currentPayment, setCurrentPayment] = useState<any>(null);
+  const [currentPayment, setCurrentPayment] = useState<any>({});
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [payments, setPayments] = useState<PaymentOut[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const { enqueueSnackbar } = useSnackbar();
+  const { selectedStore } = useStore();
   
   // Fetch payments and suppliers
   const fetchData = useCallback(async () => {
+    if (!selectedStore) {
+      enqueueSnackbar('No store selected', { variant: 'warning' });
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const [paymentsData, suppliersData] = await Promise.all([
-        financialsApi.getPaymentsOut(),
-        transactionsApi.getSuppliers()
+        financialsApi.getPaymentsOut(selectedStore.id),
+        transactionsApi.getSuppliers(selectedStore.id)
       ]);
       setPayments(paymentsData);
       setSuppliers(suppliersData);
@@ -57,11 +65,13 @@ export default function PaymentOutPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar]);
+  }, [enqueueSnackbar, selectedStore]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (selectedStore) {
+      fetchData();
+    }
+  }, [fetchData, selectedStore]);
 
   // Calculate total amount
   const totalAmount = payments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
@@ -99,7 +109,7 @@ export default function PaymentOutPage(): React.JSX.Element {
     if (paymentToEdit) {
       setCurrentPayment({
         id: paymentToEdit.id,
-        company: paymentToEdit.company,
+        store_id: paymentToEdit.store_id,
         payable: paymentToEdit.payable,
         purchase: paymentToEdit.purchase,
         amount: paymentToEdit.amount,
@@ -116,9 +126,14 @@ export default function PaymentOutPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
+    if (!selectedStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
     if (paymentToDelete) {
       try {
-        await financialsApi.deletePaymentOut(paymentToDelete);
+        await financialsApi.deletePaymentOut(selectedStore.id, paymentToDelete);
         enqueueSnackbar('Payment deleted successfully', { variant: 'success' });
         fetchData();
         setIsDeleteModalOpen(false);
@@ -131,14 +146,25 @@ export default function PaymentOutPage(): React.JSX.Element {
   };
 
   const handleSavePayment = async (paymentData: any) => {
+    if (!selectedStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
     try {
+      // Make sure the payment data includes the store_id
+      const paymentWithStore = {
+        ...paymentData,
+        store_id: selectedStore.id
+      };
+      
       if (paymentData.id) {
         // Update existing payment
-        await financialsApi.updatePaymentOut(paymentData.id, paymentData);
+        await financialsApi.updatePaymentOut(selectedStore.id, paymentData.id, paymentWithStore);
         enqueueSnackbar('Payment updated successfully', { variant: 'success' });
       } else {
         // Add new payment
-        await financialsApi.createPaymentOut(paymentData);
+        await financialsApi.createPaymentOut(selectedStore.id, paymentWithStore);
         enqueueSnackbar('Payment added successfully', { variant: 'success' });
       }
       fetchData();

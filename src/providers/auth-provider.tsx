@@ -145,15 +145,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     try {
       const response = await authApi.verifyOtp(email, otp);
-      const { access, refresh, role } = response;
+      const { access, refresh, role, company_id, stores: responseStores } = response;
       
       // Store tokens
       tokenStorage.saveTokens(
         access, 
         refresh, 
-        role, 
+        role,
+        company_id,
         assignedStore || response.assigned_store, 
-        stores || response.stores
+        stores || responseStores
       );
       
       // Update state
@@ -161,19 +162,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUserRole(role);
       
       // Set user info
-      const tokenInfo = await authApi.verifyToken(access);
-      if (tokenInfo.is_valid) {
-        setUserInfo({
-          id: tokenInfo.user_id,
-          email: tokenInfo.email,
-          role: role,
-          company_id: tokenInfo.company_id,
-        });
-      }
+      setUserInfo({
+        id: tokenStorage.getUserId(),
+        email: email,
+        role: role,
+        company_id: company_id,
+      });
       
-      // Set stores and assigned store
-      if (response.stores) {
-        setStores(response.stores);
+      // Set stores and assigned store - prioritize API response
+      const storesFromResponse = responseStores || stores || [];
+      if (storesFromResponse && storesFromResponse.length > 0) {
+        setStores(storesFromResponse);
+        
+        // For admin users with multiple stores, set the first store as default if not already assigned
+        if (role === 'admin' && !response.assigned_store && !assignedStore && storesFromResponse.length > 0) {
+          setAssignedStore(storesFromResponse[0]);
+          tokenStorage.saveAssignedStore(storesFromResponse[0]);
+        }
       }
       
       if (response.assigned_store || assignedStore) {

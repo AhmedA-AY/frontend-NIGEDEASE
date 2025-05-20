@@ -104,7 +104,9 @@ const refreshAuthToken = async () => {
         response.data.access,
         response.data.refresh || refreshToken,
         tokenStorage.getUserRole() || '',
-        tokenStorage.getUserEmail() || undefined
+        tokenStorage.getUserInfo().company_id || '',
+        undefined,  // No assigned store during refresh
+        undefined   // No stores during refresh
       );
       
       return response.data.access;

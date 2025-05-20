@@ -32,7 +32,7 @@ export default function CategoriesPage(): React.JSX.Element {
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
-  const [currentCategory, setCurrentCategory] = React.useState<{ id?: string; name: string; description?: string; logoUrl?: string; hasExpand?: boolean; company_id?: string } | null>(null);
+  const [currentCategory, setCurrentCategory] = React.useState<{ id?: string; name: string; description?: string; logoUrl?: string; hasExpand?: boolean; store_id?: string } | null>(null);
   const [categoryToDelete, setCategoryToDelete] = React.useState<string | null>(null);
   const [categories, setCategories] = React.useState<ProductCategory[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -113,25 +113,27 @@ export default function CategoriesPage(): React.JSX.Element {
         id: categoryToEdit.id,
         name: categoryToEdit.name,
         description: categoryToEdit.description,
-        company_id: categoryToEdit.company.id
+        store_id: categoryToEdit.store.id
       });
       setIsCategoryModalOpen(true);
     }
   };
 
   const handleAddCategory = () => {
-    // Get company ID from the first category (they should all be from the same company)
-    const companyId = categories.length > 0 ? categories[0].company.id : '';
+    if (!selectedStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
     
     setCurrentCategory({
       name: '',
       description: '',
-      company_id: companyId
+      store_id: selectedStore.id
     });
     setIsCategoryModalOpen(true);
   };
 
-  const handleSaveCategory = async (categoryData: { id?: string; name: string; description?: string; company_id?: string }) => {
+  const handleSaveCategory = async (categoryData: { id?: string; name: string; description?: string; store_id?: string }) => {
     if (!selectedStore) {
       enqueueSnackbar('No store selected', { variant: 'error' });
       return;
@@ -141,15 +143,15 @@ export default function CategoriesPage(): React.JSX.Element {
     console.log('Saving category with data:', categoryData);
     
     try {
-      if (!categoryData.company_id) {
-        throw new Error('Company ID is required');
+      if (!categoryData.store_id) {
+        throw new Error('Store ID is required');
       }
       
       if (categoryData.id) {
         // Update existing category
         console.log('Updating category with ID:', categoryData.id);
         const updateData: ProductCategoryUpdateData = {
-          company_id: categoryData.company_id,
+          store_id: categoryData.store_id,
           name: categoryData.name,
           description: categoryData.description || ''
         };
@@ -158,13 +160,13 @@ export default function CategoriesPage(): React.JSX.Element {
       } else {
         // Add new category
         console.log('Creating new category with data:', {
-          company_id: categoryData.company_id,
+          store_id: categoryData.store_id,
           name: categoryData.name,
           description: categoryData.description || ''
         });
         
         const createData: ProductCategoryCreateData = {
-          company_id: categoryData.company_id,
+          store_id: categoryData.store_id,
           name: categoryData.name,
           description: categoryData.description || ''
         };

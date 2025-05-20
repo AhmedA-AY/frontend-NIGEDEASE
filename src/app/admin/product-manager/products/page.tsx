@@ -152,23 +152,16 @@ export default function ProductsPage(): React.JSX.Element {
     
     console.log('handleAddProduct called');
     console.log('Categories available:', categories);
-    console.log('Companies available:', companies);
     console.log('Product units available:', productUnits);
     
-    // Use the first company if userInfo is not available
-    const companyId = userInfo?.company_id || (companies.length > 0 ? companies[0].id : '');
-    
-    if (!companyId) {
-      console.log('No company ID available');
-      enqueueSnackbar('Unable to add product: Company data not available.', { variant: 'error' });
-      return;
-    }
+    // Use the selected store
+    const storeId = selectedStore.id;
     
     // Use the first product unit by default if available
     const defaultUnitId = productUnits.length > 0 ? productUnits[0].id : '';
     
     setCurrentProduct({
-      company_id: companyId,
+      store_id: storeId,
       name: '',
       description: '',
       image: '',
@@ -180,7 +173,7 @@ export default function ProductsPage(): React.JSX.Element {
       collection_id: '',
     });
     
-    console.log('currentProduct set with company ID:', companyId);
+    console.log('currentProduct set with store ID:', storeId);
     
     setIsProductModalOpen(true);
   };
@@ -190,7 +183,7 @@ export default function ProductsPage(): React.JSX.Element {
     if (product) {
       setCurrentProduct({
         id: product.id,
-        company_id: product.company.id,
+        store_id: product.store.id,
         name: product.name,
         description: product.description,
         image: product.image,
@@ -198,8 +191,8 @@ export default function ProductsPage(): React.JSX.Element {
         product_unit_id: product.product_unit.id,
         purchase_price: product.purchase_price || '',
         sale_price: product.sale_price || '',
-        color_id: product.color_id || '',
-        collection_id: product.collection_id || '',
+        color_id: product.color || '',
+        collection_id: product.collection || '',
       });
       setIsProductModalOpen(true);
     } else {

@@ -7,6 +7,7 @@ import Stack from '@mui/material/Stack';
 import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 import { Bell as BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
 import { UserCircle as UserCircleIcon } from '@phosphor-icons/react/dist/ssr/UserCircle';
+import { StoreSelector } from './store-selector';
 
 export interface TopNavProps {
   onNavOpen?: () => void;
@@ -46,6 +47,7 @@ export function TopNav({ onNavOpen }: TopNavProps): React.JSX.Element {
           </IconButton>
         </Stack>
         <Stack alignItems="center" direction="row" spacing={2}>
+          <StoreSelector />
           <IconButton>
             <BellIcon />
           </IconButton>

@@ -128,33 +128,26 @@ export default function CompanyDeletePage({ params }: { params: { id: string } }
                 
                 <Box display="flex" flexDirection="row">
                   <Typography variant="subtitle1" fontWeight="bold" sx={{ minWidth: 200 }}>
-                    Short Name:
+                    Description:
                   </Typography>
-                  <Typography variant="body1">{company?.short_name}</Typography>
+                  <Typography variant="body1">{company?.description}</Typography>
                 </Box>
                 
                 <Box display="flex" flexDirection="row">
                   <Typography variant="subtitle1" fontWeight="bold" sx={{ minWidth: 200 }}>
-                    Address:
-                  </Typography>
-                  <Typography variant="body1">{company?.address}</Typography>
-                </Box>
-                
-                <Box display="flex" flexDirection="row">
-                  <Typography variant="subtitle1" fontWeight="bold" sx={{ minWidth: 200 }}>
-                    Subscription Plan:
+                    Status:
                   </Typography>
                   <Typography variant="body1">
-                    {company?.subscription_plan.name} ({company?.subscription_plan.billing_cycle})
+                    {company?.is_active ? 'Active' : 'Inactive'}
                   </Typography>
                 </Box>
                 
                 <Box display="flex" flexDirection="row">
                   <Typography variant="subtitle1" fontWeight="bold" sx={{ minWidth: 200 }}>
-                    Currency:
+                    Subscription Status:
                   </Typography>
                   <Typography variant="body1">
-                    {company?.currency.name} ({company?.currency.code})
+                    {company?.is_subscribed ? 'Subscribed' : 'Not Subscribed'}
                   </Typography>
                 </Box>
                 

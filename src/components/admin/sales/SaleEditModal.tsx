@@ -23,7 +23,7 @@ import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
-import { transactionsApi, Customer, TransactionPaymentMode } from '@/services/api/transactions';
+import { transactionsApi, Customer, PaymentMode } from '@/services/api/transactions';
 import { inventoryApi, Product, InventoryStore } from '@/services/api/inventory';
 import { companiesApi, Company, Currency } from '@/services/api/companies';
 import { useCurrentUser } from '@/hooks/use-auth';
@@ -110,7 +110,7 @@ export default function SaleEditModal({
   const [stores, setStores] = useState<InventoryStore[]>([]);
   const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
+  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   
@@ -134,15 +134,13 @@ export default function SaleEditModal({
             productsData, 
             companiesData, 
             storesData, 
-            currenciesData, 
-            paymentModesData
+            currenciesData
           ] = await Promise.all([
-            transactionsApi.getCustomers(),
+            transactionsApi.getCustomers(selectedStore.id),
             inventoryApi.getProducts(selectedStore.id),
             companiesApi.getCompanies(),
             inventoryApi.getStores(),
-            companiesApi.getCurrencies(),
-            transactionsApi.getPaymentModes()
+            companiesApi.getCurrencies()
           ]);
           
           setCustomers(customersData);
@@ -150,6 +148,9 @@ export default function SaleEditModal({
           setCompanies(companiesData);
           setStores(storesData);
           setCurrencies(currenciesData);
+          
+          // Get payment modes after we have the store ID
+          const paymentModesData = await transactionsApi.getPaymentModes(selectedStore.id);
           setPaymentModes(paymentModesData);
           
           // Filter stores by user's company
@@ -159,9 +160,9 @@ export default function SaleEditModal({
             );
             setFilteredStores(companyStores);
             
-            // Filter products by user's company
+            // Filter products by user's company through the store
             const companyProducts = productsData.filter(product => 
-              product.company && product.company.id === userInfo.company_id
+              product.store && product.store.company && product.store.company.id === userInfo.company_id
             );
             setFilteredProducts(companyProducts);
           } else {
@@ -220,10 +221,10 @@ export default function SaleEditModal({
         setFilteredStores(companyStores);
       }
       
-      // Filter products by company
+      // Filter products by company through the store
       if (products.length > 0) {
         const companyProducts = products.filter(product => 
-          product.company && product.company.id === userInfo.company_id
+          product.store && product.store.company && product.store.company.id === userInfo.company_id
         );
         setFilteredProducts(companyProducts);
       }

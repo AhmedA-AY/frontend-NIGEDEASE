@@ -2,6 +2,7 @@ import { coreApiClient } from './client';
 import { usersApi } from './users';
 import { inventoryApi } from './inventory';
 
+// Types
 export interface Currency {
   id: string;
   name: string;
@@ -16,9 +17,13 @@ export interface SubscriptionPlan {
   description: string;
   price: string;
   billing_cycle: 'monthly' | 'yearly';
-  features: string;
+  duration_in_months: number;
+  features: any; // This can be typed more specifically if needed
   is_active: boolean;
   storage_limit_gb: number;
+  max_products: number;
+  max_stores: number;
+  max_users: number;
   created_at: string;
   updated_at: string;
 }
@@ -26,23 +31,41 @@ export interface SubscriptionPlan {
 export interface Company {
   id: string;
   name: string;
-  short_name: string;
-  address: string;
-  subscription_plan: SubscriptionPlan;
-  currency: Currency;
+  description: string;
+  is_active: boolean;
+  is_subscribed: string;
+  subscription_plan: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface CompanyCreateData {
   name: string;
-  short_name: string;
-  address: string;
-  subscription_plan_id: string;
-  currency_id: string;
+  description: string;
+  is_active?: boolean;
+  subscription_plan?: string;
 }
 
 export interface CompanyUpdateData extends CompanyCreateData {}
+
+export interface Store {
+  id: string;
+  name: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+  is_active: "active" | "inactive";
+  company?: Company;
+}
+
+export interface StoreCreateData {
+  company_id: string;
+  name: string;
+  location: string;
+  is_active?: "active" | "inactive";
+}
+
+export interface StoreUpdateData extends StoreCreateData {}
 
 // Companies API
 export const companiesApi = {
@@ -75,6 +98,18 @@ export const companiesApi = {
     await coreApiClient.delete(`/companies/companies/${id}/`);
   },
   
+  // Check company subscription
+  checkCompanySubscription: async (id: string): Promise<any> => {
+    const response = await coreApiClient.get(`/companies/companies/${id}/subscription/check/`);
+    return response.data;
+  },
+  
+  // Renew company subscription
+  renewCompanySubscription: async (id: string, data: any): Promise<any> => {
+    const response = await coreApiClient.post(`/companies/companies/${id}/subscription/renew/`, data);
+    return response.data;
+  },
+  
   // Get all currencies
   getCurrencies: async (): Promise<Currency[]> => {
     const response = await coreApiClient.get<Currency[]>('/companies/currencies/');
@@ -104,6 +139,35 @@ export const companiesApi = {
     await coreApiClient.delete(`/companies/currencies/${id}/`);
   },
   
+  // Get all stores for a company
+  getStores: async (companyId: string): Promise<Store[]> => {
+    const response = await coreApiClient.get<Store[]>(`/companies/companies/${companyId}/stores/`);
+    return response.data;
+  },
+  
+  // Get store by ID
+  getStore: async (companyId: string, id: string): Promise<Store> => {
+    const response = await coreApiClient.get<Store>(`/companies/companies/${companyId}/stores/${id}/`);
+    return response.data;
+  },
+  
+  // Create a new store
+  createStore: async (companyId: string, data: StoreCreateData): Promise<Store> => {
+    const response = await coreApiClient.post<Store>(`/companies/companies/${companyId}/stores/`, data);
+    return response.data;
+  },
+  
+  // Update a store
+  updateStore: async (companyId: string, id: string, data: StoreUpdateData): Promise<Store> => {
+    const response = await coreApiClient.put<Store>(`/companies/companies/${companyId}/stores/${id}/`, data);
+    return response.data;
+  },
+  
+  // Delete a store
+  deleteStore: async (companyId: string, id: string): Promise<void> => {
+    await coreApiClient.delete(`/companies/companies/${companyId}/stores/${id}/`);
+  },
+  
   // Get all subscription plans
   getSubscriptionPlans: async (): Promise<SubscriptionPlan[]> => {
     const response = await coreApiClient.get<SubscriptionPlan[]>('/companies/subscription-plans/');
@@ -122,9 +186,13 @@ export const companiesApi = {
     description: string;
     price: string;
     billing_cycle: 'monthly' | 'yearly';
-    features: string;
-    is_active: boolean;
-    storage_limit_gb: number;
+    duration_in_months: number;
+    features?: any;
+    is_active?: boolean;
+    storage_limit_gb?: number;
+    max_products?: number;
+    max_stores?: number;
+    max_users?: number;
   }): Promise<SubscriptionPlan> => {
     const response = await coreApiClient.post<SubscriptionPlan>('/companies/subscription-plans/', data);
     return response.data;
@@ -134,13 +202,17 @@ export const companiesApi = {
   updateSubscriptionPlan: async (
     id: string,
     data: {
-      name: string;
-      description: string;
-      price: string;
-      billing_cycle: 'monthly' | 'yearly';
-      features: string;
-      is_active: boolean;
-      storage_limit_gb: number;
+      name?: string;
+      description?: string;
+      price?: string;
+      billing_cycle?: 'monthly' | 'yearly';
+      duration_in_months?: number;
+      features?: any;
+      is_active?: boolean;
+      storage_limit_gb?: number;
+      max_products?: number;
+      max_stores?: number;
+      max_users?: number;
     }
   ): Promise<SubscriptionPlan> => {
     const response = await coreApiClient.put<SubscriptionPlan>(`/companies/subscription-plans/${id}/`, data);

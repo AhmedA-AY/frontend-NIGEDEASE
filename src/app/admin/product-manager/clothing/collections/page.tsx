@@ -39,13 +39,15 @@ import { format, parseISO } from 'date-fns';
 
 import { PageHeading } from '@/components/page-heading';
 import { Collection, CollectionCreateData, Season, clothingsApi } from '@/services/api/clothings';
+import { companiesApi } from '@/services/api/companies';
 import { useSnackbar } from 'notistack';
 import { useCollections, useCreateCollection, useDeleteCollection, useUpdateCollection, useSeasons } from '@/hooks/use-clothings';
 import { useCurrentUser } from '@/hooks/use-auth';
 
 export default function CollectionsPage(): React.JSX.Element {
-  const { isLoading: isLoadingCollections, data: collections = [] } = useCollections();
-  const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons();
+  const [currentStoreId, setCurrentStoreId] = useState<string>('');
+  const { isLoading: isLoadingCollections, data: collections = [] } = useCollections(currentStoreId);
+  const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons(currentStoreId);
   const { mutate: createCollection, isPending: isCreating } = useCreateCollection();
   const { mutate: updateCollection, isPending: isUpdating } = useUpdateCollection();
   const { mutate: deleteCollection, isPending: isDeleting } = useDeleteCollection();
@@ -63,8 +65,42 @@ export default function CollectionsPage(): React.JSX.Element {
   
   const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
+  const [isLoadingStore, setIsLoadingStore] = useState(true);
   
-  const isLoading = isLoadingCollections || isLoadingSeasons || isCreating || isUpdating || isDeleting;
+  useEffect(() => {
+    const fetchStoreId = async () => {
+      try {
+        // Get companies to find the user's company
+        const companiesData = await companiesApi.getCompanies();
+        const companyId = userInfo?.company_id || (companiesData.length > 0 ? companiesData[0].id : '');
+        
+        if (!companyId) {
+          enqueueSnackbar('No company information found', { variant: 'error' });
+          setIsLoadingStore(false);
+          return;
+        }
+        
+        // Get stores for the company
+        const stores = await companiesApi.getStores(companyId);
+        
+        if (stores.length > 0) {
+          const storeId = stores[0].id;
+          setCurrentStoreId(storeId);
+        } else {
+          enqueueSnackbar('No stores found for your company', { variant: 'warning' });
+        }
+        setIsLoadingStore(false);
+      } catch (error) {
+        console.error('Error fetching store ID:', error);
+        enqueueSnackbar('Failed to load store information', { variant: 'error' });
+        setIsLoadingStore(false);
+      }
+    };
+    
+    fetchStoreId();
+  }, [userInfo, enqueueSnackbar]);
+  
+  const isLoading = isLoadingStore || isLoadingCollections || isLoadingSeasons || isCreating || isUpdating || isDeleting;
   
   const handleOpenAddDialog = () => {
     // Reset form data
@@ -100,8 +136,8 @@ export default function CollectionsPage(): React.JSX.Element {
   };
   
   const handleAddCollection = () => {
-    if (!userInfo?.company_id) {
-      enqueueSnackbar('Company information is required', { variant: 'error' });
+    if (!currentStoreId) {
+      enqueueSnackbar('Store information is required', { variant: 'error' });
       return;
     }
     
@@ -110,12 +146,10 @@ export default function CollectionsPage(): React.JSX.Element {
       return;
     }
     
-    const createData = {
-      ...newCollection,
-      company_id: userInfo.company_id
-    };
-    
-    createCollection(createData, {
+    createCollection({ 
+      storeId: currentStoreId, 
+      data: newCollection 
+    }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
       }
@@ -123,14 +157,13 @@ export default function CollectionsPage(): React.JSX.Element {
   };
   
   const handleEditCollection = () => {
-    if (!openCollection) return;
+    if (!openCollection || !currentStoreId) return;
     
-    const updateData = {
-      ...newCollection,
-      company_id: openCollection.company_id
-    };
-    
-    updateCollection({ id: openCollection.id, data: updateData }, {
+    updateCollection({ 
+      storeId: currentStoreId, 
+      id: openCollection.id, 
+      data: newCollection 
+    }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
       }
@@ -138,9 +171,12 @@ export default function CollectionsPage(): React.JSX.Element {
   };
   
   const handleDeleteCollection = () => {
-    if (!openCollection) return;
+    if (!openCollection || !currentStoreId) return;
     
-    deleteCollection(openCollection.id, {
+    deleteCollection({ 
+      storeId: currentStoreId, 
+      id: openCollection.id 
+    }, {
       onSuccess: () => {
         setIsDeleteDialogOpen(false);
         setOpenCollection(null);

@@ -5,6 +5,16 @@ import { decodeToken } from '@/utils/token-helpers';
 export interface AuthResponse {
   access: string;
   refresh: string;
+  role: string;
+  company_id: string;
+  stores: {
+    id: string;
+    name: string;
+    location: string;
+    created_at: string;
+    updated_at: string;
+    is_active: string;
+  }[];
   user: {
     id: string;
     email: string;
@@ -101,7 +111,8 @@ export const authApi = {
     access: string; 
     refresh: string; 
     role: string; 
-    stores?: any[];
+    company_id: string;
+    stores: any[];
     assigned_store?: any;
   }> => {
     try {
@@ -109,7 +120,8 @@ export const authApi = {
         access: string; 
         refresh: string; 
         role: string; 
-        stores?: any[];
+        company_id: string;
+        stores: any[];
         assigned_store?: any;
       }>('/auth/verify-otp/', {
         email,

@@ -31,14 +31,14 @@ export default function ExpensesPage(): React.JSX.Element {
   
   // Mock categories data
   const categories = [
-    { id: '1', company: 'company1', name: 'Travel', description: 'Travel expenses', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '2', company: 'company1', name: 'Utilities', description: 'Utility bills', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '3', company: 'company1', name: 'Office Supplies', description: 'Office supplies and equipment', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '4', company: 'company1', name: 'Marketing', description: 'Marketing and advertising', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '5', company: 'company1', name: 'Rent', description: 'Rent and lease payments', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '6', company: 'company1', name: 'Insurance', description: 'Insurance payments', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '7', company: 'company1', name: 'Salaries', description: 'Employee salaries', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '8', company: 'company1', name: 'Repairs', description: 'Repair and maintenance', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '1', store_id: 'store1', name: 'Travel', description: 'Travel expenses', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '2', store_id: 'store1', name: 'Utilities', description: 'Utility bills', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '3', store_id: 'store1', name: 'Office Supplies', description: 'Office supplies and equipment', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '4', store_id: 'store1', name: 'Marketing', description: 'Marketing and advertising', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '5', store_id: 'store1', name: 'Rent', description: 'Rent and lease payments', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '6', store_id: 'store1', name: 'Insurance', description: 'Insurance payments', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '7', store_id: 'store1', name: 'Salaries', description: 'Employee salaries', created_at: '2023-01-01', updated_at: '2023-01-01' },
+    { id: '8', store_id: 'store1', name: 'Repairs', description: 'Repair and maintenance', created_at: '2023-01-01', updated_at: '2023-01-01' },
   ];
   
   // Mock expenses data

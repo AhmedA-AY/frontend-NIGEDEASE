@@ -26,13 +26,21 @@ import ExpenseEditModal from '@/components/admin/expenses/ExpenseEditModal';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
 import { useState, useEffect, useCallback } from 'react';
 import { Expense, ExpenseCategory, ExpenseCreateData, financialsApi } from '@/services/api/financials';
-import { TransactionPaymentMode, transactionsApi } from '@/services/api/transactions';
+import { transactionsApi, PaymentMode } from '@/services/api/transactions';
 import { companiesApi, Currency, Company } from '@/services/api/companies';
 import { useSnackbar } from 'notistack';
 import { useCurrentUser } from '@/hooks/use-auth';
+import { Card as MuiCard, Container, Tab, Tabs } from '@mui/material';
+import Header from '@/components/Header';
+import { getClaimValue } from '@/utils/jwtUtils';
+import { FilterComponent } from '@/components/advanced-filter/FilterComponent';
+import { SearchBar } from '@/components/interface/SearchBar';
+import { ExpenseAdd } from './add';
+import ExpenseTable from './ExpenseTable';
+import { Stack as MuiStack } from '@mui/system';
 
 // Payment Mode Name Display component
-const PaymentModeDisplay = ({ modeId, paymentModes }: { modeId: string, paymentModes: TransactionPaymentMode[] }) => {
+const PaymentModeDisplay = ({ modeId, paymentModes }: { modeId: string, paymentModes: PaymentMode[] }) => {
   const mode = paymentModes.find(m => m.id === modeId);
   return <span>{mode ? mode.name : 'Unknown'}</span>;
 };
@@ -59,8 +67,9 @@ export default function ExpensesPage(): React.JSX.Element {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
+  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [currentStoreId, setCurrentStoreId] = useState<string>('');
   const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
   
@@ -68,25 +77,50 @@ export default function ExpensesPage(): React.JSX.Element {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [expensesData, categoriesData, currenciesData, modesData, companiesData] = await Promise.all([
-        financialsApi.getExpenses(),
-        financialsApi.getExpenseCategories(),
-        companiesApi.getCurrencies(),
-        transactionsApi.getPaymentModes(),
-        companiesApi.getCompanies()
-      ]);
-      setExpenses(expensesData);
-      setCategories(categoriesData);
-      setCurrencies(currenciesData);
-      setPaymentModes(modesData);
+      // First get companies to find the user's company
+      const companiesData = await companiesApi.getCompanies();
       setCompanies(companiesData);
+      
+      const companyId = userInfo?.company_id || (companiesData.length > 0 ? companiesData[0].id : '');
+      
+      if (!companyId) {
+        enqueueSnackbar('No company found', { variant: 'error' });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Get stores for the company
+      const stores = await companiesApi.getStores(companyId);
+      const companyStores = stores.filter(store => 
+        store.company && store.company.id === companyId
+      );
+      
+      if (companyStores.length > 0) {
+        const storeId = companyStores[0].id;
+        setCurrentStoreId(storeId);
+        
+        // Now get all data using the store ID
+        const [expensesData, categoriesData, currenciesData, modesData] = await Promise.all([
+          financialsApi.getExpenses(storeId),
+          financialsApi.getExpenseCategories(storeId),
+          companiesApi.getCurrencies(),
+          transactionsApi.getPaymentModes(storeId)
+        ]);
+        
+        setExpenses(expensesData);
+        setCategories(categoriesData);
+        setCurrencies(currenciesData);
+        setPaymentModes(modesData);
+      } else {
+        enqueueSnackbar('No stores found for your company', { variant: 'warning' });
+      }
     } catch (error: any) {
       console.error('Error fetching data:', error);
       enqueueSnackbar('Failed to load expenses', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar]);
+  }, [enqueueSnackbar, userInfo]);
 
   useEffect(() => {
     fetchData();
@@ -114,19 +148,15 @@ export default function ExpensesPage(): React.JSX.Element {
   const handleAddNewExpense = () => {
     console.log('handleAddNewExpense called');
     console.log('Currencies available:', currencies);
-    console.log('Companies available:', companies);
     
-    // Use the first company if userInfo is not available
-    const companyId = userInfo?.company_id || (companies.length > 0 ? companies[0].id : '');
-    
-    if (!companyId) {
-      console.log('No company ID available');
-      enqueueSnackbar('Unable to add expense: Company data not available.', { variant: 'error' });
+    if (!currentStoreId) {
+      console.log('No store ID available');
+      enqueueSnackbar('Unable to add expense: Store data not available.', { variant: 'error' });
       return;
     }
     
     setCurrentExpense({
-      company: companyId,
+      store_id: currentStoreId,
       expense_category: '',
       amount: '',
       description: '',
@@ -134,7 +164,7 @@ export default function ExpensesPage(): React.JSX.Element {
       payment_mode: '',
     });
     
-    console.log('currentExpense set with company ID:', companyId);
+    console.log('currentExpense set with store ID:', currentStoreId);
     
     setIsExpenseModalOpen(true);
   };
@@ -155,9 +185,9 @@ export default function ExpensesPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
-    if (expenseToDelete) {
+    if (expenseToDelete && currentStoreId) {
       try {
-        await financialsApi.deleteExpense(expenseToDelete);
+        await financialsApi.deleteExpense(currentStoreId, expenseToDelete);
         enqueueSnackbar('Expense deleted successfully', { variant: 'success' });
         fetchData();
         setIsDeleteModalOpen(false);
@@ -172,15 +202,19 @@ export default function ExpensesPage(): React.JSX.Element {
   const handleSaveExpense = async (expenseData: ExpenseCreateData & { id?: string }) => {
     console.log('handleSaveExpense called with data:', expenseData);
     try {
+      if (!currentStoreId) {
+        throw new Error('Store ID is not available');
+      }
+      
       if (expenseData.id) {
         // Update existing expense
         console.log('Updating expense with ID:', expenseData.id);
-        await financialsApi.updateExpense(expenseData.id, expenseData);
+        await financialsApi.updateExpense(currentStoreId, expenseData.id, expenseData);
         enqueueSnackbar('Expense updated successfully', { variant: 'success' });
       } else {
-        // Add new expense - company ID is now properly set in the modal component
+        // Add new expense
         console.log('Creating new expense with data:', expenseData);
-        await financialsApi.createExpense(expenseData);
+        await financialsApi.createExpense(currentStoreId, expenseData);
         enqueueSnackbar('Expense added successfully', { variant: 'success' });
       }
       fetchData();
@@ -241,7 +275,7 @@ export default function ExpensesPage(): React.JSX.Element {
             startIcon={<PlusIcon weight="bold" />}
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddNewExpense}
-            disabled={isLoading || currencies.length === 0 || (companies.length === 0 && !userInfo)}
+            disabled={isLoading || currencies.length === 0 || !currentStoreId}
           >
             Add New Expense
           </Button>

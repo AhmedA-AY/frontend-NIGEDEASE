@@ -30,7 +30,7 @@ import { paths } from '@/paths';
 import PurchaseEditModal from '@/components/admin/purchases/PurchaseEditModal';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
 import { useState, useEffect, useCallback } from 'react';
-import { Purchase, Supplier, PurchaseCreateData, PurchaseUpdateData, transactionsApi, TransactionPaymentMode } from '@/services/api/transactions';
+import { Purchase, Supplier, PurchaseCreateData, PurchaseUpdateData, transactionsApi, PaymentMode } from '@/services/api/transactions';
 import { inventoryApi, InventoryStore } from '@/services/api/inventory';
 import { companiesApi, Company, Currency } from '@/services/api/companies';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -58,7 +58,7 @@ export default function PurchasesPage(): React.JSX.Element {
   const [stores, setStores] = useState<InventoryStore[]>([]);
   const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = useState<TransactionPaymentMode[]>([]);
+  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState<string>('');
   const [selectedPurchaseDetails, setSelectedPurchaseDetails] = useState<Purchase | null>(null);
   
@@ -83,12 +83,12 @@ export default function PurchasesPage(): React.JSX.Element {
         currenciesData, 
         paymentModesData
       ] = await Promise.all([
-        transactionsApi.getPurchases(),
-        transactionsApi.getSuppliers(),
+        transactionsApi.getPurchases(selectedStore.id),
+        transactionsApi.getSuppliers(selectedStore.id),
         companiesApi.getCompanies(),
         inventoryApi.getStores(),
         companiesApi.getCurrencies(),
-        transactionsApi.getPaymentModes()
+        transactionsApi.getPaymentModes(selectedStore.id)
       ]);
       
       setPurchases(purchasesData);
@@ -143,7 +143,11 @@ export default function PurchasesPage(): React.JSX.Element {
     
   // Further filter purchases by user's company if available
   const companyPurchases = userInfo?.company_id
-    ? filteredPurchases.filter(purchase => purchase.company.id === userInfo.company_id)
+    ? filteredPurchases.filter(purchase => 
+        purchase.store && 
+        purchase.store.company && 
+        purchase.store.company.id === userInfo.company_id
+      )
     : filteredPurchases;
 
   // Calculate total amounts
@@ -229,203 +233,112 @@ export default function PurchasesPage(): React.JSX.Element {
       return;
     }
     
-    console.log(`Editing purchase: ${JSON.stringify(purchaseToEdit)}`);
-    
-    if (purchaseToEdit) {
-      // Show loading indicator
-      setIsLoading(true);
+    try {
+      // Fetch purchase items for this purchase
+      const purchaseItems = await transactionsApi.getPurchaseItems(selectedStore.id, id);
       
-      try {
-        // Fetch purchase items for this purchase
-        const purchaseItems = await transactionsApi.getPurchaseItems(id);
-        
-        // Convert purchase items to the format expected by the form
-        const products = await Promise.all(
-          purchaseItems.map(async (item) => {
-            // Get product details
-            let product;
-            try {
-              product = await inventoryApi.getProduct(selectedStore.id, item.product.id);
-            } catch (err) {
-              console.error(`Error fetching product ${item.product.id}:`, err);
-              product = item.product;
-            }
-            
-            return {
-              id: item.product.id,
-              name: product.name,
-              quantity: parseInt(item.quantity),
-              unitPrice: product.purchase_price ? parseFloat(product.purchase_price) : 0,
-              discount: 0, // Not available from API, default to 0
-              tax: 0, // Not available from API, default to 0
-              subtotal: parseFloat(item.quantity) * (product.purchase_price ? parseFloat(product.purchase_price) : 0)
-            };
-          })
-        );
-        
-        // Convert the purchase data to the format expected by the modal
-        setCurrentPurchase({
-          id: purchaseToEdit.id,
-          date: new Date(purchaseToEdit.created_at).toISOString().split('T')[0],
-          supplier: purchaseToEdit.supplier.id,
-          status: purchaseToEdit.is_credit ? 'Credit' : 'Paid',
-          products: products,
-          totalAmount: parseFloat(purchaseToEdit.total_amount),
-          paidAmount: 0, // Not available directly
-          dueAmount: parseFloat(purchaseToEdit.total_amount), // Assuming full amount is due
-          paymentStatus: purchaseToEdit.is_credit ? 'Unpaid' : 'Paid',
-          company_id: purchaseToEdit.company.id,
-          store_id: purchaseToEdit.store.id,
-          currency_id: purchaseToEdit.currency.id,
-          payment_mode_id: purchaseToEdit.payment_mode.id,
-          is_credit: purchaseToEdit.is_credit
-        });
-        
-        setIsPurchaseModalOpen(true);
-        handleMenuClose(id);
-      } catch (error) {
-        console.error('Error fetching purchase items:', error);
-        alert('Failed to fetch purchase details. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
+      // Convert purchase items to the format expected by the form
+      const products = await Promise.all(
+        purchaseItems.map(async (item) => ({
+          id: item.product.id,
+          name: item.product.name,
+          quantity: parseInt(item.quantity, 10),
+          price: 0, // This needs to be fetched from somewhere
+          subtotal: 0 // This needs to be calculated
+        }))
+      );
+      
+      // Set the current purchase for editing
+      setCurrentPurchase({
+        id: purchaseToEdit.id,
+        date: new Date(purchaseToEdit.created_at).toISOString().split('T')[0],
+        supplier: purchaseToEdit.supplier.id,
+        status: purchaseToEdit.status,
+        products: products,
+        totalAmount: parseFloat(purchaseToEdit.total_amount),
+        paidAmount: 0, // This needs to be fetched from somewhere
+        dueAmount: parseFloat(purchaseToEdit.total_amount), // This needs to be calculated
+        paymentStatus: purchaseToEdit.is_credit ? 'Credit' : 'Paid',
+        store_id: purchaseToEdit.store.id,
+        currency_id: purchaseToEdit.currency.id,
+        payment_mode_id: purchaseToEdit.payment_mode.id,
+        is_credit: purchaseToEdit.is_credit
+      });
+      
+      setIsPurchaseModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching purchase details:', error);
+      enqueueSnackbar('Failed to load purchase details', { variant: 'error' });
     }
   };
 
   const handleDeletePurchase = (id: string) => {
     setPurchaseToDelete(id);
     setIsDeleteModalOpen(true);
-    handleMenuClose(id);
   };
 
   const handleConfirmDelete = async () => {
+    if (!purchaseToDelete || !selectedStore) {
+      enqueueSnackbar('No purchase selected or no store selected', { variant: 'error' });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await transactionsApi.deletePurchase(selectedStore.id, purchaseToDelete);
+      
+      // Remove the deleted purchase from the state
+      setPurchases(purchases.filter(purchase => purchase.id !== purchaseToDelete));
+      
+      enqueueSnackbar('Purchase deleted successfully', { variant: 'success' });
+      setIsDeleteModalOpen(false);
+      setPurchaseToDelete(null);
+    } catch (error) {
+      console.error('Error deleting purchase:', error);
+      enqueueSnackbar('Failed to delete purchase', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSavePurchase = async (purchaseData: any) => {
     if (!selectedStore) {
       enqueueSnackbar('Please select a store first', { variant: 'warning' });
       return;
     }
     
-    if (purchaseToDelete) {
-      try {
-        await transactionsApi.deletePurchase(purchaseToDelete);
-        console.log(`Deleted purchase with ID: ${purchaseToDelete}`);
-        // Refresh data
-        fetchData();
-        setIsDeleteModalOpen(false);
-        setPurchaseToDelete(null);
-      } catch (error) {
-        console.error('Error deleting purchase:', error);
-      }
-    }
-  };
-
-  const handleSavePurchase = async (purchaseData: any) => {
+    setIsLoading(true);
     try {
-      // Check if company_id is available
-      if (!userInfo || !userInfo.company_id) {
-        alert("Company information is not available. Please refresh the page or log in again.");
-        return;
-      }
-      
-      // Log data before creating/updating
-      console.log('Purchase data to save:', purchaseData);
-      
-      // Use the user's company ID
-      const company_id = userInfo.company_id;
-      // For other fields, use the form values or defaults
-      const store_id = purchaseData.store_id || (filteredStores.length > 0 ? filteredStores[0].id : '');
-      const currency_id = purchaseData.currency_id || (currencies.length > 0 ? currencies[0].id : '');
-      const payment_mode_id = purchaseData.payment_mode_id || (paymentModes.length > 0 ? paymentModes[0].id : '');
-      
-      // Log IDs being used
-      console.log('Using IDs:', {
-        company_id,
-        store_id,
-        currency_id,
-        payment_mode_id
-      });
-      
-      // Verify required IDs are present
-      if (!store_id || !currency_id || !payment_mode_id || !purchaseData.supplier) {
-        alert("Missing required information. Please ensure all fields are filled.");
-        return;
-      }
-      
-      // Convert product items to the format expected by the API
-      const items = (purchaseData.products || []).map((product: {id: string; quantity: number}) => ({
-        product_id: product.id,
-        quantity: String(product.quantity) // Ensure quantity is a string
-      }));
-      
-      // Make sure we have at least one item
-      if (items.length === 0) {
-        alert("You must add at least one product to create a purchase.");
-        return;
-      }
-      
-      const purchasePayload: PurchaseCreateData = {
-        company_id: company_id,
-        store_id: store_id,
+      const formattedData = {
+        store_id: selectedStore.id,
         supplier_id: purchaseData.supplier,
         total_amount: purchaseData.totalAmount.toString(),
-        currency_id: currency_id,
-        payment_mode_id: payment_mode_id,
-        is_credit: purchaseData.status === 'Credit',
-        items: items
+        currency_id: purchaseData.currency_id,
+        payment_mode_id: purchaseData.payment_mode_id,
+        is_credit: purchaseData.is_credit,
+        items: purchaseData.products.map((product: any) => ({
+          product_id: product.id,
+          quantity: product.quantity.toString()
+        }))
       };
-
-      // Show final payload
-      console.log('Final purchase payload:', purchasePayload);
-
-      let responseData;
       
       if (purchaseData.id) {
         // Update existing purchase
-        responseData = await transactionsApi.updatePurchase(purchaseData.id, purchasePayload);
-        console.log(`Updated purchase: ${JSON.stringify(purchasePayload)}`);
+        await transactionsApi.updatePurchase(selectedStore.id, purchaseData.id, formattedData);
+        enqueueSnackbar('Purchase updated successfully', { variant: 'success' });
       } else {
-        // Add new purchase
-        responseData = await transactionsApi.createPurchase(purchasePayload);
-        console.log(`Added new purchase: ${JSON.stringify(purchasePayload)}`);
+        // Create new purchase
+        await transactionsApi.createPurchase(selectedStore.id, formattedData);
+        enqueueSnackbar('Purchase created successfully', { variant: 'success' });
       }
       
-      // Create payable automatically
-      if (responseData && responseData.id) {
-        try {
-          console.log('Creating payable for purchase:', responseData.id);
-          
-          const payablePayload = {
-            company: company_id,
-            purchase: responseData.id,
-            amount: purchaseData.totalAmount.toString(),
-            currency: currency_id
-          };
-          
-          console.log('Payable payload:', payablePayload);
-          
-          await financialsApi.createPayable(payablePayload);
-          console.log('Payable created successfully');
-        } catch (payableError) {
-          console.error('Error creating payable:', payableError);
-          // Still consider the purchase successful, just show an error about the payable
-          alert("Purchase was saved, but there was an error creating the payable. Please create it manually.");
-        }
-      } else {
-        console.error('Purchase response missing ID:', responseData);
-        alert("Purchase was saved but there was an issue with the response. Payable was not created.");
-      }
-      
-      // Refresh the data
-      fetchData();
       setIsPurchaseModalOpen(false);
-    } catch (error: any) {
+      fetchData();
+    } catch (error) {
       console.error('Error saving purchase:', error);
-      // Display the error details if available
-      if (error.response && error.response.data) {
-        console.error('API error details:', error.response.data);
-        alert(`Error: ${JSON.stringify(error.response.data)}`);
-      } else {
-        alert("An error occurred while saving the purchase.");
-      }
+      enqueueSnackbar('Failed to save purchase', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -6,6 +6,7 @@ const USER_EMAIL_KEY = 'niged_ease_user_email';
 const USER_ID_KEY = 'niged_ease_user_id';
 const ASSIGNED_STORE_KEY = 'assignedStore';
 const COMPANY_STORES_KEY = 'companyStores';
+const COMPANY_ID_KEY = 'companyId';
 
 // Helper to check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined';
@@ -76,13 +77,15 @@ const tokenStorage = {
   saveTokens: (
     accessToken: string, 
     refreshToken: string, 
-    role: string, 
+    role: string,
+    companyId: string,
     assignedStore?: any,
     stores?: any[]
   ): void => {
     localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     localStorage.setItem(USER_ROLE_KEY, role);
+    localStorage.setItem(COMPANY_ID_KEY, companyId);
     
     if (assignedStore) {
       localStorage.setItem(ASSIGNED_STORE_KEY, JSON.stringify(assignedStore));
@@ -90,6 +93,12 @@ const tokenStorage = {
     
     if (stores && stores.length > 0) {
       localStorage.setItem(COMPANY_STORES_KEY, JSON.stringify(stores));
+    }
+    
+    // Also extract and save user ID from access token
+    const decoded = decodeToken(accessToken);
+    if (decoded && decoded.user_id) {
+      localStorage.setItem(USER_ID_KEY, decoded.user_id);
     }
   },
 
@@ -112,6 +121,7 @@ const tokenStorage = {
     localStorage.removeItem(USER_ID_KEY);
     localStorage.removeItem(ASSIGNED_STORE_KEY);
     localStorage.removeItem(COMPANY_STORES_KEY);
+    localStorage.removeItem(COMPANY_ID_KEY);
   },
 
   // Get user email
@@ -136,12 +146,13 @@ const tokenStorage = {
     const decodedToken = decodeToken(accessToken);
     const email = localStorage.getItem(USER_EMAIL_KEY);
     const role = localStorage.getItem(USER_ROLE_KEY);
+    const companyId = localStorage.getItem(COMPANY_ID_KEY);
     
     return {
-      id: decodedToken?.user_id || decodedToken?.sub,
+      id: decodedToken?.user_id || decodedToken?.sub || localStorage.getItem(USER_ID_KEY),
       email: email || decodedToken?.email,
       role: role || decodedToken?.role,
-      company_id: decodedToken?.company_id
+      company_id: companyId || decodedToken?.company_id
     };
   },
 

@@ -4,7 +4,15 @@ import { Company, Currency, SubscriptionPlan } from './companies';
 // Inventory Interfaces
 export interface ProductUnit {
   id: string;
-  company: Company;
+  store: {
+    id: string;
+    company: Company;
+    name: string;
+    location: string;
+    created_at: string;
+    updated_at: string;
+    is_active: "active" | "inactive";
+  };
   name: string;
   description: string;
   created_at: string;
@@ -12,7 +20,7 @@ export interface ProductUnit {
 }
 
 export interface ProductUnitCreateData {
-  company_id: string;
+  store_id: string;
   name: string;
   description: string;
 }
@@ -21,7 +29,15 @@ export interface ProductUnitUpdateData extends ProductUnitCreateData {}
 
 export interface ProductCategory {
   id: string;
-  company: Company;
+  store: {
+    id: string;
+    company: Company;
+    name: string;
+    location: string;
+    created_at: string;
+    updated_at: string;
+    is_active: "active" | "inactive";
+  };
   name: string;
   description: string;
   created_at: string;
@@ -29,7 +45,7 @@ export interface ProductCategory {
 }
 
 export interface ProductCategoryCreateData {
-  company_id: string;
+  store_id: string;
   name: string;
   description: string;
 }
@@ -38,25 +54,33 @@ export interface ProductCategoryUpdateData extends ProductCategoryCreateData {}
 
 export interface Product {
   id: string;
-  company: Company;
+  store: {
+    id: string;
+    company: Company;
+    name: string;
+    location: string;
+    created_at: string;
+    updated_at: string;
+    is_active: "active" | "inactive";
+  };
   name: string;
   description: string;
   image: string;
   product_unit: ProductUnit;
   product_category: ProductCategory;
-  purchase_price?: string;
-  sale_price?: string;
-  color_id?: string;
-  collection_id?: string;
+  purchase_price: string;
+  sale_price: string;
+  color: string;
+  collection: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface ProductCreateData {
-  company_id: string;
+  store_id: string;
   name: string;
   description: string;
-  image: string;
+  image?: string;
   product_unit_id: string;
   product_category_id: string;
   purchase_price?: string;
@@ -83,11 +107,11 @@ export interface InventoryStore {
 export interface InventoryStoreCreateData {
   company_id: string;
   name: string;
-  address: string;
-  phone_number: string;
-  email: string;
-  is_active: "active" | "inactive";
   location: string;
+  is_active?: "active" | "inactive";
+  address?: string;
+  phone_number?: string;
+  email?: string;
 }
 
 export interface InventoryStoreUpdateData extends Partial<InventoryStoreCreateData> {}
@@ -112,26 +136,25 @@ export interface InventoryUpdateData extends InventoryCreateData {}
 // Clothing Interfaces
 export interface ClothingColor {
   id: string;
-  company: Company;
+  store_id: string;
   name: string;
-  code: string;
-  description: string;
+  color_code: string;
   created_at: string;
   updated_at: string;
+  is_active: boolean;
 }
 
 export interface ClothingColorCreateData {
-  company_id: string;
+  store_id: string;
   name: string;
-  code: string;
-  description: string;
+  color_code: string;
 }
 
 export interface ClothingColorUpdateData extends ClothingColorCreateData {}
 
 export interface ClothingMaterial {
   id: string;
-  company: Company;
+  store_id: string;
   name: string;
   description: string;
   created_at: string;
@@ -139,7 +162,7 @@ export interface ClothingMaterial {
 }
 
 export interface ClothingMaterialCreateData {
-  company_id: string;
+  store_id: string;
   name: string;
   description: string;
 }
@@ -148,7 +171,7 @@ export interface ClothingMaterialUpdateData extends ClothingMaterialCreateData {
 
 export interface ClothingSize {
   id: string;
-  company: Company;
+  store_id: string;
   name: string;
   description: string;
   created_at: string;
@@ -156,7 +179,7 @@ export interface ClothingSize {
 }
 
 export interface ClothingSizeCreateData {
-  company_id: string;
+  store_id: string;
   name: string;
   description: string;
 }
@@ -165,16 +188,20 @@ export interface ClothingSizeUpdateData extends ClothingSizeCreateData {}
 
 export interface ClothingSeason {
   id: string;
-  company: Company;
+  store_id: string;
   name: string;
+  start_date: string;
+  end_date: string;
   description: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface ClothingSeasonCreateData {
-  company_id: string;
+  store_id: string;
   name: string;
+  start_date: string;
+  end_date: string;
   description: string;
 }
 
@@ -182,16 +209,22 @@ export interface ClothingSeasonUpdateData extends ClothingSeasonCreateData {}
 
 export interface ClothingCollection {
   id: string;
-  company: Company;
+  store_id: string;
+  season_id: string;
   name: string;
+  release_date: string;
   description: string;
+  store: string;
+  season: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface ClothingCollectionCreateData {
-  company_id: string;
+  store_id: string;
+  season_id: string;
   name: string;
+  release_date: string;
   description: string;
 }
 
@@ -288,7 +321,7 @@ export const inventoryApi = {
   // Stores
   getStores: async (): Promise<InventoryStore[]> => {
     console.log('Making API call to get stores');
-    const response = await coreApiClient.get<InventoryStore[]>('/inventory/stores/');
+    const response = await coreApiClient.get<InventoryStore[]>('/companies/stores/');
     console.log('Raw API response for stores:', response);
     console.log('API response data structure:', JSON.stringify(response.data, null, 2));
     
@@ -306,22 +339,22 @@ export const inventoryApi = {
   },
   
   getStore: async (id: string): Promise<InventoryStore> => {
-    const response = await coreApiClient.get<InventoryStore>(`/inventory/stores/${id}/`);
+    const response = await coreApiClient.get<InventoryStore>(`/companies/stores/${id}/`);
     return response.data;
   },
   
   createStore: async (data: InventoryStoreCreateData): Promise<InventoryStore> => {
-    const response = await coreApiClient.post<InventoryStore>('/inventory/stores/', data);
+    const response = await coreApiClient.post<InventoryStore>('/companies/stores/', data);
     return response.data;
   },
   
   updateStore: async (id: string, data: InventoryStoreUpdateData): Promise<InventoryStore> => {
-    const response = await coreApiClient.put<InventoryStore>(`/inventory/stores/${id}/`, data);
+    const response = await coreApiClient.put<InventoryStore>(`/companies/stores/${id}/`, data);
     return response.data;
   },
   
   deleteStore: async (id: string): Promise<void> => {
-    await coreApiClient.delete(`/inventory/stores/${id}/`);
+    await coreApiClient.delete(`/companies/stores/${id}/`);
   },
 
   toggleStoreStatus: async (id: string, isActive: boolean): Promise<InventoryStore> => {
@@ -378,127 +411,127 @@ export const inventoryApi = {
   },
 
   // Clothing Colors
-  getClothingColors: async (): Promise<ClothingColor[]> => {
-    const response = await coreApiClient.get<ClothingColor[]>('/inventory/clothing/colors/');
+  getClothingColors: async (storeId: string): Promise<ClothingColor[]> => {
+    const response = await coreApiClient.get<ClothingColor[]>(`/clothings/stores/${storeId}/colors/`);
     return response.data;
   },
   
-  getClothingColor: async (id: string): Promise<ClothingColor> => {
-    const response = await coreApiClient.get<ClothingColor>(`/inventory/clothing/colors/${id}/`);
+  getClothingColor: async (storeId: string, id: string): Promise<ClothingColor> => {
+    const response = await coreApiClient.get<ClothingColor>(`/clothings/stores/${storeId}/colors/${id}/`);
     return response.data;
   },
   
-  createClothingColor: async (data: ClothingColorCreateData): Promise<ClothingColor> => {
-    const response = await coreApiClient.post<ClothingColor>('/inventory/clothing/colors/', data);
+  createClothingColor: async (storeId: string, data: ClothingColorCreateData): Promise<ClothingColor> => {
+    const response = await coreApiClient.post<ClothingColor>(`/clothings/stores/${storeId}/colors/`, data);
     return response.data;
   },
   
-  updateClothingColor: async (id: string, data: ClothingColorUpdateData): Promise<ClothingColor> => {
-    const response = await coreApiClient.put<ClothingColor>(`/inventory/clothing/colors/${id}/`, data);
+  updateClothingColor: async (storeId: string, id: string, data: ClothingColorUpdateData): Promise<ClothingColor> => {
+    const response = await coreApiClient.put<ClothingColor>(`/clothings/stores/${storeId}/colors/${id}/`, data);
     return response.data;
   },
   
-  deleteClothingColor: async (id: string): Promise<void> => {
-    await coreApiClient.delete(`/inventory/clothing/colors/${id}/`);
+  deleteClothingColor: async (storeId: string, id: string): Promise<void> => {
+    await coreApiClient.delete(`/clothings/stores/${storeId}/colors/${id}/`);
   },
 
   // Clothing Materials
-  getClothingMaterials: async (): Promise<ClothingMaterial[]> => {
-    const response = await coreApiClient.get<ClothingMaterial[]>('/inventory/clothing/materials/');
+  getClothingMaterials: async (storeId: string): Promise<ClothingMaterial[]> => {
+    const response = await coreApiClient.get<ClothingMaterial[]>(`/clothings/stores/${storeId}/materials/`);
     return response.data;
   },
   
-  getClothingMaterial: async (id: string): Promise<ClothingMaterial> => {
-    const response = await coreApiClient.get<ClothingMaterial>(`/inventory/clothing/materials/${id}/`);
+  getClothingMaterial: async (storeId: string, id: string): Promise<ClothingMaterial> => {
+    const response = await coreApiClient.get<ClothingMaterial>(`/clothings/stores/${storeId}/materials/${id}/`);
     return response.data;
   },
   
-  createClothingMaterial: async (data: ClothingMaterialCreateData): Promise<ClothingMaterial> => {
-    const response = await coreApiClient.post<ClothingMaterial>('/inventory/clothing/materials/', data);
+  createClothingMaterial: async (storeId: string, data: ClothingMaterialCreateData): Promise<ClothingMaterial> => {
+    const response = await coreApiClient.post<ClothingMaterial>(`/clothings/stores/${storeId}/materials/`, data);
     return response.data;
   },
   
-  updateClothingMaterial: async (id: string, data: ClothingMaterialUpdateData): Promise<ClothingMaterial> => {
-    const response = await coreApiClient.put<ClothingMaterial>(`/inventory/clothing/materials/${id}/`, data);
+  updateClothingMaterial: async (storeId: string, id: string, data: ClothingMaterialUpdateData): Promise<ClothingMaterial> => {
+    const response = await coreApiClient.put<ClothingMaterial>(`/clothings/stores/${storeId}/materials/${id}/`, data);
     return response.data;
   },
   
-  deleteClothingMaterial: async (id: string): Promise<void> => {
-    await coreApiClient.delete(`/inventory/clothing/materials/${id}/`);
+  deleteClothingMaterial: async (storeId: string, id: string): Promise<void> => {
+    await coreApiClient.delete(`/clothings/stores/${storeId}/materials/${id}/`);
   },
 
   // Clothing Sizes
-  getClothingSizes: async (): Promise<ClothingSize[]> => {
-    const response = await coreApiClient.get<ClothingSize[]>('/inventory/clothing/sizes/');
+  getClothingSizes: async (storeId: string): Promise<ClothingSize[]> => {
+    const response = await coreApiClient.get<ClothingSize[]>(`/clothings/stores/${storeId}/sizes/`);
     return response.data;
   },
   
-  getClothingSize: async (id: string): Promise<ClothingSize> => {
-    const response = await coreApiClient.get<ClothingSize>(`/inventory/clothing/sizes/${id}/`);
+  getClothingSize: async (storeId: string, id: string): Promise<ClothingSize> => {
+    const response = await coreApiClient.get<ClothingSize>(`/clothings/stores/${storeId}/sizes/${id}/`);
     return response.data;
   },
   
-  createClothingSize: async (data: ClothingSizeCreateData): Promise<ClothingSize> => {
-    const response = await coreApiClient.post<ClothingSize>('/inventory/clothing/sizes/', data);
+  createClothingSize: async (storeId: string, data: ClothingSizeCreateData): Promise<ClothingSize> => {
+    const response = await coreApiClient.post<ClothingSize>(`/clothings/stores/${storeId}/sizes/`, data);
     return response.data;
   },
   
-  updateClothingSize: async (id: string, data: ClothingSizeUpdateData): Promise<ClothingSize> => {
-    const response = await coreApiClient.put<ClothingSize>(`/inventory/clothing/sizes/${id}/`, data);
+  updateClothingSize: async (storeId: string, id: string, data: ClothingSizeUpdateData): Promise<ClothingSize> => {
+    const response = await coreApiClient.put<ClothingSize>(`/clothings/stores/${storeId}/sizes/${id}/`, data);
     return response.data;
   },
   
-  deleteClothingSize: async (id: string): Promise<void> => {
-    await coreApiClient.delete(`/inventory/clothing/sizes/${id}/`);
+  deleteClothingSize: async (storeId: string, id: string): Promise<void> => {
+    await coreApiClient.delete(`/clothings/stores/${storeId}/sizes/${id}/`);
   },
 
   // Clothing Seasons
-  getClothingSeasons: async (): Promise<ClothingSeason[]> => {
-    const response = await coreApiClient.get<ClothingSeason[]>('/inventory/clothing/seasons/');
+  getClothingSeasons: async (storeId: string): Promise<ClothingSeason[]> => {
+    const response = await coreApiClient.get<ClothingSeason[]>(`/clothings/stores/${storeId}/seasons/`);
     return response.data;
   },
   
-  getClothingSeason: async (id: string): Promise<ClothingSeason> => {
-    const response = await coreApiClient.get<ClothingSeason>(`/inventory/clothing/seasons/${id}/`);
+  getClothingSeason: async (storeId: string, id: string): Promise<ClothingSeason> => {
+    const response = await coreApiClient.get<ClothingSeason>(`/clothings/stores/${storeId}/seasons/${id}/`);
     return response.data;
   },
   
-  createClothingSeason: async (data: ClothingSeasonCreateData): Promise<ClothingSeason> => {
-    const response = await coreApiClient.post<ClothingSeason>('/inventory/clothing/seasons/', data);
+  createClothingSeason: async (storeId: string, data: ClothingSeasonCreateData): Promise<ClothingSeason> => {
+    const response = await coreApiClient.post<ClothingSeason>(`/clothings/stores/${storeId}/seasons/`, data);
     return response.data;
   },
   
-  updateClothingSeason: async (id: string, data: ClothingSeasonUpdateData): Promise<ClothingSeason> => {
-    const response = await coreApiClient.put<ClothingSeason>(`/inventory/clothing/seasons/${id}/`, data);
+  updateClothingSeason: async (storeId: string, id: string, data: ClothingSeasonUpdateData): Promise<ClothingSeason> => {
+    const response = await coreApiClient.put<ClothingSeason>(`/clothings/stores/${storeId}/seasons/${id}/`, data);
     return response.data;
   },
   
-  deleteClothingSeason: async (id: string): Promise<void> => {
-    await coreApiClient.delete(`/inventory/clothing/seasons/${id}/`);
+  deleteClothingSeason: async (storeId: string, id: string): Promise<void> => {
+    await coreApiClient.delete(`/clothings/stores/${storeId}/seasons/${id}/`);
   },
 
   // Clothing Collections
-  getClothingCollections: async (): Promise<ClothingCollection[]> => {
-    const response = await coreApiClient.get<ClothingCollection[]>('/inventory/clothing/collections/');
+  getClothingCollections: async (storeId: string): Promise<ClothingCollection[]> => {
+    const response = await coreApiClient.get<ClothingCollection[]>(`/clothings/stores/${storeId}/collections/`);
     return response.data;
   },
   
-  getClothingCollection: async (id: string): Promise<ClothingCollection> => {
-    const response = await coreApiClient.get<ClothingCollection>(`/inventory/clothing/collections/${id}/`);
+  getClothingCollection: async (storeId: string, id: string): Promise<ClothingCollection> => {
+    const response = await coreApiClient.get<ClothingCollection>(`/clothings/stores/${storeId}/collections/${id}/`);
     return response.data;
   },
   
-  createClothingCollection: async (data: ClothingCollectionCreateData): Promise<ClothingCollection> => {
-    const response = await coreApiClient.post<ClothingCollection>('/inventory/clothing/collections/', data);
+  createClothingCollection: async (storeId: string, data: ClothingCollectionCreateData): Promise<ClothingCollection> => {
+    const response = await coreApiClient.post<ClothingCollection>(`/clothings/stores/${storeId}/collections/`, data);
     return response.data;
   },
   
-  updateClothingCollection: async (id: string, data: ClothingCollectionUpdateData): Promise<ClothingCollection> => {
-    const response = await coreApiClient.put<ClothingCollection>(`/inventory/clothing/collections/${id}/`, data);
+  updateClothingCollection: async (storeId: string, id: string, data: ClothingCollectionUpdateData): Promise<ClothingCollection> => {
+    const response = await coreApiClient.put<ClothingCollection>(`/clothings/stores/${storeId}/collections/${id}/`, data);
     return response.data;
   },
   
-  deleteClothingCollection: async (id: string): Promise<void> => {
-    await coreApiClient.delete(`/inventory/clothing/collections/${id}/`);
+  deleteClothingCollection: async (storeId: string, id: string): Promise<void> => {
+    await coreApiClient.delete(`/clothings/stores/${storeId}/collections/${id}/`);
   },
 }; 

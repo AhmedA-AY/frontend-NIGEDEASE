@@ -65,8 +65,8 @@ export default function ProductEditModal({
         const [companiesData, unitsData, colorsData, collectionsData] = await Promise.all([
           companiesApi.getCompanies(),
           inventoryApi.getProductUnits(selectedStore.id),
-          clothingsApi.getColors(),
-          clothingsApi.getCollections()
+          clothingsApi.getColors(selectedStore.id),
+          clothingsApi.getCollections(selectedStore.id)
         ]);
         setCompanies(companiesData);
         setProductUnits(unitsData);
@@ -86,32 +86,23 @@ export default function ProductEditModal({
   useEffect(() => {
     if (open) {
       console.log('Modal opened, userInfo:', userInfo);
-      console.log('Companies:', companies);
+      console.log('Selected Store:', selectedStore);
       
-      let companyId = '';
-      
-      // Try to get company ID from various sources
-      if (userInfo && userInfo.company_id) {
-        console.log('Setting company ID from userInfo:', userInfo.company_id);
-        companyId = userInfo.company_id;
-      } else if (product.company_id) {
-        console.log('Using product.company_id:', product.company_id);
-        companyId = product.company_id;
-      } else if (companies.length > 0) {
-        console.log('Using first company ID:', companies[0].id);
-        companyId = companies[0].id;
+      if (!selectedStore) {
+        console.error('No store selected');
+        return;
       }
       
       setFormData({
         ...product,
-        company_id: companyId,
+        store_id: selectedStore.id,
         purchase_price: product.purchase_price || '',
         sale_price: product.sale_price || ''
       });
       
       setErrors({});
     }
-  }, [product, open, userInfo, companies]);
+  }, [product, open, userInfo, selectedStore]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -165,6 +156,11 @@ export default function ProductEditModal({
       newErrors.description = 'Description is required';
     }
     
+    if (!formData.store_id) {
+      console.log('Validation failed: store_id is missing');
+      newErrors.store_id = 'Store is required';
+    }
+    
     // Validate prices if provided
     if (formData.purchase_price && isNaN(Number(formData.purchase_price))) {
       newErrors.purchase_price = 'Purchase price must be a valid number';
@@ -185,29 +181,18 @@ export default function ProductEditModal({
     if (validateForm()) {
       console.log('Form validation passed');
       
-      let companyId = formData.company_id;
-      
-      // If company ID is missing, try to find it
-      if (!companyId) {
-        if (userInfo && userInfo.company_id) {
-          companyId = userInfo.company_id;
-        } else if (companies.length > 0) {
-          companyId = companies[0].id;
-        }
-      }
-      
-      if (!companyId) {
-        console.log('Company ID missing');
+      if (!selectedStore) {
+        console.error('No store selected');
         setErrors(prev => ({
           ...prev,
-          company_id: "Unable to determine company ID. Please try again later."
+          store_id: "No store selected. Please select a store and try again."
         }));
         return;
       }
       
       // Make sure we have all required fields before submitting
       const completeData: ProductCreateData & { id?: string } = {
-        company_id: companyId,
+        store_id: selectedStore.id,
         name: formData.name || '',
         description: formData.description || '',
         product_category_id: formData.product_category_id || '',
