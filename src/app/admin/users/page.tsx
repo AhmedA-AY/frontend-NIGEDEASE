@@ -419,9 +419,21 @@ export default function UsersPage() {
         try {
           // Try to get more detailed user info including assigned store
           const userDetail = await usersApi.getUser(user.id);
+          console.log(`User ${user.id} details:`, {
+            email: userDetail.email,
+            role: userDetail.role,
+            assigned_store: userDetail.assigned_store
+          });
+          
+          // If the user has no assigned_store but should have one, check if there's a raw property
+          const assignedStore = userDetail.assigned_store || 
+                               (userDetail as any).assigned_store_id ? 
+                               { id: (userDetail as any).assigned_store_id, name: 'Unknown Store' } : 
+                               null;
+          
           return {
             ...user,
-            assigned_store: userDetail.assigned_store || null
+            assigned_store: assignedStore
           };
         } catch (error) {
           console.error(`Error fetching details for user ${user.id}:`, error);
@@ -431,6 +443,12 @@ export default function UsersPage() {
           };
         }
       }));
+      
+      console.log('Users with details:', usersWithDetails.map(user => ({
+        id: user.id,
+        email: user.email,
+        assigned_store: user.assigned_store
+      })));
       
       setUsers(usersWithDetails);
       
@@ -470,11 +488,21 @@ export default function UsersPage() {
     
     // Apply store filter
     if (store !== 'all') {
-      filtered = filtered.filter(user => 
-        user.assigned_store && user.assigned_store.id === store
-      );
+      console.log(`Filtering by store ID: ${store}`);
+      console.log('User store assignments:', userList.map(user => ({
+        userId: user.id,
+        userName: `${user.first_name} ${user.last_name}`,
+        storeInfo: user.assigned_store
+      })));
+      
+      filtered = filtered.filter(user => {
+        const match = user.assigned_store && user.assigned_store.id === store;
+        console.log(`User ${user.id} (${user.email}) - has store: ${!!user.assigned_store}, store id: ${user.assigned_store?.id}, match: ${match}`);
+        return match;
+      });
     }
     
+    console.log(`Filter results: ${filtered.length} users matched from ${userList.length} total`);
     setFilteredUsers(filtered);
   }, []);
   

@@ -10,6 +10,7 @@ export interface ExtendedUserResponse extends UserResponse {
     is_active?: string;
     [key: string]: any;
   } | null;
+  assigned_store_id?: string; // Fallback for when the object isn't populated
 }
 
 // User API
@@ -26,8 +27,29 @@ export const usersApi = {
 
   // Get user by ID
   getUser: async (id: string): Promise<ExtendedUserResponse> => {
-    const response = await userManagementApiClient.get<ExtendedUserResponse>(`/users/${id}/`);
-    return response.data;
+    try {
+      const response = await userManagementApiClient.get<ExtendedUserResponse>(`/users/${id}/`);
+      const userData = response.data;
+      
+      // Handle the case where assigned_store might be a string ID instead of an object
+      if (typeof userData.assigned_store === 'string') {
+        userData.assigned_store_id = userData.assigned_store;
+        userData.assigned_store = {
+          id: userData.assigned_store,
+          name: 'Unknown Store'
+        };
+      }
+      
+      console.log(`API getUser(${id}) response:`, {
+        userData: userData,
+        assignedStore: userData.assigned_store
+      });
+      
+      return userData;
+    } catch (error) {
+      console.error(`Error fetching user ${id}:`, error);
+      throw error;
+    }
   },
 
   // Create a new user
