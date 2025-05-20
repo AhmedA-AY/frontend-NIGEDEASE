@@ -58,21 +58,7 @@ export default function StoresPage(): React.JSX.Element {
         ? storesData 
         : storesData.filter(store => store.company && userInfo?.role === 'superadmin');
       
-      // Fetch detailed information for each store to get address, phone, email
-      const storesWithDetails = await Promise.all(
-        filteredStores.map(async (store) => {
-          try {
-            // Get detailed store information
-            const detailedStore = await inventoryApi.getStore(store.id);
-            return detailedStore;
-          } catch (error) {
-            console.error(`Error fetching details for store ${store.id}:`, error);
-            return store; // Return original store if can't get details
-          }
-        })
-      );
-      
-      setStores(storesWithDetails);
+      setStores(filteredStores);
     } catch (error) {
       console.error('Error fetching stores:', error);
       enqueueSnackbar('Failed to fetch stores', { variant: 'error' });
@@ -245,8 +231,6 @@ export default function StoresPage(): React.JSX.Element {
               <TableRow>
                 <TableCell>Name</TableCell>
                 <TableCell>Location</TableCell>
-                <TableCell>Address</TableCell>
-                <TableCell>Contact Info</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell width="100px">Actions</TableCell>
               </TableRow>
@@ -254,13 +238,13 @@ export default function StoresPage(): React.JSX.Element {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
                     <CircularProgress size={32} />
                   </TableCell>
                 </TableRow>
               ) : filteredStores.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
                     <Typography variant="body1" color="text.secondary">
                       No stores found
                     </Typography>
@@ -271,20 +255,6 @@ export default function StoresPage(): React.JSX.Element {
                   <TableRow key={store.id} hover>
                     <TableCell>{store.name}</TableCell>
                     <TableCell>{store.location}</TableCell>
-                    <TableCell>{store.address || '-'}</TableCell>
-                    <TableCell>
-                      {store.phone_number && (
-                        <Typography variant="body2" sx={{ mb: 0.5 }}>
-                          📞 {store.phone_number}
-                        </Typography>
-                      )}
-                      {store.email && (
-                        <Typography variant="body2">
-                          ✉️ {store.email}
-                        </Typography>
-                      )}
-                      {!store.phone_number && !store.email && '-'}
-                    </TableCell>
                     <TableCell>
                       <Chip 
                         label={store.is_active === 'active' ? 'Active' : 'Inactive'} 
