@@ -381,13 +381,25 @@ export default function UsersPage() {
   }) | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
   
   const { enqueueSnackbar } = useSnackbar();
   const { userInfo } = useCurrentUser();
   const { stores } = useStore();
   
+  // Check if auth is initialized
+  useEffect(() => {
+    if (userInfo !== undefined) {
+      setAuthInitialized(true);
+    }
+  }, [userInfo]);
+  
   // Fetch users data
   const fetchUsers = useCallback(async () => {
+    if (!authInitialized) {
+      return; // Don't do anything until auth is initialized
+    }
+    
     if (!userInfo) {
       enqueueSnackbar('User profile not available. Please log in again.', { variant: 'error' });
       setIsLoading(false);
@@ -461,11 +473,13 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo, enqueueSnackbar]);
+  }, [userInfo, enqueueSnackbar, authInitialized]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (authInitialized) {
+      fetchUsers();
+    }
+  }, [fetchUsers, authInitialized]);
   
   // Filter users based on search query, role filter, and store filter
   const filterUsers = useCallback((userList: ExtendedUserResponse[], query: string, role: string, store: string) => {
