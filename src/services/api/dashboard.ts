@@ -82,6 +82,7 @@ export interface DashboardFilters {
   startDate?: string;
   endDate?: string;
   period?: 'today' | 'yesterday' | 'week' | 'month' | 'year';
+  storeId?: string;
 }
 
 // API client for dashboard

@@ -8,6 +8,7 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import PeopleIcon from '@mui/icons-material/People';
 import { ApexOptions } from 'apexcharts';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { format as formatDate, subDays, subMonths } from 'date-fns';
 
 import DynamicApexChart from '@/components/dynamic-apex-chart';
 import { DashboardFilters, dashboardApi, TopSellingProduct, RecentSale, StockAlert, TopCustomer } from '@/services/api/dashboard';
@@ -15,8 +16,14 @@ import { TopSellingProducts } from '@/components/dashboard/overview/top-selling-
 import { RecentSales } from '@/components/dashboard/overview/recent-sales';
 import { StockAlerts } from '@/components/dashboard/overview/stock-alerts';
 import { TopCustomers } from '@/components/dashboard/overview/top-customers';
+import { useCurrentUser } from '@/hooks/use-auth';
+import { useStore, STORE_CHANGED_EVENT } from '@/providers/store-provider';
+import { transactionsApi } from '@/services/api/transactions';
+import { financialsApi } from '@/services/api/financials';
 
 export default function SalesmanDashboardPage() {
+  const { userInfo } = useCurrentUser();
+  const { currentStore } = useStore();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [stats, setStats] = React.useState({
@@ -33,32 +40,80 @@ export default function SalesmanDashboardPage() {
     dailySales: [] as any[],
     monthlySales: [] as any[],
   });
-  const [selectedPeriod, setSelectedPeriod] = React.useState<DashboardFilters['period']>('month');
+  const [selectedPeriod, setSelectedPeriod] = React.useState<'today' | 'week' | 'month' | 'year'>('month');
   const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
 
   const fetchDashboardData = React.useCallback(async () => {
+    if (!currentStore) {
+      setError('Please select a store to view dashboard data');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
       console.log('Fetching dashboard data with period:', selectedPeriod);
-      const [dashboardStats, sales] = await Promise.all([
-        dashboardApi.getDashboardStats({ period: selectedPeriod }),
-        dashboardApi.getSalesStats({ period: selectedPeriod }),
-      ]);
       
-      console.log('Dashboard data received:', { 
-        totalSales: dashboardStats.totalSales,
-        totalExpenses: dashboardStats.totalExpenses,
-        totalCustomers: dashboardStats.topCustomers.length,
-        dailySalesCount: sales.dailySales.length
-      });
+      // Use either direct API calls or the dashboardApi service
+      if (dashboardApi.getDashboardStats) {
+        // If using the dashboard API service
+        const [dashboardStats, sales] = await Promise.all([
+          dashboardApi.getDashboardStats({ 
+            period: selectedPeriod as DashboardFilters['period'],
+            storeId: currentStore.id 
+          }),
+          dashboardApi.getSalesStats({ 
+            period: selectedPeriod as DashboardFilters['period'],
+            storeId: currentStore.id
+          }),
+        ]);
+        
+        setStats({
+          ...dashboardStats,
+          totalCustomers: dashboardStats.topCustomers.length,
+          salesGrowth: calculateGrowth(sales.monthlySales),
+        });
+        setSalesStats(sales);
+      } else {
+        // Direct API calls if dashboard service isn't available
+        const [sales, expenses, customers] = await Promise.all([
+          transactionsApi.getSales(currentStore.id),
+          financialsApi.getExpenses(currentStore.id),
+          transactionsApi.getCustomers(currentStore.id),
+        ]);
+        
+        console.log('Data fetched:', {
+          salesCount: sales.length,
+          expensesCount: expenses.length,
+          customersCount: customers.length,
+        });
+        
+        // Process the data
+        const dailySalesData = processRecentSalesData(sales, expenses, selectedPeriod);
+        const monthlySalesData = processMonthlySalesData(sales, expenses);
+        const topSellingProducts = generateTopSellingProducts(sales);
+        const recentSales = generateRecentSales(sales);
+        const topCustomers = generateTopCustomers(sales, customers);
+        const salesGrowth = calculateGrowth(monthlySalesData);
+        
+        setStats({
+          totalSales: sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount || '0'), 0),
+          totalExpenses: expenses.reduce((sum, expense) => sum + parseFloat(expense.amount || '0'), 0),
+          totalCustomers: customers.length,
+          salesGrowth,
+          topSellingProducts,
+          recentSales,
+          stockAlerts: [],
+          topCustomers,
+        });
+        
+        setSalesStats({
+          dailySales: dailySalesData,
+          monthlySales: monthlySalesData,
+        });
+      }
       
-      setStats({
-        ...dashboardStats,
-        totalCustomers: dashboardStats.topCustomers.length,
-        salesGrowth: calculateGrowth(sales.monthlySales),
-      });
-      setSalesStats(sales);
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -66,9 +121,113 @@ export default function SalesmanDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedPeriod]);
+  }, [selectedPeriod, currentStore]);
 
-  // Calculate growth percentage from monthly sales data
+  // Process sales and expenses data into daily points for chart
+  const processRecentSalesData = (sales: any[], expenses: any[], period: string) => {
+    const days = period === 'today' ? 1 : 
+                period === 'week' ? 7 : 
+                period === 'month' ? 30 : 365;
+    
+    const result = [];
+    const today = new Date();
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = subDays(today, i);
+      const dateStr = formatDate(date, 'yyyy-MM-dd');
+      const dayLabel = formatDate(date, 'MMM dd');
+      
+      // Filter sales for this day
+      const daySales = sales.filter(sale => 
+        sale.created_at?.substring(0, 10) === dateStr
+      );
+      
+      // Calculate total sales for the day
+      const daySalesTotal = daySales.reduce((sum, sale) => 
+        sum + parseFloat(sale.total_amount || '0'), 0
+      );
+      
+      // Filter expenses for this day
+      const dayExpenses = expenses.filter(expense => 
+        expense.created_at?.substring(0, 10) === dateStr
+      );
+      
+      // Calculate total expenses for the day
+      const dayExpensesTotal = dayExpenses.reduce((sum, expense) => 
+        sum + parseFloat(expense.amount || '0'), 0
+      );
+      
+      result.push({
+        day: dayLabel,
+        sales: daySalesTotal,
+        expenses: dayExpensesTotal,
+      });
+    }
+    
+    return result;
+  };
+  
+  // Process sales data into monthly points for chart and growth calculation
+  const processMonthlySalesData = (sales: any[], expenses: any[]) => {
+    const result = [];
+    const today = new Date();
+    
+    for (let i = 11; i >= 0; i--) {
+      const date = subMonths(today, i);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const monthLabel = formatDate(date, 'MMM yy');
+      
+      // Filter sales for this month
+      const monthSales = sales.filter(sale => {
+        if (!sale.created_at) return false;
+        const saleDate = new Date(sale.created_at);
+        return saleDate.getFullYear() === year && saleDate.getMonth() + 1 === month;
+      });
+      
+      // Calculate total sales for the month
+      const monthSalesTotal = monthSales.reduce((sum, sale) => 
+        sum + parseFloat(sale.total_amount || '0'), 0
+      );
+      
+      // Filter expenses for this month
+      const monthExpenses = expenses.filter(expense => {
+        if (!expense.created_at) return false;
+        const expenseDate = new Date(expense.created_at);
+        return expenseDate.getFullYear() === year && expenseDate.getMonth() + 1 === month;
+      });
+      
+      // Calculate total expenses for the month
+      const monthExpensesTotal = monthExpenses.reduce((sum, expense) => 
+        sum + parseFloat(expense.amount || '0'), 0
+      );
+      
+      result.push({
+        month: monthLabel,
+        sales: monthSalesTotal,
+        expenses: monthExpensesTotal,
+      });
+    }
+    
+    return result;
+  };
+
+  // Helper functions to generate dashboard data
+  const generateTopSellingProducts = (sales: any[]): TopSellingProduct[] => {
+    // Implementation similar to admin dashboard
+    return [];
+  };
+
+  const generateRecentSales = (sales: any[]): RecentSale[] => {
+    // Implementation similar to admin dashboard
+    return [];
+  };
+
+  const generateTopCustomers = (sales: any[], customers: any[]): TopCustomer[] => {
+    // Implementation similar to admin dashboard
+    return [];
+  };
+
   const calculateGrowth = (monthlySales: any[]): number => {
     if (monthlySales.length < 2) return 0;
     
@@ -80,9 +239,30 @@ export default function SalesmanDashboardPage() {
     return ((currentMonth - previousMonth) / previousMonth) * 100;
   };
 
+  // Listen for store changes
+  React.useEffect(() => {
+    const handleStoreChange = () => {
+      fetchDashboardData();
+    };
+
+    window.addEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    
+    return () => {
+      window.removeEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    };
+  }, [fetchDashboardData]);
+
   React.useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  const handlePeriodChange = (period: 'today' | 'week' | 'month' | 'year') => {
+    setSelectedPeriod(period);
+  };
+
+  const handleRetry = () => {
+    fetchDashboardData();
+  };
 
   // Configure chart options
   const salesChartOptions: ApexOptions = {
@@ -124,14 +304,6 @@ export default function SalesmanDashboardPage() {
       data: salesStats.dailySales.map((item: any) => item.expenses),
     },
   ];
-
-  const handlePeriodChange = (period: DashboardFilters['period']) => {
-    setSelectedPeriod(period);
-  };
-
-  const handleRetry = () => {
-    fetchDashboardData();
-  };
 
   if (isLoading) {
     return (

@@ -19,67 +19,82 @@ export function MainNav(): React.JSX.Element {
 
   // Generate user initials from email
   const userInitials = React.useMemo(() => {
-    if (!userInfo?.email) return 'U';
+    if (!userInfo?.email) return '';
     
     const namePart = userInfo.email.split('@')[0];
-    if (!namePart) return 'U';
+    if (namePart) {
+      // Get initials from name parts
+      return namePart
+        .split(/[._-]/)
+        .map((part: string) => part.charAt(0).toUpperCase())
+        .slice(0, 2)
+        .join('');
+    }
     
-    // Format initials from name parts (e.g., john.doe -> JD)
-    return namePart
-      .split(/[._-]/)
-      .map((part: string) => part.charAt(0).toUpperCase())
-      .join('')
-      .slice(0, 2);
+    return userInfo.email.substring(0, 2).toUpperCase();
   }, [userInfo?.email]);
 
   return (
-    <React.Fragment>
+    <>
       <Box
         component="header"
         sx={{
-          borderBottom: '1px solid var(--mui-palette-divider)',
-          backgroundColor: 'var(--mui-palette-background-paper)',
-          position: 'sticky',
+          backdropFilter: 'blur(6px)',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderBottomColor: 'var(--mui-palette-divider)',
+          borderBottomStyle: 'solid',
+          borderBottomWidth: 1,
+          color: 'var(--mui-palette-text-primary)',
+          height: 'var(--MainNav-height)',
+          left: {
+            lg: 'var(--SideNav-width)',
+          },
+          position: 'fixed',
+          right: 0,
           top: 0,
-          zIndex: 'var(--mui-zIndex-appBar)',
+          zIndex: 'var(--MainNav-zIndex)',
         }}
       >
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{ alignItems: 'center', justifyContent: 'space-between', minHeight: '64px', px: 2 }}
-        >
-          <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
-            <IconButton
-              onClick={(): void => {
-                setOpenNav(true);
-              }}
-              sx={{ display: { lg: 'none' } }}
-            >
+        <Stack direction="row" spacing={2} sx={{ height: '100%', px: 3 }}>
+          <Box sx={{ alignItems: 'center', display: { lg: 'none', xs: 'flex' } }}>
+            <IconButton onClick={(): void => setOpenNav(true)}>
               <ListIcon />
             </IconButton>
-          </Stack>
-          <Avatar
-            onClick={userPopover.handleOpen}
-            ref={userPopover.anchorRef}
-            src="/assets/profile.jpeg"
-            sx={{
-              cursor: 'pointer',
-              height: 40,
-              width: 40
-            }}
+          </Box>
+          <Stack
+            alignItems="center"
+            direction="row"
+            spacing={2}
+            sx={{ alignItems: 'center', flex: '1 1 auto', justifyContent: 'flex-end' }}
           >
-            {userInitials}
-          </Avatar>
+            <Box ref={userPopover.anchorRef}>
+              <Avatar
+                onClick={userPopover.handleOpen}
+                ref={userPopover.anchorRef}
+                src="/assets/profile.jpeg"
+                sx={{
+                  cursor: 'pointer',
+                  height: 40,
+                  width: 40
+                }}
+              >
+                {userInitials}
+              </Avatar>
+            </Box>
+          </Stack>
         </Stack>
       </Box>
-      <UserPopover anchorEl={userPopover.anchorRef.current} onClose={userPopover.handleClose} open={userPopover.open} />
       <MobileNav
         onClose={() => {
           setOpenNav(false);
         }}
         open={openNav}
       />
-    </React.Fragment>
+      <UserPopover
+        anchorEl={userPopover.anchorRef.current}
+        onClose={userPopover.handleClose}
+        open={userPopover.open}
+      />
+    </>
   );
 } 
