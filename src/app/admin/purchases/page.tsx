@@ -26,11 +26,12 @@ import Avatar from '@mui/material/Avatar';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { paths } from '@/paths';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
 import { useState, useEffect, useCallback } from 'react';
 import { Purchase, Supplier, PurchaseCreateData, PurchaseUpdateData, transactionsApi, PaymentMode } from '@/services/api/transactions';
-import { inventoryApi, InventoryStore } from '@/services/api/inventory';
+import { inventoryApi, InventoryStore, Product } from '@/services/api/inventory';
 import { companiesApi, Company, Currency } from '@/services/api/companies';
 import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
@@ -45,6 +46,26 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import TableContainer from '@mui/material/TableContainer';
+import Paper from '@mui/material/Paper';
+
+// Purchase modal props interface
+interface PurchaseModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSave: (purchaseData: any) => void;
+  purchase: any;
+  suppliers: any[];
+  currencies: any[];
+  paymentModes: any[];
+  isLoading: boolean;
+  products: any[];
+  selectedProduct: string;
+  currentQuantity: number;
+  setSelectedProduct: (value: string) => void;
+  setCurrentQuantity: (value: number) => void;
+}
 
 export default function PurchasesPage(): React.JSX.Element {
   const { currentStore } = useStore();
@@ -64,6 +85,9 @@ export default function PurchasesPage(): React.JSX.Element {
   const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<string>('');
+  const [currentQuantity, setCurrentQuantity] = useState<number>(1);
   const [selectedSupplier, setSelectedSupplier] = useState<string>('');
   const [selectedPurchaseDetails, setSelectedPurchaseDetails] = useState<Purchase | null>(null);
   
@@ -87,22 +111,26 @@ export default function PurchasesPage(): React.JSX.Element {
         companiesData, 
         storesData, 
         currenciesData, 
-        paymentModesData
+        paymentModesData,
+        productsData
       ] = await Promise.all([
         transactionsApi.getPurchases(currentStore.id),
         transactionsApi.getSuppliers(currentStore.id),
         companiesApi.getCompanies(),
         inventoryApi.getStores(),
         companiesApi.getCurrencies(),
-        transactionsApi.getPaymentModes(currentStore.id)
+        transactionsApi.getPaymentModes(currentStore.id),
+        inventoryApi.getProducts(currentStore.id)
       ]);
       
+      console.log('Purchases data received:', purchasesData);
       setPurchases(purchasesData);
       setSuppliers(suppliersData);
       setCompanies(companiesData);
       setStores(storesData);
       setCurrencies(currenciesData);
       setPaymentModes(paymentModesData);
+      setProducts(productsData);
       
       // Filter stores based on user's company
       if (userInfo?.company_id) {
@@ -161,17 +189,66 @@ export default function PurchasesPage(): React.JSX.Element {
     
   // Further filter purchases by user's company if available
   const companyPurchases = userInfo?.company_id
-    ? filteredPurchases.filter(purchase => 
-        purchase.store && 
-        purchase.store.company && 
-        purchase.store.company.id === userInfo.company_id
-      )
+    ? filteredPurchases
     : filteredPurchases;
 
   // Calculate total amounts
   const totalAmount = companyPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.total_amount), 0);
   const totalPaid = 0; // Not available in the API directly
   const totalDue = totalAmount - totalPaid;
+
+  const calculateTotalAmount = (products: any[]) => {
+    return products.reduce((sum, item) => {
+      const product = products.find(p => p.id === item.id);
+      const price = product ? parseFloat(product.purchase_price || '0') : 0;
+      return sum + (item.quantity * price);
+    }, 0);
+  };
+
+  const addProductToOrder = () => {
+    if (!selectedProduct) {
+      enqueueSnackbar('Please select a product', { variant: 'warning' });
+      return;
+    }
+    
+    const product = products.find(p => p.id === selectedProduct);
+    if (!product) {
+      enqueueSnackbar('Selected product not found', { variant: 'error' });
+      return;
+    }
+    
+    if (!currentPurchase.products) {
+      setCurrentPurchase({...currentPurchase, products: []});
+    }
+    
+    const newProducts = [...(currentPurchase.products || [])];
+    const existingIndex = newProducts.findIndex(p => p.id === selectedProduct);
+    
+    if (existingIndex >= 0) {
+      // Update quantity if product already exists
+      newProducts[existingIndex].quantity += currentQuantity;
+    } else {
+      // Add new product
+      newProducts.push({
+        id: product.id,
+        name: product.name,
+        quantity: currentQuantity,
+        unitPrice: parseFloat(product.purchase_price || '0')
+      });
+    }
+    
+    const totalAmount = calculateTotalAmount(newProducts);
+    
+    setCurrentPurchase({
+      ...currentPurchase, 
+      products: newProducts,
+      totalAmount: totalAmount
+    });
+    
+    // Reset selection
+    setSelectedProduct('');
+    setCurrentQuantity(1);
+  };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -339,10 +416,13 @@ export default function PurchasesPage(): React.JSX.Element {
     
     setIsLoading(true);
     try {
+      // Calculate the total amount based on products
+      const totalAmount = calculateTotalAmount(purchaseData.products);
+
       const formattedData = {
         store_id: currentStore.id,
         supplier_id: purchaseData.supplier,
-        total_amount: purchaseData.totalAmount.toString(),
+        total_amount: totalAmount.toString(),
         currency_id: purchaseData.currency_id,
         payment_mode_id: purchaseData.payment_mode_id,
         is_credit: purchaseData.is_credit,
@@ -378,6 +458,260 @@ export default function PurchasesPage(): React.JSX.Element {
     { label: 'Dashboard', url: paths.admin.dashboard },
     { label: 'Purchases', url: paths.admin.purchases },
   ];
+
+  const PurchaseModal = ({ open, onClose, onSave, purchase, suppliers, currencies, paymentModes, isLoading }: PurchaseModalProps) => {
+    const [formData, setFormData] = useState<any>(purchase);
+
+    useEffect(() => {
+      setFormData(purchase);
+    }, [purchase]);
+
+    const handleChange = (e: any) => {
+      const { name, value, type, checked } = e.target;
+      setFormData({
+        ...formData,
+        [name]: type === 'checkbox' ? checked : value,
+      });
+    };
+
+    const handleSubmit = () => {
+      onSave(formData);
+    };
+
+    const removeProductFromOrder = (productId: string) => {
+      const updatedProducts = formData.products.filter((product: any) => product.id !== productId);
+      
+      // Recalculate total amount
+      const totalAmount = updatedProducts.reduce((sum: number, product: any) => {
+        return sum + (product.quantity * product.unitPrice);
+      }, 0);
+      
+      setFormData({
+        ...formData,
+        products: updatedProducts,
+        totalAmount
+      });
+    };
+
+    return (
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+        <DialogTitle>
+          {formData.id ? 'Edit Purchase' : 'Add New Purchase'}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Basic Purchase Information */}
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel id="supplier-label">Supplier</InputLabel>
+                  <Select
+                    labelId="supplier-label"
+                    name="supplier"
+                    value={formData.supplier || ''}
+                    onChange={handleChange}
+                    label="Supplier"
+                    disabled={isLoading}
+                  >
+                    {suppliers.map((supplier) => (
+                      <MenuItem key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Date"
+                  name="date"
+                  type="date"
+                  value={formData.date || ''}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                  disabled={isLoading}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Products Section */}
+            <Card sx={{ p: 2, mt: 2, bgcolor: '#f9fafb' }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Add Items</Typography>
+              
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={5}>
+                  <FormControl fullWidth>
+                    <InputLabel id="product-label">Product</InputLabel>
+                    <Select
+                      labelId="product-label"
+                      name="selectedProduct"
+                      value={selectedProduct || ''}
+                      onChange={(e) => setSelectedProduct(e.target.value)}
+                      label="Product"
+                      disabled={isLoading}
+                      displayEmpty
+                      renderValue={(selected) => {
+                        if (!selected) {
+                          return <Typography color="text.secondary">Select a product</Typography>;
+                        }
+                        const product = products.find(p => p.id === selected);
+                        return product ? product.name : '';
+                      }}
+                      MenuProps={{
+                        PaperProps: {
+                          style: {
+                            maxHeight: 300
+                          }
+                        }
+                      }}
+                    >
+                      {products.map((product) => (
+                        <MenuItem key={product.id} value={product.id}>
+                          {product.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Quantity"
+                    name="currentQuantity"
+                    type="number"
+                    value={currentQuantity}
+                    onChange={(e) => setCurrentQuantity(Number(e.target.value))}
+                    disabled={isLoading}
+                    InputProps={{ inputProps: { min: 1 } }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={addProductToOrder}
+                    disabled={isLoading || !selectedProduct}
+                    sx={{ height: '56px', bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
+                  >
+                    Add to Order
+                  </Button>
+                </Grid>
+              </Grid>
+
+              {/* Products Table */}
+              {formData.products && formData.products.length > 0 && (
+                <TableContainer component={Paper} sx={{ mt: 2 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Product</TableCell>
+                        <TableCell align="right">Quantity</TableCell>
+                        <TableCell align="right">Unit Price</TableCell>
+                        <TableCell align="right">Total</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {formData.products.map((product: any) => (
+                        <TableRow key={product.id}>
+                          <TableCell>{product.name}</TableCell>
+                          <TableCell align="right">{product.quantity}</TableCell>
+                          <TableCell align="right">${product.unitPrice.toFixed(2)}</TableCell>
+                          <TableCell align="right">${(product.quantity * product.unitPrice).toFixed(2)}</TableCell>
+                          <TableCell align="right">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => removeProductFromOrder(product.id)}
+                              disabled={isLoading}
+                            >
+                              <TrashIcon size={20} />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow>
+                        <TableCell colSpan={3} align="right"><strong>Total Amount:</strong></TableCell>
+                        <TableCell align="right" colSpan={2}>
+                          <strong>${formData.totalAmount ? formData.totalAmount.toFixed(2) : '0.00'}</strong>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Card>
+
+            {/* Payment Details */}
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel id="currency-label">Currency</InputLabel>
+                  <Select
+                    labelId="currency-label"
+                    name="currency_id"
+                    value={formData.currency_id || ''}
+                    onChange={handleChange}
+                    label="Currency"
+                    disabled={isLoading}
+                  >
+                    {currencies.map((currency) => (
+                      <MenuItem key={currency.id} value={currency.id}>
+                        {currency.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel id="payment-mode-label">Payment Mode</InputLabel>
+                  <Select
+                    labelId="payment-mode-label"
+                    name="payment_mode_id"
+                    value={formData.payment_mode_id || ''}
+                    onChange={handleChange}
+                    label="Payment Mode"
+                    disabled={isLoading}
+                  >
+                    {paymentModes.map((mode) => (
+                      <MenuItem key={mode.id} value={mode.id}>
+                        {mode.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      name="is_credit"
+                      checked={formData.is_credit || false}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                    />
+                  }
+                  label="Credit Purchase"
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} disabled={isLoading}>Cancel</Button>
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained" 
+            disabled={isLoading || !formData.supplier || (formData.products && formData.products.length === 0)}
+            sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
+          >
+            {isLoading ? <CircularProgress size={24} /> : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
 
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
@@ -546,11 +880,11 @@ export default function PurchasesPage(): React.JSX.Element {
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" color="text.secondary">Status</Typography>
                 <Chip 
-                  label={selectedPurchaseDetails.is_credit ? 'Credit' : 'Paid'} 
+                  label={selectedPurchaseDetails.status || (selectedPurchaseDetails.is_credit ? 'Credit' : 'Paid')} 
                   size="small"
                   sx={{ 
-                    bgcolor: selectedPurchaseDetails.is_credit ? 'warning.100' : 'success.100',
-                    color: selectedPurchaseDetails.is_credit ? 'warning.main' : 'success.main',
+                    bgcolor: selectedPurchaseDetails.status === 'UNPAID' || selectedPurchaseDetails.is_credit ? 'warning.100' : 'success.100',
+                    color: selectedPurchaseDetails.status === 'UNPAID' || selectedPurchaseDetails.is_credit ? 'warning.main' : 'success.main',
                     fontWeight: 500
                   }}
                 />
@@ -637,8 +971,8 @@ export default function PurchasesPage(): React.JSX.Element {
                     year: 'numeric'
                   }).replace(/\//g, '-');
                   
-                  const displayStatus = purchase.is_credit ? 'Credit' : 'Paid';
-                  const displayPaymentStatus = purchase.is_credit ? 'Unpaid' : 'Paid';
+                  const displayStatus = purchase.status || (purchase.is_credit ? 'Credit' : 'Paid');
+                  const displayPaymentStatus = purchase.status || (purchase.is_credit ? 'Unpaid' : 'Paid');
                   
                   return (
                     <TableRow 
@@ -711,180 +1045,21 @@ export default function PurchasesPage(): React.JSX.Element {
 
       {/* Modals */}
       {isPurchaseModalOpen && currentPurchase && (
-        <Dialog 
-          open={isPurchaseModalOpen} 
+        <PurchaseModal
+          open={isPurchaseModalOpen}
           onClose={() => setIsPurchaseModalOpen(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>{currentPurchase.id ? 'Edit Purchase' : 'Add New Purchase'}</DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <Grid container spacing={2} sx={{ mt: 2 }}>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Supplier</InputLabel>
-                    <Select
-                      value={currentPurchase.supplier || ''}
-                      label="Supplier"
-                      onChange={(e) => setCurrentPurchase({...currentPurchase, supplier: e.target.value})}
-                    >
-                      {suppliers.map(supplier => (
-                        <MenuItem key={supplier.id} value={supplier.id}>
-                          {supplier.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Payment Mode</InputLabel>
-                    <Select
-                      value={currentPurchase.payment_mode_id || ''}
-                      label="Payment Mode"
-                      onChange={(e) => setCurrentPurchase({...currentPurchase, payment_mode_id: e.target.value})}
-                    >
-                      {paymentModes.map(mode => (
-                        <MenuItem key={mode.id} value={mode.id}>
-                          {mode.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Currency</InputLabel>
-                    <Select
-                      value={currentPurchase.currency_id || ''}
-                      label="Currency"
-                      onChange={(e) => setCurrentPurchase({...currentPurchase, currency_id: e.target.value})}
-                    >
-                      {currencies.map(currency => (
-                        <MenuItem key={currency.id} value={currency.id}>
-                          {currency.code} - {currency.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Credit Purchase</InputLabel>
-                    <Select
-                      value={currentPurchase.is_credit ? 'true' : 'false'}
-                      label="Credit Purchase"
-                      onChange={(e) => setCurrentPurchase({...currentPurchase, is_credit: e.target.value === 'true'})}
-                    >
-                      <MenuItem value="false">No</MenuItem>
-                      <MenuItem value="true">Yes</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Total Amount"
-                    type="number"
-                    value={currentPurchase.totalAmount || 0}
-                    onChange={(e) => setCurrentPurchase({...currentPurchase, totalAmount: parseFloat(e.target.value)})}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>Items</Typography>
-                  <Button 
-                    variant="contained" 
-                    startIcon={<PlusIcon />}
-                    onClick={() => {
-                      if (!currentPurchase.products) {
-                        setCurrentPurchase({...currentPurchase, products: []});
-                      }
-                      // Add a dummy product item (you'll need to implement actual product selection)
-                      const newProducts = [...(currentPurchase.products || [])];
-                      newProducts.push({
-                        id: '00000000-0000-0000-0000-000000000000', // This will be replaced with actual product
-                        name: 'Product',
-                        quantity: 1
-                      });
-                      setCurrentPurchase({...currentPurchase, products: newProducts});
-                    }}
-                    sx={{ mb: 2 }}
-                  >
-                    Add Item
-                  </Button>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Product ID</TableCell>
-                        <TableCell>Quantity</TableCell>
-                        <TableCell>Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {(currentPurchase.products || []).length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} align="center">No items added</TableCell>
-                        </TableRow>
-                      ) : (
-                        (currentPurchase.products || []).map((product: any, index: number) => (
-                          <TableRow key={index}>
-                            <TableCell>
-                              <TextField
-                                fullWidth
-                                placeholder="Product ID"
-                                value={product.id}
-                                onChange={(e) => {
-                                  const newProducts = [...currentPurchase.products];
-                                  newProducts[index].id = e.target.value;
-                                  setCurrentPurchase({...currentPurchase, products: newProducts});
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <TextField
-                                fullWidth
-                                type="number"
-                                placeholder="Quantity"
-                                value={product.quantity}
-                                onChange={(e) => {
-                                  const newProducts = [...currentPurchase.products];
-                                  newProducts[index].quantity = parseInt(e.target.value);
-                                  setCurrentPurchase({...currentPurchase, products: newProducts});
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <IconButton
-                                color="error"
-                                onClick={() => {
-                                  const newProducts = [...currentPurchase.products];
-                                  newProducts.splice(index, 1);
-                                  setCurrentPurchase({...currentPurchase, products: newProducts});
-                                }}
-                              >
-                                <DotsThreeIcon />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </Grid>
-              </Grid>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setIsPurchaseModalOpen(false)}>Cancel</Button>
-            <Button 
-              variant="contained" 
-              onClick={() => handleSavePurchase(currentPurchase)}
-            >
-              {currentPurchase.id ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          onSave={handleSavePurchase}
+          purchase={currentPurchase}
+          suppliers={suppliers}
+          currencies={currencies}
+          paymentModes={paymentModes}
+          isLoading={isLoading}
+          products={products}
+          selectedProduct={selectedProduct}
+          currentQuantity={currentQuantity}
+          setSelectedProduct={setSelectedProduct}
+          setCurrentQuantity={setCurrentQuantity}
+        />
       )}
       
       <DeleteConfirmationModal
