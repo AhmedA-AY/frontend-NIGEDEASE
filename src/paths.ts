@@ -28,6 +28,7 @@ export const paths = {
     payments: '/admin/payments',
     paymentIn: '/admin/payments-in',
     paymentOut: '/admin/payments-out',
+    paymentModes: '/admin/payment-modes',
     parties: '/admin/parties',
     users: '/admin/users',
     companies: '/admin/companies',

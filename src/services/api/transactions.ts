@@ -197,27 +197,52 @@ export const transactionsApi = {
 
   // Payment Modes
   getPaymentModes: async (storeId: string): Promise<PaymentMode[]> => {
-    const response = await coreApiClient.get<PaymentMode[]>(`/transactions/stores/${storeId}/payment-modes/`);
-    return response.data;
+    try {
+      const response = await coreApiClient.get<PaymentMode[]>(`/transactions/stores/${storeId}/payment-modes/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching payment modes:', error);
+      throw error;
+    }
   },
 
   getPaymentMode: async (storeId: string, id: string): Promise<PaymentMode> => {
-    const response = await coreApiClient.get<PaymentMode>(`/transactions/stores/${storeId}/payment-modes/${id}/`);
-    return response.data;
+    try {
+      const response = await coreApiClient.get<PaymentMode>(`/transactions/stores/${storeId}/payment-modes/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching payment mode:', error);
+      throw error;
+    }
   },
 
   createPaymentMode: async (storeId: string, data: PaymentModeCreateData): Promise<PaymentMode> => {
-    const response = await coreApiClient.post<PaymentMode>(`/transactions/stores/${storeId}/payment-modes/`, data);
-    return response.data;
+    try {
+      const response = await coreApiClient.post<PaymentMode>(`/transactions/stores/${storeId}/payment-modes/`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating payment mode:', error);
+      throw error;
+    }
   },
 
   updatePaymentMode: async (storeId: string, id: string, data: PaymentModeUpdateData): Promise<PaymentMode> => {
-    const response = await coreApiClient.put<PaymentMode>(`/transactions/stores/${storeId}/payment-modes/${id}/`, data);
-    return response.data;
+    try {
+      const response = await coreApiClient.put<PaymentMode>(`/transactions/stores/${storeId}/payment-modes/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating payment mode:', error);
+      throw error;
+    }
   },
 
   deletePaymentMode: async (storeId: string, id: string): Promise<void> => {
-    await coreApiClient.delete(`/transactions/stores/${storeId}/payment-modes/${id}/`);
+    try {
+      await coreApiClient.delete(`/transactions/stores/${storeId}/payment-modes/${id}/`);
+    } catch (error) {
+      console.error('Error deleting payment mode:', error);
+      throw error;
+    }
   },
 
   // Purchases

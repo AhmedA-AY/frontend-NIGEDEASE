@@ -57,7 +57,16 @@ export const adminNavItems = [
       { key: 'admin-expense-categories', title: 'Categories', href: paths.admin.expenseCategories }
     ]
   },
-  { key: 'admin-payments', title: 'Payments', href: paths.admin.payments, icon: 'credit-card' },
+  { 
+    key: 'admin-payments', 
+    title: 'Payments', 
+    href: paths.admin.payments, 
+    icon: 'credit-card',
+    items: [
+      { key: 'admin-payments-main', title: 'All Payments', href: paths.admin.payments },
+      { key: 'admin-payment-modes', title: 'Payment Modes', href: paths.admin.paymentModes }
+    ]
+  },
   { key: 'admin-parties', title: 'Parties', href: paths.admin.parties, icon: 'users' },
   { key: 'admin-stores', title: 'Stores', href: paths.admin.stores, icon: 'storefront' },
   { key: 'admin-users', title: 'Users', href: paths.admin.users, icon: 'user-gear' },
