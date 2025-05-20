@@ -67,7 +67,7 @@ function UserFormDialog({
   companyId: string; 
   onSave: (userData: UserFormData) => Promise<void>; 
 }) {
-  const [formData, setFormData] = useState<UserFormData & { assigned_store_id?: string }>({
+  const [formData, setFormData] = React.useState<UserFormData & { assigned_store_id?: string }>({
     company_id: companyId,
     email: '',
     password: '',
@@ -77,8 +77,8 @@ function UserFormDialog({
     profile_image: '',
     assigned_store_id: ''
   });
-  const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = React.useState(false);
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
   const { enqueueSnackbar } = useSnackbar();
   const { stores } = useStore();
 
@@ -323,7 +323,7 @@ function DeleteUserDialog({
   userId: string | null;
   onDelete: () => Promise<void>; 
 }) {
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = React.useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
   const handleDelete = async () => {
@@ -366,21 +366,21 @@ function DeleteUserDialog({
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<ExtendedUserResponse[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<ExtendedUserResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [storeFilter, setStoreFilter] = useState<string>('all');
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [userFormOpen, setUserFormOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<(Partial<CreateUserData> & { 
+  const [users, setUsers] = React.useState<ExtendedUserResponse[]>([]);
+  const [filteredUsers, setFilteredUsers] = React.useState<ExtendedUserResponse[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [roleFilter, setRoleFilter] = React.useState<string>('all');
+  const [storeFilter, setStoreFilter] = React.useState<string>('all');
+  const [selectedUsers, setSelectedUsers] = React.useState<string[]>([]);
+  const [userFormOpen, setUserFormOpen] = React.useState(false);
+  const [currentUser, setCurrentUser] = React.useState<(Partial<CreateUserData> & { 
     id?: string; 
     role?: string;
     assigned_store_id?: string;
   }) | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [userToDelete, setUserToDelete] = React.useState<string | null>(null);
   
   const { enqueueSnackbar } = useSnackbar();
   const { userInfo } = useCurrentUser();

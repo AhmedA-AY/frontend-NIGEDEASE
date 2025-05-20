@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -86,7 +86,7 @@ export default function PurchaseEditModal({
   },
   isNew = true
 }: PurchaseEditModalProps): React.JSX.Element {
-  const [formData, setFormData] = useState<PurchaseData>({
+  const [formData, setFormData] = React.useState<PurchaseData>({
     date: new Date().toISOString().split('T')[0],
     supplier: '',
     status: 'Ordered',
@@ -100,24 +100,24 @@ export default function PurchaseEditModal({
     currency_id: '',
     payment_mode_id: ''
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedProduct, setSelectedProduct] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [stores, setStores] = useState<InventoryStore[]>([]);
-  const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [selectedProduct, setSelectedProduct] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
+  const [companies, setCompanies] = React.useState<Company[]>([]);
+  const [stores, setStores] = React.useState<InventoryStore[]>([]);
+  const [filteredStores, setFilteredStores] = React.useState<InventoryStore[]>([]);
+  const [currencies, setCurrencies] = React.useState<Currency[]>([]);
+  const [paymentModes, setPaymentModes] = React.useState<PaymentMode[]>([]);
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = React.useState<Product[]>([]);
   
   // Get current user's company
   const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
   const { currentStore } = useStore();
   
   // Fetch data when modal opens
-  useEffect(() => {
+  React.useEffect(() => {
     if (open) {
       const fetchData = async () => {
         setIsLoading(true);
@@ -208,7 +208,7 @@ export default function PurchaseEditModal({
   }, [open, userInfo]);
   
   // Filter stores whenever user company changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (userInfo?.company_id) {
       // Filter stores by company
       if (stores.length > 0) {
@@ -229,7 +229,7 @@ export default function PurchaseEditModal({
   }, [userInfo, stores, products]);
   
   // Reset form data when modal opens with new purchase data
-  useEffect(() => {
+  React.useEffect(() => {
     if (open) {
       // Update purchase data with user's company if creating new
       const updatedPurchase = { ...purchase };

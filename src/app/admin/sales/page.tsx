@@ -51,17 +51,17 @@ export default function SalesPage(): React.JSX.Element {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [currentSale, setCurrentSale] = React.useState<any>(null);
   const [saleToDelete, setSaleToDelete] = React.useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [editModalLoading, setEditModalLoading] = useState(false);
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [stores, setStores] = useState<InventoryStore[]>([]);
-  const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<string>('');
-  const [selectedSaleDetails, setSelectedSaleDetails] = useState<Sale | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [editModalLoading, setEditModalLoading] = React.useState(false);
+  const [sales, setSales] = React.useState<Sale[]>([]);
+  const [customers, setCustomers] = React.useState<Customer[]>([]);
+  const [companies, setCompanies] = React.useState<Company[]>([]);
+  const [stores, setStores] = React.useState<InventoryStore[]>([]);
+  const [filteredStores, setFilteredStores] = React.useState<InventoryStore[]>([]);
+  const [currencies, setCurrencies] = React.useState<Currency[]>([]);
+  const [paymentModes, setPaymentModes] = React.useState<PaymentMode[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = React.useState<string>('');
+  const [selectedSaleDetails, setSelectedSaleDetails] = React.useState<Sale | null>(null);
   
   // Get current user's company
   const { userInfo, isLoading: isLoadingUser } = useCurrentUser();

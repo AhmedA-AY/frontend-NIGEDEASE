@@ -63,13 +63,13 @@ export default function ExpensesPage(): React.JSX.Element {
     payment_mode: '',
   });
   const [expenseToDelete, setExpenseToDelete] = React.useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [currentStoreId, setCurrentStoreId] = useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [expenses, setExpenses] = React.useState<Expense[]>([]);
+  const [categories, setCategories] = React.useState<ExpenseCategory[]>([]);
+  const [currencies, setCurrencies] = React.useState<Currency[]>([]);
+  const [paymentModes, setPaymentModes] = React.useState<PaymentMode[]>([]);
+  const [companies, setCompanies] = React.useState<Company[]>([]);
+  const [currentStoreId, setCurrentStoreId] = React.useState<string>('');
   const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
   

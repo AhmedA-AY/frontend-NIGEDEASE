@@ -104,15 +104,15 @@ export default function SaleEditModal({
   });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [selectedProduct, setSelectedProduct] = React.useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [stores, setStores] = useState<InventoryStore[]>([]);
-  const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [customers, setCustomers] = React.useState<Customer[]>([]);
+  const [companies, setCompanies] = React.useState<Company[]>([]);
+  const [stores, setStores] = React.useState<InventoryStore[]>([]);
+  const [filteredStores, setFilteredStores] = React.useState<InventoryStore[]>([]);
+  const [currencies, setCurrencies] = React.useState<Currency[]>([]);
+  const [paymentModes, setPaymentModes] = React.useState<PaymentMode[]>([]);
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = React.useState<Product[]>([]);
   
   // Get current user's company
   const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
