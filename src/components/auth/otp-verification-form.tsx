@@ -67,25 +67,46 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
   const onSubmit = React.useCallback(
     async (values: Values): Promise<void> => {
       try {
+        // Use a more complete type that includes stores
+        interface OtpResponse {
+          access: string;
+          refresh: string;
+          role: string;
+          company_id: string;
+          assigned_store?: any;
+          stores?: any[];
+        }
+
         const response = await verifyOtpMutation.mutateAsync({
           email,
           otp: values.otp,
-        });
+        }) as OtpResponse;
 
         // Log the role for debugging
         console.log('User role:', response.role);
+        console.log('OTP verification response:', response);
         
-        // If the user is a salesman or stock manager and has an assigned store
-        if ((response.role === 'salesman' || response.role === 'stock_manager') && response.assigned_store) {
-          console.log('Assigned store:', response.assigned_store);
+        // For all user roles, check and save the store information
+        if (response.assigned_store) {
+          console.log('Saving assigned store:', response.assigned_store);
           // Save the assigned store in token storage
           tokenStorage.saveAssignedStore(response.assigned_store);
-          // Successful verification, save tokens and redirect with the assigned store
-          verifyOtp(email, values.otp, (response as any).stores || [], response.assigned_store);
-        } else {
-          // For other roles or cases without assigned store
-          verifyOtp(email, values.otp);
         }
+        
+        if (response.stores && response.stores.length > 0) {
+          console.log('Saving company stores:', response.stores);
+          // Save all available stores
+          tokenStorage.saveCompanyStores(response.stores);
+          
+          // If there's no assigned store but there are stores available, use the first one
+          if (!response.assigned_store && (response.role === 'salesman' || response.role === 'stock_manager')) {
+            console.log('No assigned store found, using first available store');
+            tokenStorage.saveAssignedStore(response.stores[0]);
+          }
+        }
+        
+        // Complete the verification process
+        verifyOtp(email, values.otp, response.stores || [], response.assigned_store);
       } catch (error: any) {
         const errorMessage = error?.error || 'Invalid OTP. Please try again.';
         setError('root', { type: 'server', message: errorMessage });

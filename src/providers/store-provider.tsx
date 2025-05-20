@@ -33,30 +33,40 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
+        console.log('Initializing stores:', { authStores });
         // Get stores from auth context or localStorage
         const availableStores = authStores.length > 0
           ? authStores
           : tokenStorage.getCompanyStores();
-
+        
+        console.log('Available stores:', availableStores);
         setStores(availableStores);
 
         // Get assigned store from localStorage
         const savedStore = tokenStorage.getAssignedStore();
+        console.log('Saved store from token storage:', savedStore);
         
         if (savedStore) {
           // Verify the saved store exists in available stores
           const storeExists = availableStores.some(store => store.id === savedStore.id);
+          console.log('Store exists in available stores:', storeExists);
+          
           if (storeExists) {
+            console.log('Setting current store to saved store:', savedStore);
             setCurrentStore(savedStore);
           } else if (availableStores.length > 0) {
             // If saved store doesn't exist anymore, select first available store
+            console.log('Saved store not found in available stores, using first available store:', availableStores[0]);
             setCurrentStore(availableStores[0]);
             tokenStorage.saveAssignedStore(availableStores[0]);
           }
         } else if (availableStores.length > 0) {
           // No saved store, select first available
+          console.log('No saved store found, using first available store:', availableStores[0]);
           setCurrentStore(availableStores[0]);
           tokenStorage.saveAssignedStore(availableStores[0]);
+        } else {
+          console.warn('No stores available for the user');
         }
       } catch (error) {
         console.error('Error initializing stores:', error);

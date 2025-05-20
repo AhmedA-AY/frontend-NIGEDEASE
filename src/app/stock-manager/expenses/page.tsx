@@ -33,6 +33,7 @@ import { useSnackbar } from 'notistack';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore } from '@/providers/store-provider';
 import { SelectChangeEvent } from '@mui/material/Select';
+import tokenStorage from '@/utils/token-storage';
 
 // Payment Mode Name Display component
 const PaymentModeDisplay = ({ modeId, paymentModes }: { modeId: string, paymentModes: PaymentMode[] }) => {
@@ -71,6 +72,13 @@ export default function ExpensesPage(): React.JSX.Element {
   
   // Fetch expenses, categories, and currencies
   const fetchData = useCallback(async () => {
+    console.log('Current store status:', { 
+      currentStore, 
+      userInfo,
+      storesInStorage: tokenStorage.getCompanyStores(),
+      assignedStore: tokenStorage.getAssignedStore()
+    });
+
     if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'warning' });
       setIsLoading(false);
@@ -79,6 +87,7 @@ export default function ExpensesPage(): React.JSX.Element {
     
     setIsLoading(true);
     try {
+      console.log(`Fetching data for store: ${currentStore.name} (${currentStore.id})`);
       // Fetch data using the current store ID
       const [expensesData, categoriesData, currenciesData, modesData] = await Promise.all([
         financialsApi.getExpenses(currentStore.id),
@@ -86,6 +95,13 @@ export default function ExpensesPage(): React.JSX.Element {
         companiesApi.getCurrencies(),
         transactionsApi.getPaymentModes(currentStore.id)
       ]);
+      
+      console.log('Received data:', { 
+        expenses: expensesData.length, 
+        categories: categoriesData.length, 
+        currencies: currenciesData.length, 
+        modes: modesData.length 
+      });
       
       setExpenses(expensesData);
       setCategories(categoriesData);
@@ -97,7 +113,7 @@ export default function ExpensesPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [currentStore, enqueueSnackbar]);
+  }, [currentStore, enqueueSnackbar, userInfo]);
 
   useEffect(() => {
     if (currentStore) {

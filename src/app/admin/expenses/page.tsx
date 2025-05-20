@@ -38,6 +38,8 @@ import { SearchBar } from '@/components/interface/SearchBar';
 import { ExpenseAdd } from './add';
 import ExpenseTable from './ExpenseTable';
 import { Stack as MuiStack } from '@mui/system';
+import { useStore } from '@/providers/store-provider';
+import tokenStorage from '@/utils/token-storage';
 
 // Payment Mode Name Display component
 const PaymentModeDisplay = ({ modeId, paymentModes }: { modeId: string, paymentModes: PaymentMode[] }) => {
@@ -72,47 +74,93 @@ export default function ExpensesPage(): React.JSX.Element {
   const [currentStoreId, setCurrentStoreId] = React.useState<string>('');
   const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
+  const { currentStore } = useStore();
   
   // Fetch expenses, categories, and currencies
   const fetchData = useCallback(async () => {
+    console.log('Current store status (admin expenses):', { 
+      currentStore, 
+      userInfo,
+      storesInStorage: tokenStorage.getCompanyStores(),
+      assignedStore: tokenStorage.getAssignedStore()
+    });
+
     setIsLoading(true);
     try {
-      // First get companies to find the user's company
-      const companiesData = await companiesApi.getCompanies();
-      setCompanies(companiesData);
-      
-      const companyId = userInfo?.company_id || (companiesData.length > 0 ? companiesData[0].id : '');
-      
-      if (!companyId) {
-        enqueueSnackbar('No company found', { variant: 'error' });
-        setIsLoading(false);
-        return;
-      }
-      
-      // Get stores for the company
-      const stores = await companiesApi.getStores(companyId);
-      const companyStores = stores.filter(store => 
-        store.company && store.company.id === companyId
-      );
-      
-      if (companyStores.length > 0) {
-        const storeId = companyStores[0].id;
-        setCurrentStoreId(storeId);
+      if (!currentStore) {
+        // Try to use the store provider
+        console.log('No current store from store provider, falling back to company stores');
+        
+        // First get companies to find the user's company
+        const companiesData = await companiesApi.getCompanies();
+        setCompanies(companiesData);
+        
+        const companyId = userInfo?.company_id || (companiesData.length > 0 ? companiesData[0].id : '');
+        
+        if (!companyId) {
+          enqueueSnackbar('No company found', { variant: 'error' });
+          setIsLoading(false);
+          return;
+        }
+        
+        // Get stores for the company
+        const stores = await companiesApi.getStores(companyId);
+        const companyStores = stores.filter(store => 
+          store.company && store.company.id === companyId
+        );
+        
+        if (companyStores.length > 0) {
+          const storeId = companyStores[0].id;
+          setCurrentStoreId(storeId);
+          console.log(`Using first company store: ${companyStores[0].name} (${storeId})`);
+          
+          // Now get all data using the store ID
+          const [expensesData, categoriesData, currenciesData, modesData] = await Promise.all([
+            financialsApi.getExpenses(storeId),
+            financialsApi.getExpenseCategories(storeId),
+            companiesApi.getCurrencies(),
+            transactionsApi.getPaymentModes(storeId)
+          ]);
+          
+          console.log('Received data:', { 
+            expenses: expensesData.length, 
+            categories: categoriesData.length, 
+            currencies: currenciesData.length, 
+            modes: modesData.length 
+          });
+          
+          setExpenses(expensesData);
+          setCategories(categoriesData);
+          setCurrencies(currenciesData);
+          setPaymentModes(modesData);
+        } else {
+          console.warn('No stores found for company:', companyId);
+          enqueueSnackbar('No stores found for your company', { variant: 'warning' });
+        }
+      } else {
+        // Use the current store from the store provider
+        setCurrentStoreId(currentStore.id);
+        console.log(`Using current store from provider: ${currentStore.name} (${currentStore.id})`);
         
         // Now get all data using the store ID
         const [expensesData, categoriesData, currenciesData, modesData] = await Promise.all([
-          financialsApi.getExpenses(storeId),
-          financialsApi.getExpenseCategories(storeId),
+          financialsApi.getExpenses(currentStore.id),
+          financialsApi.getExpenseCategories(currentStore.id),
           companiesApi.getCurrencies(),
-          transactionsApi.getPaymentModes(storeId)
+          transactionsApi.getPaymentModes(currentStore.id)
         ]);
+        
+        console.log('Received data:', { 
+          expenses: expensesData.length, 
+          categories: categoriesData.length, 
+          currencies: currenciesData.length, 
+          modes: modesData.length 
+        });
         
         setExpenses(expensesData);
         setCategories(categoriesData);
         setCurrencies(currenciesData);
         setPaymentModes(modesData);
-      } else {
-        enqueueSnackbar('No stores found for your company', { variant: 'warning' });
       }
     } catch (error: any) {
       console.error('Error fetching data:', error);
@@ -120,11 +168,30 @@ export default function ExpensesPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, userInfo]);
+  }, [enqueueSnackbar, userInfo, currentStore]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Listen for store change events
+  useEffect(() => {
+    const handleStoreChange = () => {
+      // Force refetch data when store changes
+      if (currentStore) {
+        // Small delay to ensure store context has been updated
+        setTimeout(() => {
+          fetchData();
+        }, 100);
+      }
+    };
+
+    window.addEventListener('store-selection-changed', handleStoreChange);
+    
+    return () => {
+      window.removeEventListener('store-selection-changed', handleStoreChange);
+    };
+  }, [fetchData, currentStore]);
 
   // Calculate total amount
   const totalAmount = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
@@ -149,14 +216,17 @@ export default function ExpensesPage(): React.JSX.Element {
     console.log('handleAddNewExpense called');
     console.log('Currencies available:', currencies);
     
-    if (!currentStoreId) {
+    // Prefer currentStore from store provider, fall back to currentStoreId
+    const storeId = currentStore?.id || currentStoreId;
+    
+    if (!storeId) {
       console.log('No store ID available');
       enqueueSnackbar('Unable to add expense: Store data not available.', { variant: 'error' });
       return;
     }
     
     setCurrentExpense({
-      store_id: currentStoreId,
+      store_id: storeId,
       expense_category: '',
       amount: '',
       description: '',
@@ -164,7 +234,7 @@ export default function ExpensesPage(): React.JSX.Element {
       payment_mode: '',
     });
     
-    console.log('currentExpense set with store ID:', currentStoreId);
+    console.log('currentExpense set with store ID:', storeId);
     
     setIsExpenseModalOpen(true);
   };
@@ -185,9 +255,12 @@ export default function ExpensesPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
-    if (expenseToDelete && currentStoreId) {
+    // Prefer currentStore from store provider, fall back to currentStoreId
+    const storeId = currentStore?.id || currentStoreId;
+    
+    if (expenseToDelete && storeId) {
       try {
-        await financialsApi.deleteExpense(currentStoreId, expenseToDelete);
+        await financialsApi.deleteExpense(storeId, expenseToDelete);
         enqueueSnackbar('Expense deleted successfully', { variant: 'success' });
         fetchData();
         setIsDeleteModalOpen(false);
@@ -202,19 +275,22 @@ export default function ExpensesPage(): React.JSX.Element {
   const handleSaveExpense = async (expenseData: ExpenseCreateData & { id?: string }) => {
     console.log('handleSaveExpense called with data:', expenseData);
     try {
-      if (!currentStoreId) {
+      // Prefer currentStore from store provider, fall back to currentStoreId
+      const storeId = currentStore?.id || currentStoreId;
+      
+      if (!storeId) {
         throw new Error('Store ID is not available');
       }
       
       if (expenseData.id) {
         // Update existing expense
         console.log('Updating expense with ID:', expenseData.id);
-        await financialsApi.updateExpense(currentStoreId, expenseData.id, expenseData);
+        await financialsApi.updateExpense(storeId, expenseData.id, expenseData);
         enqueueSnackbar('Expense updated successfully', { variant: 'success' });
       } else {
         // Add new expense
         console.log('Creating new expense with data:', expenseData);
-        await financialsApi.createExpense(currentStoreId, expenseData);
+        await financialsApi.createExpense(storeId, expenseData);
         enqueueSnackbar('Expense added successfully', { variant: 'success' });
       }
       fetchData();
@@ -275,7 +351,7 @@ export default function ExpensesPage(): React.JSX.Element {
             startIcon={<PlusIcon weight="bold" />}
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddNewExpense}
-            disabled={isLoading || currencies.length === 0 || !currentStoreId}
+            disabled={isLoading || currencies.length === 0 || (!currentStore?.id && !currentStoreId)}
           >
             Add New Expense
           </Button>
