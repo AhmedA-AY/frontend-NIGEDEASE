@@ -1,112 +1,297 @@
 'use client';
 
 import * as React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
+import Checkbox from '@mui/material/Checkbox';
 import OutlinedInput from '@mui/material/OutlinedInput';
+import InputAdornment from '@mui/material/InputAdornment';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import { SelectChangeEvent } from '@mui/material/Select';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import IconButton from '@mui/material/IconButton';
-import Stack from '@mui/material/Stack';
-import Pagination from '@mui/material/Pagination';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import Chip from '@mui/material/Chip';
+import Grid from '@mui/material/Grid';
+import Avatar from '@mui/material/Avatar';
+import CircularProgress from '@mui/material/CircularProgress';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { paths } from '@/paths';
+import { Expense, ExpenseCategory, financialsApi } from '@/services/api/financials';
+import { Currency, companiesApi } from '@/services/api/companies';
+import { PaymentMode, transactionsApi } from '@/services/api/transactions';
 import ExpenseEditModal from '@/components/admin/expenses/ExpenseEditModal';
-import { ExpenseCategory } from '@/services/api/financials';
+import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
+import { useStore, STORE_CHANGED_EVENT } from '@/providers/store-provider';
+import { useSnackbar } from 'notistack';
 
 export default function ExpensesPage(): React.JSX.Element {
-  const [selectedExpenses, setSelectedExpenses] = React.useState<number[]>([]);
-  const [isExpenseModalOpen, setIsExpenseModalOpen] = React.useState(false);
-  const [currentExpense, setCurrentExpense] = React.useState<any>(null);
-  
-  // Mock categories data
-  const categories = [
-    { id: '1', store_id: 'store1', name: 'Travel', description: 'Travel expenses', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '2', store_id: 'store1', name: 'Utilities', description: 'Utility bills', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '3', store_id: 'store1', name: 'Office Supplies', description: 'Office supplies and equipment', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '4', store_id: 'store1', name: 'Marketing', description: 'Marketing and advertising', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '5', store_id: 'store1', name: 'Rent', description: 'Rent and lease payments', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '6', store_id: 'store1', name: 'Insurance', description: 'Insurance payments', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '7', store_id: 'store1', name: 'Salaries', description: 'Employee salaries', created_at: '2023-01-01', updated_at: '2023-01-01' },
-    { id: '8', store_id: 'store1', name: 'Repairs', description: 'Repair and maintenance', created_at: '2023-01-01', updated_at: '2023-01-01' },
-  ];
-  
-  // Mock expenses data
-  const expenses = [
-    { id: 1, category: 'Travel', amount: 48.00, date: '26-04-2025', user: 'Salesman' },
-    { id: 2, category: 'Utilities', amount: 50.00, date: '26-04-2025', user: 'Mafalda Bahringer DDS' },
-    { id: 3, category: 'Office Supplies', amount: 125.50, date: '24-04-2025', user: 'Admin User' },
-    { id: 4, category: 'Marketing', amount: 350.00, date: '22-04-2025', user: 'Salesman' },
-    { id: 5, category: 'Rent', amount: 1200.00, date: '20-04-2025', user: 'Admin User' },
-    { id: 6, category: 'Insurance', amount: 480.75, date: '18-04-2025', user: 'Mafalda Bahringer DDS' },
-    { id: 7, category: 'Salaries', amount: 2500.00, date: '15-04-2025', user: 'Admin User' },
-    { id: 8, category: 'Repairs', amount: 175.25, date: '10-04-2025', user: 'Salesman' },
-  ];
+  const { currentStore } = useStore();
+  const { enqueueSnackbar } = useSnackbar();
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [tabValue, setTabValue] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
+  const [currentExpense, setCurrentExpense] = useState<any>(null);
+  const [selectedExpenses, setSelectedExpenses] = useState<string[]>([]);
+  const [categoryMenuAnchor, setCategoryMenuAnchor] = useState<null | HTMLElement>(null);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<{ [key: string]: HTMLElement | null }>({});
 
+  // Fetch data
+  const fetchData = useCallback(async () => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const [
+        expensesData, 
+        categoriesData, 
+        currenciesData, 
+        paymentModesData
+      ] = await Promise.all([
+        financialsApi.getExpenses(currentStore.id),
+        financialsApi.getExpenseCategories(currentStore.id),
+        companiesApi.getCurrencies(),
+        transactionsApi.getPaymentModes(currentStore.id)
+      ]);
+      
+      setExpenses(expensesData);
+      setCategories(categoriesData);
+      setCurrencies(currenciesData);
+      setPaymentModes(paymentModesData);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      enqueueSnackbar('Failed to load expenses', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentStore, enqueueSnackbar]);
+
+  // Initial load
+  useEffect(() => {
+    if (currentStore) {
+      fetchData();
+    }
+  }, [fetchData, currentStore]);
+  
+  // Listen for store change events
+  useEffect(() => {
+    const handleStoreChange = () => {
+      // Force refetch data when store changes
+      if (currentStore) {
+        // Small delay to ensure store context has been updated
+        setTimeout(() => {
+          fetchData();
+        }, 100);
+      }
+    };
+
+    window.addEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    
+    return () => {
+      window.removeEventListener(STORE_CHANGED_EVENT, handleStoreChange);
+    };
+  }, [fetchData, currentStore]);
+  
+  // Filter expenses by category and search term
+  const filteredExpenses = expenses.filter(expense => {
+    const matchesCategory = !selectedCategory || expense.expense_category === selectedCategory;
+    const matchesSearch = !searchTerm || 
+      (expense.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
+  
   // Calculate total amount
-  const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalAmount = filteredExpenses.reduce((sum, expense) => {
+    return sum + parseFloat(expense.amount);
+  }, 0);
+  
+  // Menu handlers
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
+    setMenuAnchorEl({ ...menuAnchorEl, [id]: event.currentTarget });
+  };
 
+  const handleMenuClose = (id: string) => {
+    setMenuAnchorEl({ ...menuAnchorEl, [id]: null });
+  };
+  
+  // Category filter handlers
+  const handleCategoryMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setCategoryMenuAnchor(event.currentTarget);
+  };
+
+  const handleCategoryMenuClose = () => {
+    setCategoryMenuAnchor(null);
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    handleCategoryMenuClose();
+  };
+  
+  // Tab change handler
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+  
+  // Search handler
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
+  
+  // Selection handlers
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      setSelectedExpenses(expenses.map(expense => expense.id));
+      setSelectedExpenses(filteredExpenses.map(expense => expense.id));
     } else {
       setSelectedExpenses([]);
     }
   };
 
-  const handleSelectOne = (id: number) => {
+  const handleSelectOne = (id: string) => {
     if (selectedExpenses.includes(id)) {
       setSelectedExpenses(selectedExpenses.filter(expenseId => expenseId !== id));
     } else {
       setSelectedExpenses([...selectedExpenses, id]);
     }
   };
-
-  const handleAddNewExpense = () => {
+  
+  // Modal handlers
+  const handleAddExpense = () => {
+    if (!currentStore) {
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      return;
+    }
+    
+    const defaultCategoryId = categories.length > 0 ? categories[0].id : '';
+    const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
+    const defaultPaymentModeId = paymentModes.length > 0 ? paymentModes[0].id : '';
+    
     setCurrentExpense({
-      category: '',
+      description: '',
       amount: 0,
       date: new Date().toISOString().split('T')[0],
-      user: '',
-      description: '',
-      reference: ''
+      store_id: currentStore.id,
+      category_id: defaultCategoryId,
+      currency_id: defaultCurrencyId,
+      payment_mode_id: defaultPaymentModeId
     });
-    setIsExpenseModalOpen(true);
+    setIsCreateModalOpen(true);
   };
 
-  const handleEditExpense = (id: number) => {
-    const expenseToEdit = expenses.find(expense => expense.id === id);
-    if (expenseToEdit) {
-      setCurrentExpense(expenseToEdit);
-      setIsExpenseModalOpen(true);
+  const handleEditExpense = (id: string) => {
+    const expense = expenses.find(e => e.id === id);
+    if (expense) {
+      setCurrentExpense({
+        id: expense.id,
+        description: expense.description || '',
+        amount: parseFloat(expense.amount),
+        date: new Date(expense.created_at).toISOString().split('T')[0],
+        store_id: expense.store_id,
+        category_id: expense.expense_category || '',
+        currency_id: expense.currency,
+        payment_mode_id: expense.payment_mode
+      });
+      setIsCreateModalOpen(true);
+      handleMenuClose(id);
     }
   };
 
-  const handleSaveExpense = (expenseData: any) => {
-    if (expenseData.id) {
-      // Update existing expense
-      console.log(`Updated expense: ${JSON.stringify(expenseData)}`);
-    } else {
-      // Add new expense
-      console.log(`Added new expense: ${JSON.stringify(expenseData)}`);
-    }
-    setIsExpenseModalOpen(false);
+  const handleDeleteClick = (id: string) => {
+    setExpenseToDelete(id);
+    setIsConfirmDeleteOpen(true);
+    handleMenuClose(id);
   };
 
-  // Generate breadcrumb path links
+  const handleConfirmDelete = async () => {
+    if (!currentStore || !expenseToDelete) {
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await financialsApi.deleteExpense(currentStore.id, expenseToDelete);
+      enqueueSnackbar('Expense deleted successfully', { variant: 'success' });
+      
+      // Remove from selected items if it was selected
+      setSelectedExpenses(prev => prev.filter(id => id !== expenseToDelete));
+      
+      // Refresh expenses list
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      enqueueSnackbar('Failed to delete expense', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+      setIsConfirmDeleteOpen(false);
+      setExpenseToDelete(null);
+    }
+  };
+
+  const handleSaveExpense = async (expenseData: any) => {
+    if (!currentStore) {
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const formattedData = {
+        store_id: currentStore.id,
+        expense_category: expenseData.category_id,
+        amount: expenseData.amount.toString(),
+        description: expenseData.description,
+        currency: expenseData.currency_id,
+        payment_mode: expenseData.payment_mode_id
+      };
+      
+      if (expenseData.id) {
+        // Update existing expense
+        await financialsApi.updateExpense(currentStore.id, expenseData.id, formattedData);
+        enqueueSnackbar('Expense updated successfully', { variant: 'success' });
+      } else {
+        // Create new expense
+        await financialsApi.createExpense(currentStore.id, formattedData);
+        enqueueSnackbar('Expense created successfully', { variant: 'success' });
+      }
+      
+      setIsCreateModalOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error saving expense:', error);
+      enqueueSnackbar('Failed to save expense', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Generate breadcrumb items
   const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Expenses', url: paths.admin.expenses },
+    { label: 'Dashboard', url: paths.salesman.dashboard },
+    { label: 'Expenses', url: paths.salesman.expenses },
   ];
 
   return (
@@ -134,183 +319,170 @@ export default function ExpensesPage(): React.JSX.Element {
 
       {/* Action Buttons and Filters */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Box>
-          <Button 
-            variant="contained" 
-            startIcon={<PlusIcon weight="bold" />}
-            sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
-            onClick={handleAddNewExpense}
-          >
-            Add New Expense
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<PlusIcon />}
+          onClick={handleAddExpense}
+        >
+          Add New Expense
+        </Button>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Select
-            displayEmpty
-            value=""
-            input={<OutlinedInput size="small" />}
-            renderValue={(selected) => {
-              if (!selected) {
-                return <Typography color="text.secondary">Select Category...</Typography>;
-              }
-              return selected;
-            }}
-            sx={{ minWidth: 200 }}
+          <OutlinedInput
+            placeholder="Search expenses..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            size="small"
+            startAdornment={
+              <InputAdornment position="start">
+                <MagnifyingGlassIcon size={20} />
+              </InputAdornment>
+            }
+            sx={{ width: 200 }}
+          />
+          <Button 
+            variant="outlined" 
+            onClick={handleCategoryMenuOpen}
+            sx={{ minWidth: 180, justifyContent: 'space-between', textTransform: 'none' }}
           >
-            <MenuItem value="">All Categories</MenuItem>
-            <MenuItem value="Travel">Travel</MenuItem>
-            <MenuItem value="Utilities">Utilities</MenuItem>
-            <MenuItem value="Office Supplies">Office Supplies</MenuItem>
-            <MenuItem value="Marketing">Marketing</MenuItem>
-            <MenuItem value="Rent">Rent</MenuItem>
-            <MenuItem value="Salaries">Salaries</MenuItem>
-            <MenuItem value="Repairs">Repairs</MenuItem>
-            <MenuItem value="Insurance">Insurance</MenuItem>
-          </Select>
-          <Select
-            displayEmpty
-            value=""
-            input={<OutlinedInput size="small" />}
-            renderValue={(selected) => {
-              if (!selected) {
-                return <Typography color="text.secondary">Select User...</Typography>;
-              }
-              return selected;
-            }}
-            sx={{ minWidth: 200 }}
+            {selectedCategory ? 
+              categories.find(c => c.id === selectedCategory)?.name || 'All Categories' 
+              : 'All Categories'}
+          </Button>
+          <Menu
+            anchorEl={categoryMenuAnchor}
+            open={Boolean(categoryMenuAnchor)}
+            onClose={handleCategoryMenuClose}
           >
-            <MenuItem value="">All Users</MenuItem>
-            <MenuItem value="Salesman">Salesman</MenuItem>
-            <MenuItem value="Mafalda Bahringer DDS">Mafalda Bahringer DDS</MenuItem>
-            <MenuItem value="Admin User">Admin User</MenuItem>
-          </Select>
-          <Box sx={{ 
-            display: 'flex', 
-            border: '1px solid #e0e0e0', 
-            borderRadius: 1, 
-            overflow: 'hidden',
-            alignItems: 'center',
-          }}>
-            <input 
-              type="text" 
-              placeholder="Start Date"
-              style={{ 
-                border: 'none', 
-                padding: '8px 12px',
-                outline: 'none',
-                width: 100
-              }}
-            />
-            <Box sx={{ display: 'flex', alignItems: 'center', px: 1 }}>→</Box>
-            <input 
-              type="text" 
-              placeholder="End Date"
-              style={{ 
-                border: 'none', 
-                padding: '8px 12px',
-                outline: 'none',
-                width: 100
-              }}
-            />
-          </Box>
+            <MenuItem onClick={() => handleCategorySelect('')}>
+              All Categories
+            </MenuItem>
+            {categories.map(category => (
+              <MenuItem key={category.id} onClick={() => handleCategorySelect(category.id)}>
+                {category.name}
+              </MenuItem>
+            ))}
+          </Menu>
         </Box>
       </Box>
 
+      {/* Summary Card */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <Card>
+            <Box sx={{ p: 2 }}>
+              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>Total Expenses</Typography>
+              <Typography variant="h5">${totalAmount.toFixed(2)}</Typography>
+            </Box>
+          </Card>
+        </Grid>
+      </Grid>
+
       {/* Expenses Table */}
       <Card>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={expenses.length > 0 && selectedExpenses.length === expenses.length}
-                  indeterminate={selectedExpenses.length > 0 && selectedExpenses.length < expenses.length}
-                  onChange={handleSelectAll}
-                />
-              </TableCell>
-              <TableCell>Expense Category</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>User</TableCell>
-              <TableCell>Action</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {expenses.map((expense) => (
-              <TableRow key={expense.id} hover>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Table>
+            <TableHead>
+              <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={selectedExpenses.includes(expense.id)}
-                    onChange={() => handleSelectOne(expense.id)}
+                    checked={filteredExpenses.length > 0 && selectedExpenses.length === filteredExpenses.length}
+                    indeterminate={selectedExpenses.length > 0 && selectedExpenses.length < filteredExpenses.length}
+                    onChange={handleSelectAll}
                   />
                 </TableCell>
-                <TableCell>{expense.category}</TableCell>
-                <TableCell>${expense.amount.toFixed(2)}</TableCell>
-                <TableCell>{expense.date}</TableCell>
-                <TableCell>{expense.user}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <IconButton 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: '#0ea5e9', 
-                        color: 'white',
-                        '&:hover': { bgcolor: '#0284c7' }  
-                      }}
-                      onClick={() => handleEditExpense(expense.id)}
-                    >
-                      <PencilSimpleIcon size={18} />
-                    </IconButton>
-                  </Stack>
-                </TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Category</TableCell>
+                <TableCell>Amount</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
-            ))}
-            <TableRow>
-              <TableCell colSpan={1} sx={{ fontWeight: 'bold' }}>
-                Total
-              </TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>${totalAmount.toFixed(2)}</TableCell>
-              <TableCell colSpan={4}></TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&lt;</Button>
-              <Button 
-                size="small" 
-                sx={{ 
-                  minWidth: 24, 
-                  height: 24, 
-                  p: 0, 
-                  mx: 0.5, 
-                  border: '1px solid #0ea5e9', 
-                  borderRadius: 1,
-                  color: '#0ea5e9' 
-                }}
-              >
-                1
-              </Button>
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&gt;</Button>
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              10 / page <Box component="span" sx={{ ml: 0.5, cursor: 'pointer' }}>▼</Box>
-            </Typography>
-          </Box>
-        </Box>
+            </TableHead>
+            <TableBody>
+              {filteredExpenses.length > 0 ? (
+                filteredExpenses.map(expense => {
+                  const isSelected = selectedExpenses.includes(expense.id);
+                  const formattedDate = new Date(expense.created_at).toLocaleDateString();
+                  const category = categories.find(c => c.id === expense.expense_category);
+                  const currency = currencies.find(c => c.id === expense.currency);
+                  
+                  return (
+                    <TableRow 
+                      hover 
+                      key={expense.id}
+                      selected={isSelected}
+                    >
+                      <TableCell padding="checkbox">
+                        <Checkbox 
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(expense.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="subtitle2">{expense.description}</Typography>
+                      </TableCell>
+                      <TableCell>{formattedDate}</TableCell>
+                      <TableCell>
+                        {category && (
+                          <Chip 
+                            label={category.name} 
+                            size="small"
+                            sx={{ bgcolor: 'primary.50', color: 'primary.main' }}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>{currency ? currency.code : ''} {parseFloat(expense.amount).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <IconButton onClick={(e) => handleMenuOpen(e, expense.id)}>
+                          <DotsThreeIcon />
+                        </IconButton>
+                        <Menu
+                          anchorEl={menuAnchorEl[expense.id]}
+                          open={Boolean(menuAnchorEl[expense.id])}
+                          onClose={() => handleMenuClose(expense.id)}
+                        >
+                          <MenuItem onClick={() => handleEditExpense(expense.id)}>Edit</MenuItem>
+                          <MenuItem onClick={() => handleDeleteClick(expense.id)}>Delete</MenuItem>
+                        </Menu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    <Typography variant="body1" sx={{ py: 2 }}>No expenses found</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </Card>
 
-      {/* Modals */}
-      {isExpenseModalOpen && currentExpense && (
+      {/* Expense Edit Modal */}
+      {isCreateModalOpen && (
         <ExpenseEditModal
-          open={isExpenseModalOpen}
-          onClose={() => setIsExpenseModalOpen(false)}
+          open={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
           onSave={handleSaveExpense}
           expense={currentExpense}
           categories={categories}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={isConfirmDeleteOpen}
+        onClose={() => setIsConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+      />
     </Box>
   );
 } 

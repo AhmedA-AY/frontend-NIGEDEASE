@@ -58,7 +58,7 @@ export default function SalesmanDashboardPage() {
       // Use either direct API calls or the dashboardApi service
       if (dashboardApi.getDashboardStats) {
         // If using the dashboard API service
-        const [dashboardStats, sales] = await Promise.all([
+      const [dashboardStats, sales] = await Promise.all([
           dashboardApi.getDashboardStats({ 
             period: selectedPeriod as DashboardFilters['period'],
             storeId: currentStore.id 
@@ -68,13 +68,13 @@ export default function SalesmanDashboardPage() {
             storeId: currentStore.id
           }),
         ]);
-        
-        setStats({
-          ...dashboardStats,
-          totalCustomers: dashboardStats.topCustomers.length,
-          salesGrowth: calculateGrowth(sales.monthlySales),
-        });
-        setSalesStats(sales);
+      
+      setStats({
+        ...dashboardStats,
+        totalCustomers: dashboardStats.topCustomers.length,
+        salesGrowth: calculateGrowth(sales.monthlySales),
+      });
+      setSalesStats(sales);
       } else {
         // Direct API calls if dashboard service isn't available
         const [sales, expenses, customers] = await Promise.all([
@@ -214,18 +214,115 @@ export default function SalesmanDashboardPage() {
 
   // Helper functions to generate dashboard data
   const generateTopSellingProducts = (sales: any[]): TopSellingProduct[] => {
-    // Implementation similar to admin dashboard
-    return [];
+    // Get all sale items
+    const productSales: Record<string, {
+      id: string,
+      name: string,
+      total_quantity: number,
+      total_sales: number
+    }> = {};
+
+    // Process all sales and their items
+    sales.forEach(sale => {
+      if (sale.items && Array.isArray(sale.items)) {
+        sale.items.forEach((item: any) => {
+          const productId = item.product.id;
+          const productName = item.product.name;
+          const quantity = parseInt(item.quantity) || 0;
+          const price = parseFloat(item.unit_price) || 0;
+          const totalSale = quantity * price;
+
+          if (productSales[productId]) {
+            productSales[productId].total_quantity += quantity;
+            productSales[productId].total_sales += totalSale;
+          } else {
+            productSales[productId] = {
+              id: productId,
+              name: productName,
+              total_quantity: quantity,
+              total_sales: totalSale
+            };
+          }
+        });
+      }
+    });
+
+    // Convert to array and sort by total sales
+    const totalSales = Object.values(productSales).reduce((sum, product) => sum + product.total_sales, 0);
+    
+    const topProducts = Object.values(productSales)
+      .sort((a, b) => b.total_sales - a.total_sales)
+      .slice(0, 5)
+      .map(product => ({
+        id: product.id,
+        name: product.name,
+        quantity: product.total_quantity,
+        amount: product.total_sales,
+        percentage: totalSales > 0 ? (product.total_sales / totalSales) * 100 : 0
+      }));
+
+    return topProducts;
   };
 
   const generateRecentSales = (sales: any[]): RecentSale[] => {
-    // Implementation similar to admin dashboard
-    return [];
+    return sales
+      .sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+      .slice(0, 5)
+      .map(sale => ({
+        id: sale.id,
+        customer: {
+          id: sale.customer.id,
+          name: sale.customer.name
+        },
+        status: sale.status,
+        amount: parseFloat(sale.total_amount),
+        paid: sale.is_credit ? 0 : parseFloat(sale.total_amount), // Assuming credit sales are unpaid
+        date: formatDate(new Date(sale.created_at), 'MMM dd, yyyy')
+      }));
   };
 
   const generateTopCustomers = (sales: any[], customers: any[]): TopCustomer[] => {
-    // Implementation similar to admin dashboard
-    return [];
+    // Create a map to store total purchases by customer
+    const customerPurchases: Record<string, {
+      id: string,
+      name: string,
+      total_purchases: number,
+      order_count: number
+    }> = {};
+
+    // Process all sales
+    sales.forEach(sale => {
+      const customerId = sale.customer.id;
+      const customerName = sale.customer.name;
+      const amount = parseFloat(sale.total_amount) || 0;
+
+      if (customerPurchases[customerId]) {
+        customerPurchases[customerId].total_purchases += amount;
+        customerPurchases[customerId].order_count += 1;
+      } else {
+        customerPurchases[customerId] = {
+          id: customerId,
+          name: customerName,
+          total_purchases: amount,
+          order_count: 1
+        };
+      }
+    });
+
+    // Convert to array and sort by total purchases
+    const topCustomers = Object.values(customerPurchases)
+      .sort((a, b) => b.total_purchases - a.total_purchases)
+      .slice(0, 5)
+      .map(customer => ({
+        id: customer.id,
+        name: customer.name,
+        amount: customer.total_purchases,
+        salesCount: customer.order_count
+      }));
+
+    return topCustomers;
   };
 
   const calculateGrowth = (monthlySales: any[]): number => {

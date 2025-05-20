@@ -22,36 +22,61 @@ import Tab from '@mui/material/Tab';
 import { useState } from 'react';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { UploadSimple as UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 import SupplierEditModal, { SupplierFormData } from '@/components/admin/parties/SupplierEditModal';
 import { useSnackbar } from 'notistack';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import { Supplier, SupplierCreateData, transactionsApi } from '@/services/api/transactions';
+import { useStore } from '@/providers/store-provider';
 
 export default function SuppliersPage(): React.JSX.Element {
   const [selectedSuppliers, setSelectedSuppliers] = React.useState<string[]>([]);
   const [tabValue, setTabValue] = React.useState(0);
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-  const [currentSupplier, setCurrentSupplier] = React.useState<SupplierFormData | undefined>(undefined);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentSupplier, setCurrentSupplier] = useState<SupplierFormData | undefined>(undefined);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [supplierToDelete, setSupplierToDelete] = useState<string | null>(null);
   const { enqueueSnackbar } = useSnackbar();
+  const [isLoading, setIsLoading] = useState(true);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const { currentStore } = useStore();
   
-  // Mock supplier data
-  const [suppliers, setSuppliers] = useState([
-    { id: '1', name: 'Aggie Suppliers Inc', email: 'info@aggiesuppliers.com', phone: '123-456-7890', createdAt: '30-04-2025 04:56 am', balance: '$0.00', status: 'Enabled' },
-    { id: '2', name: 'Osborne Logistics', email: 'contact@osbornelogistics.net', phone: '234-567-8901', createdAt: '29-04-2025 02:36 pm', balance: '$473,918.00', status: 'Enabled' },
-    { id: '3', name: 'Morgan Tech Solutions', email: 'support@morgantech.com', phone: '345-678-9012', createdAt: '29-04-2025 02:36 pm', balance: '$182,556.00', status: 'Enabled' },
-    { id: '4', name: 'Hamilton Distributors', email: 'sales@hamiltondist.org', phone: '456-789-0123', createdAt: '29-04-2025 02:36 pm', balance: '$382,471.75', status: 'Enabled' },
-    { id: '5', name: 'Patel Manufacturing', email: 'orders@patelmfg.com', phone: '567-890-1234', createdAt: '29-04-2025 02:36 pm', balance: '$107,382.00', status: 'Enabled' },
-    { id: '6', name: 'Silva Industrial', email: 'info@silvaindustrial.net', phone: '678-901-2345', createdAt: '29-04-2025 02:36 pm', balance: '$538,921.50', status: 'Enabled' },
-    { id: '7', name: 'Lee Electronics', email: 'sales@leeelectronics.org', phone: '789-012-3456', createdAt: '29-04-2025 02:36 pm', balance: '$219,546.00', status: 'Enabled' },
-    { id: '8', name: 'Torres Raw Materials', email: 'supply@torresraw.com', phone: '890-123-4567', createdAt: '29-04-2025 02:36 pm', balance: '$693,275.25', status: 'Enabled' },
-    { id: '9', name: 'Mendoza Equipment', email: 'info@mendozaequip.net', phone: '901-234-5678', createdAt: '29-04-2025 02:36 pm', balance: '$285,932.00', status: 'Enabled' },
-    { id: '10', name: 'Nguyen Exports', email: 'export@nguyen.com', phone: '012-345-6789', createdAt: '29-04-2025 02:36 pm', balance: '$127,853.00', status: 'Enabled' },
-  ]);
+  // Fetch suppliers
+  const fetchSuppliers = React.useCallback(async () => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'warning' });
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const data = await transactionsApi.getSuppliers(currentStore.id);
+      setSuppliers(data);
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+      enqueueSnackbar('Failed to load suppliers', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enqueueSnackbar, currentStore]);
+
+  React.useEffect(() => {
+    if (currentStore) {
+      fetchSuppliers();
+    }
+  }, [fetchSuppliers, currentStore]);
 
   // Calculate total balance
   const totalBalance = suppliers.reduce((sum, supplier) => {
-    const amount = parseFloat(supplier.balance.replace(/[$,]/g, ''));
+    const amount = parseFloat(supplier.credit_limit || '0');
     return sum + amount;
   }, 0);
 
@@ -80,21 +105,16 @@ export default function SuppliersPage(): React.JSX.Element {
     setIsEditModalOpen(true);
   };
   
-  const handleOpenEditModal = (supplier: any) => {
-    // Convert balance string to number for the form
-    const balanceStr = supplier.balance.replace(/[$,]/g, '');
-    const balanceNum = parseFloat(balanceStr);
-    
+  const handleOpenEditModal = (supplier: Supplier) => {
     setCurrentSupplier({
       id: supplier.id,
       name: supplier.name,
       email: supplier.email,
       phone: supplier.phone,
-      status: supplier.status as 'Enabled' | 'Disabled',
-      openingBalance: balanceNum,
-      // Other fields can be added as needed
+      status: supplier.is_active ? 'Enabled' : 'Disabled',
+      openingBalance: parseFloat(supplier.credit_limit || '0'),
       taxNumber: '',
-      address: '',
+      address: supplier.address,
       city: '',
       state: '',
       zipCode: '',
@@ -107,46 +127,74 @@ export default function SuppliersPage(): React.JSX.Element {
     setIsEditModalOpen(false);
   };
   
-  const handleSaveSupplier = (supplierData: SupplierFormData) => {
-    if (supplierData.id) {
-      // Update existing supplier
-      setSuppliers(prevSuppliers => 
-        prevSuppliers.map(supplier => 
-          supplier.id === supplierData.id 
-            ? {
-                ...supplier,
-                name: supplierData.name,
-                email: supplierData.email,
-                phone: supplierData.phone,
-                status: supplierData.status,
-                balance: `$${supplierData.openingBalance?.toLocaleString() || '0.00'}`,
-              }
-            : supplier
-        )
-      );
-      enqueueSnackbar('Supplier updated successfully', { variant: 'success' });
-    } else {
-      // Add new supplier
-      const newSupplier = {
-        id: (suppliers.length + 1).toString(),
+  const handleSaveSupplier = async (supplierData: SupplierFormData) => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
+    try {
+      const supplierPayload: SupplierCreateData = {
+        store_id: currentStore.id,
         name: supplierData.name,
         email: supplierData.email,
         phone: supplierData.phone,
-        createdAt: new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }).replace(/\//g, '-'),
-        balance: `$${supplierData.openingBalance?.toLocaleString() || '0.00'}`,
-        status: supplierData.status
+        address: supplierData.address || '',
+        credit_limit: (supplierData.openingBalance || 0).toString(),
+        is_active: supplierData.status === 'Enabled',
       };
+
+      if (supplierData.id) {
+        // Update existing supplier
+        await transactionsApi.updateSupplier(currentStore.id, supplierData.id, supplierPayload);
+        enqueueSnackbar('Supplier updated successfully', { variant: 'success' });
+      } else {
+        // Add new supplier
+        await transactionsApi.createSupplier(currentStore.id, supplierPayload);
+        enqueueSnackbar('Supplier added successfully', { variant: 'success' });
+      }
       
-      setSuppliers(prevSuppliers => [...prevSuppliers, newSupplier]);
-      enqueueSnackbar('Supplier added successfully', { variant: 'success' });
+      // Refresh the supplier list
+      fetchSuppliers();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving supplier:', error);
+      enqueueSnackbar('Failed to save supplier', { variant: 'error' });
     }
+  };
+  
+  const handleOpenDeleteDialog = (supplierId: string) => {
+    setSupplierToDelete(supplierId);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleCloseDeleteDialog = () => {
+    setIsDeleteDialogOpen(false);
+    setSupplierToDelete(null);
+  };
+  
+  const handleDeleteSupplier = async () => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
+    if (supplierToDelete) {
+      try {
+        await transactionsApi.deleteSupplier(currentStore.id, supplierToDelete);
+        enqueueSnackbar('Supplier deleted successfully', { variant: 'success' });
+        // Refresh the supplier list
+        fetchSuppliers();
+        // Clear selection if the deleted supplier was selected
+        setSelectedSuppliers(prevSelected => 
+          prevSelected.filter(id => id !== supplierToDelete)
+        );
+      } catch (error) {
+        console.error('Error deleting supplier:', error);
+        enqueueSnackbar('Failed to delete supplier', { variant: 'error' });
+      }
+    }
+    handleCloseDeleteDialog();
   };
 
   // Generate breadcrumb path links
@@ -252,111 +300,118 @@ export default function SuppliersPage(): React.JSX.Element {
             '&.Mui-selected': { color: '#0ea5e9' }
           }} 
         />
-        <Tab 
-          label="To Collect" 
-          sx={{ 
-            textTransform: 'none', 
-            minWidth: 80,
-            color: tabValue === 2 ? '#0ea5e9' : 'inherit',
-            '&.Mui-selected': { color: '#0ea5e9' }
-          }} 
-        />
       </Tabs>
 
       {/* Suppliers Table */}
       <Card>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={suppliers.length > 0 && selectedSuppliers.length === suppliers.length}
-                  indeterminate={selectedSuppliers.length > 0 && selectedSuppliers.length < suppliers.length}
-                  onChange={handleSelectAll}
-                />
-              </TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Created At</TableCell>
-              <TableCell>Balance</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Action</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {suppliers.map((supplier) => (
-              <TableRow key={supplier.id} hover>
+        <Box sx={{ overflowX: 'auto', mt: 1 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={selectedSuppliers.includes(supplier.id)}
-                    onChange={() => handleSelectOne(supplier.id)}
+                    checked={selectedSuppliers.length === suppliers.length && suppliers.length > 0}
+                    onChange={handleSelectAll}
+                    indeterminate={selectedSuppliers.length > 0 && selectedSuppliers.length < suppliers.length}
                   />
                 </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        bgcolor: '#0ea5e9',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        mr: 1,
-                      }}
-                    >
-                      {supplier.name.charAt(0)}
-                    </Box>
-                    {supplier.name}
-                  </Box>
-                </TableCell>
-                <TableCell>{supplier.email}</TableCell>
-                <TableCell>{supplier.createdAt}</TableCell>
-                <TableCell>{supplier.balance}</TableCell>
-                <TableCell>
-                  <Box 
-                    sx={{ 
-                      bgcolor: 'rgba(16, 185, 129, 0.1)', 
-                      color: 'rgb(16, 185, 129)', 
-                      py: 0.5, 
-                      px: 1.5, 
-                      borderRadius: 1, 
-                      display: 'inline-block',
-                      fontSize: '0.75rem'
-                    }}
-                  >
-                    {supplier.status}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleOpenEditModal(supplier)}
-                      sx={{ color: '#0ea5e9' }}
-                    >
-                      <PencilSimpleIcon size={18} />
-                    </IconButton>
-                    <IconButton size="small" sx={{ color: '#0f766e' }}>
-                      <EyeIcon size={18} />
-                    </IconButton>
-                  </Stack>
-                </TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Phone</TableCell>
+                <TableCell>Balance</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1">Loading suppliers...</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : suppliers.length > 0 ? (
+                suppliers.map((supplier) => {
+                  const isSelected = selectedSuppliers.includes(supplier.id);
+                  return (
+                    <TableRow key={supplier.id} hover selected={isSelected}>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(supplier.id)}
+                        />
+                      </TableCell>
+                      <TableCell>{supplier.name}</TableCell>
+                      <TableCell>{supplier.email}</TableCell>
+                      <TableCell>{supplier.phone}</TableCell>
+                      <TableCell>${parseFloat(supplier.credit_limit || '0').toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Box
+                          sx={{
+                            backgroundColor: supplier.is_active ? 'success.lighter' : 'error.lighter',
+                            borderRadius: 1,
+                            color: supplier.is_active ? 'success.main' : 'error.main',
+                            px: 1,
+                            py: 0.5,
+                            display: 'inline-block',
+                          }}
+                        >
+                          {supplier.is_active ? 'Enabled' : 'Disabled'}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex' }}>
+                          <IconButton onClick={() => handleOpenEditModal(supplier)}>
+                            <PencilSimpleIcon size={20} />
+                          </IconButton>
+                          <IconButton color="error" onClick={() => handleOpenDeleteDialog(supplier.id)}>
+                            <TrashIcon size={20} />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1">No suppliers found</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Box>
       </Card>
-      
-      {/* Supplier Edit Modal */}
-      <SupplierEditModal
-        open={isEditModalOpen}
-        onClose={handleCloseModal}
-        supplier={currentSupplier}
-        onSave={handleSaveSupplier}
-      />
+
+      {/* Add/Edit Modal */}
+      {isEditModalOpen && (
+        <SupplierEditModal
+          open={isEditModalOpen}
+          onClose={handleCloseModal}
+          onSave={handleSaveSupplier}
+          supplier={currentSupplier}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={isDeleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this supplier? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
+          <Button onClick={handleDeleteSupplier} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 } 

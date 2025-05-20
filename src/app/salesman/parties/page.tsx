@@ -21,37 +21,63 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { UploadSimple as UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { useState } from 'react';
 import CustomerEditModal, { CustomerFormData } from '@/components/admin/parties/CustomerEditModal';
 import { useSnackbar } from 'notistack';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import { Customer, CustomerCreateData, transactionsApi } from '@/services/api/transactions';
+import { useStore } from '@/providers/store-provider';
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function CustomersPage(): React.JSX.Element {
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([]);
   const [tabValue, setTabValue] = React.useState(0);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState<CustomerFormData | undefined>(undefined);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
   const { enqueueSnackbar } = useSnackbar();
+  const [isLoading, setIsLoading] = useState(true);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const { currentStore } = useStore();
   
-  // Mock customer data
-  const [customers, setCustomers] = useState([
-    { id: '1', name: 'Walk In Customer', email: 'walkin@email.com', phone: '123-456-7890', createdAt: '30-04-2025 04:56 am', balance: '$0.00', status: 'Enabled' },
-    { id: '2', name: 'Joesph Kulas', email: 'samantha.runolfsdottir@example.com', phone: '234-567-8901', createdAt: '29-04-2025 02:36 pm', balance: '$696,531.00', status: 'Enabled' },
-    { id: '3', name: 'Corbin Hoppe Jr.', email: 'grant.kirlin@example.com', phone: '345-678-9012', createdAt: '29-04-2025 02:36 pm', balance: '$223,229.00', status: 'Enabled' },
-    { id: '4', name: 'Kayli Skiles', email: 'annabell32@example.org', phone: '456-789-0123', createdAt: '29-04-2025 02:36 pm', balance: '$688,035.80', status: 'Enabled' },
-    { id: '5', name: 'Mack O\'Connell MD', email: 'gregoria44@example.org', phone: '567-890-1234', createdAt: '29-04-2025 02:36 pm', balance: '$223,229.00', status: 'Enabled' },
-    { id: '6', name: 'Bettie Barrows', email: 'damore.ressie@example.net', phone: '678-901-2345', createdAt: '29-04-2025 02:36 pm', balance: '$742,003.85', status: 'Enabled' },
-    { id: '7', name: 'Maverick Runte', email: 'kris.cordie@example.org', phone: '789-012-3456', createdAt: '29-04-2025 02:36 pm', balance: '$263,697.00', status: 'Enabled' },
-    { id: '8', name: 'Dr. Durward Shields Jr.', email: 'kelsi.funk@example.org', phone: '890-123-4567', createdAt: '29-04-2025 02:36 pm', balance: '$828,702.25', status: 'Enabled' },
-    { id: '9', name: 'Prof. Luciano Wolff', email: 'darion83@example.net', phone: '901-234-5678', createdAt: '29-04-2025 02:36 pm', balance: '$309,087.00', status: 'Enabled' },
-    { id: '10', name: 'Josianne Wunsch', email: 'nborer@example.com', phone: '012-345-6789', createdAt: '29-04-2025 02:36 pm', balance: '$142,094.00', status: 'Enabled' },
-  ]);
+  // Fetch customers
+  const fetchCustomers = React.useCallback(async () => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'warning' });
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const data = await transactionsApi.getCustomers(currentStore.id);
+      setCustomers(data);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      enqueueSnackbar('Failed to load customers', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enqueueSnackbar, currentStore]);
+
+  React.useEffect(() => {
+    if (currentStore) {
+      fetchCustomers();
+    }
+  }, [fetchCustomers, currentStore]);
 
   // Calculate total balance
   const totalBalance = customers.reduce((sum, customer) => {
-    const amount = parseFloat(customer.balance.replace(/[$,]/g, ''));
+    const amount = parseFloat(customer.credit_limit || '0');
     return sum + amount;
   }, 0);
 
@@ -80,20 +106,16 @@ export default function CustomersPage(): React.JSX.Element {
     setIsEditModalOpen(true);
   };
   
-  const handleOpenEditModal = (customer: any) => {
-    // Convert balance string to number for the form
-    const balanceStr = customer.balance.replace(/[$,]/g, '');
-    const balanceNum = parseFloat(balanceStr);
-    
+  const handleOpenEditModal = (customer: Customer) => {
     setCurrentCustomer({
       id: customer.id,
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
-      status: customer.status as 'Enabled' | 'Disabled',
-      openingBalance: balanceNum,
+      status: 'Enabled', // Status is not in Customer model, assuming Enabled by default
+      openingBalance: parseFloat(customer.credit_limit || '0'),
       taxNumber: '',
-      address: '',
+      address: customer.address,
       city: '',
       state: '',
       zipCode: '',
@@ -106,54 +128,79 @@ export default function CustomersPage(): React.JSX.Element {
     setIsEditModalOpen(false);
   };
   
-  const handleSaveCustomer = (customerData: CustomerFormData) => {
-    if (customerData.id) {
-      // Update existing customer
-      setCustomers(prevCustomers => 
-        prevCustomers.map(customer => 
-          customer.id === customerData.id 
-            ? {
-                ...customer,
-                name: customerData.name,
-                email: customerData.email,
-                phone: customerData.phone,
-                status: customerData.status,
-                balance: `$${customerData.openingBalance?.toLocaleString() || '0.00'}`,
-              }
-            : customer
-        )
-      );
-      enqueueSnackbar('Customer updated successfully', { variant: 'success' });
-    } else {
-      // Add new customer
-      const newCustomer = {
-        id: (customers.length + 1).toString(),
+  const handleSaveCustomer = async (customerData: CustomerFormData) => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
+    try {
+      const customerPayload: CustomerCreateData = {
+        store_id: currentStore.id,
         name: customerData.name,
         email: customerData.email,
         phone: customerData.phone,
-        createdAt: new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }).replace(/\//g, '-'),
-        balance: `$${customerData.openingBalance?.toLocaleString() || '0.00'}`,
-        status: customerData.status
+        address: customerData.address || '',
+        credit_limit: (customerData.openingBalance || 0).toString(),
       };
+
+      if (customerData.id) {
+        // Update existing customer
+        await transactionsApi.updateCustomer(currentStore.id, customerData.id, customerPayload);
+        enqueueSnackbar('Customer updated successfully', { variant: 'success' });
+      } else {
+        // Add new customer
+        await transactionsApi.createCustomer(currentStore.id, customerPayload);
+        enqueueSnackbar('Customer added successfully', { variant: 'success' });
+      }
       
-      setCustomers(prevCustomers => [...prevCustomers, newCustomer]);
-      enqueueSnackbar('Customer added successfully', { variant: 'success' });
+      // Refresh the customer list
+      fetchCustomers();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving customer:', error);
+      enqueueSnackbar('Failed to save customer', { variant: 'error' });
     }
-    setIsEditModalOpen(false);
+  };
+  
+  const handleOpenDeleteDialog = (customerId: string) => {
+    setCustomerToDelete(customerId);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleCloseDeleteDialog = () => {
+    setIsDeleteDialogOpen(false);
+    setCustomerToDelete(null);
+  };
+  
+  const handleDeleteCustomer = async () => {
+    if (!currentStore) {
+      enqueueSnackbar('No store selected', { variant: 'error' });
+      return;
+    }
+    
+    if (customerToDelete) {
+      try {
+        await transactionsApi.deleteCustomer(currentStore.id, customerToDelete);
+        enqueueSnackbar('Customer deleted successfully', { variant: 'success' });
+        // Refresh the customer list
+        fetchCustomers();
+        // Clear selection if the deleted customer was selected
+        setSelectedCustomers(prevSelected => 
+          prevSelected.filter(id => id !== customerToDelete)
+        );
+      } catch (error) {
+        console.error('Error deleting customer:', error);
+        enqueueSnackbar('Failed to delete customer', { variant: 'error' });
+      }
+    }
+    handleCloseDeleteDialog();
   };
 
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: 'Dashboard', url: '/admin/dashboard' },
-    { label: 'Parties', url: '/admin/parties' },
-    { label: 'Customers', url: '/admin/parties/customers' },
+    { label: 'Dashboard', url: '/salesman/dashboard' },
+    { label: 'Parties', url: '/salesman/parties' },
   ];
 
   return (
@@ -252,112 +299,136 @@ export default function CustomersPage(): React.JSX.Element {
             '&.Mui-selected': { color: '#0ea5e9' }
           }} 
         />
-        <Tab 
-          label="To Pay" 
-          sx={{ 
-            textTransform: 'none', 
-            minWidth: 60,
-            color: tabValue === 2 ? '#0ea5e9' : 'inherit',
-            '&.Mui-selected': { color: '#0ea5e9' }
-          }} 
-        />
       </Tabs>
 
       {/* Customers Table */}
       <Card>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={customers.length > 0 && selectedCustomers.length === customers.length}
-                  indeterminate={selectedCustomers.length > 0 && selectedCustomers.length < customers.length}
-                  onChange={handleSelectAll}
-                />
-              </TableCell>
-              <TableCell>Customer Name</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Phone</TableCell>
-              <TableCell>Created At</TableCell>
-              <TableCell>Balance</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Action</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {customers.map((customer) => (
-              <TableRow key={customer.id} hover>
+        <Box sx={{ overflowX: 'auto' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={selectedCustomers.includes(customer.id)}
-                    onChange={() => handleSelectOne(customer.id)}
+                    checked={selectedCustomers.length === customers.length && customers.length > 0}
+                    onChange={handleSelectAll}
+                    indeterminate={selectedCustomers.length > 0 && selectedCustomers.length < customers.length}
                   />
                 </TableCell>
-                <TableCell>{customer.name}</TableCell>
-                <TableCell>{customer.email}</TableCell>
-                <TableCell>{customer.phone}</TableCell>
-                <TableCell>{customer.createdAt}</TableCell>
-                <TableCell>{customer.balance}</TableCell>
-                <TableCell>{customer.status}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleOpenEditModal(customer)}
-                      sx={{ color: '#0ea5e9' }}
-                    >
-                      <PencilSimpleIcon size={18} />
-                    </IconButton>
-                    <IconButton size="small" sx={{ color: '#0f766e' }}>
-                      <EyeIcon size={18} />
-                    </IconButton>
-                  </Stack>
-                </TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Phone</TableCell>
+                <TableCell>Balance</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
-            ))}
-            <TableRow>
-              <TableCell colSpan={4} sx={{ fontWeight: 'bold' }}>
-                Total
-              </TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>${totalBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
-              <TableCell colSpan={2}></TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&lt;</Button>
-              <Button 
-                size="small" 
-                sx={{ 
-                  minWidth: 24, 
-                  height: 24, 
-                  p: 0, 
-                  mx: 0.5, 
-                  border: '1px solid #0ea5e9', 
-                  borderRadius: 1,
-                  color: '#0ea5e9' 
-                }}
-              >
-                1
-              </Button>
-              <Button size="small" sx={{ minWidth: 'auto', p: 0 }}>&gt;</Button>
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              10 / page <Box component="span" sx={{ ml: 0.5, cursor: 'pointer' }}>▼</Box>
-            </Typography>
-          </Box>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              ) : customers.length > 0 ? (
+                customers.map((customer) => {
+                  const isSelected = selectedCustomers.includes(customer.id);
+                  return (
+                    <TableRow key={customer.id} hover selected={isSelected}>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(customer.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              bgcolor: '#0ea5e9',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white',
+                              mr: 1,
+                            }}
+                          >
+                            {customer.name.charAt(0)}
+                          </Box>
+                          {customer.name}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{customer.email}</TableCell>
+                      <TableCell>{customer.phone}</TableCell>
+                      <TableCell>${parseFloat(customer.credit_limit || '0').toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={1}>
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleOpenEditModal(customer)}
+                            sx={{ color: '#0ea5e9' }}
+                          >
+                            <PencilSimpleIcon size={18} />
+                          </IconButton>
+                          <IconButton 
+                            size="small" 
+                            sx={{ color: '#0f766e' }}
+                          >
+                            <EyeIcon size={18} />
+                          </IconButton>
+                          <IconButton 
+                            size="small" 
+                            sx={{ color: '#ef4444' }}
+                            onClick={() => handleOpenDeleteDialog(customer.id)}
+                          >
+                            <TrashIcon size={18} />
+                          </IconButton>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    <Typography variant="body1" sx={{ py: 2 }}>No customers found</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </Box>
       </Card>
       
       {/* Customer Edit Modal */}
-      <CustomerEditModal
-        open={isEditModalOpen}
-        onClose={handleCloseModal}
-        customer={currentCustomer}
-        onSave={handleSaveCustomer}
-      />
+      {isEditModalOpen && (
+        <CustomerEditModal
+          open={isEditModalOpen}
+          onClose={handleCloseModal}
+          customer={currentCustomer}
+          onSave={handleSaveCustomer}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={isDeleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this customer? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
+          <Button onClick={handleDeleteCustomer} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 } 
