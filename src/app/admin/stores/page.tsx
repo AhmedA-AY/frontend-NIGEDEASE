@@ -29,15 +29,11 @@ import { inventoryApi, InventoryStore } from '@/services/api/inventory';
 import { useSnackbar } from 'notistack';
 import { paths } from '@/paths';
 import StoreEditModal from '@/components/admin/stores/StoreEditModal';
-import { StoreSelector } from '@/components/admin/store-selector';
-import { useStore } from '@/contexts/store-context';
-import { FormControl, InputLabel, Select } from '@mui/material';
 
 export default function StoresPage(): React.JSX.Element {
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
   const { userInfo } = useCurrentUser();
-  const { selectedStore: activeStore, stores: contextStores } = useStore();
   
   const [isLoading, setIsLoading] = React.useState(true);
   const [stores, setStores] = React.useState<InventoryStore[]>([]);
@@ -48,33 +44,6 @@ export default function StoresPage(): React.JSX.Element {
   const [storeToDelete, setStoreToDelete] = React.useState<string | null>(null);
   const [anchorElMap, setAnchorElMap] = React.useState<{ [key: string]: HTMLElement | null }>({});
   
-  // Check for URL query parameters
-  React.useEffect(() => {
-    // Get URL search params
-    const queryParams = new URLSearchParams(window.location.search);
-    const editStoreId = queryParams.get('edit');
-    const deleteStoreId = queryParams.get('delete');
-
-    // If there's an edit parameter, open the edit modal for that store
-    if (editStoreId) {
-      const storeToEdit = stores.find(store => store.id === editStoreId);
-      if (storeToEdit) {
-        setSelectedStore(storeToEdit);
-        setIsStoreModalOpen(true);
-        // Clear the query parameter
-        router.replace('/admin/stores');
-      }
-    }
-
-    // If there's a delete parameter, open the delete confirmation for that store
-    if (deleteStoreId) {
-      setStoreToDelete(deleteStoreId);
-      setIsDeleteModalOpen(true);
-      // Clear the query parameter
-      router.replace('/admin/stores');
-    }
-  }, [stores, router]);
-  
   // Fetch stores data
   const fetchStores = React.useCallback(async () => {
     setIsLoading(true);
@@ -84,8 +53,8 @@ export default function StoresPage(): React.JSX.Element {
         ? await inventoryApi.getStores(userInfo.company_id) 
         : await inventoryApi.getStores();
       
-      // Filter stores by user's company and role
-      let filteredStores = userInfo?.company_id 
+      // Filter stores by user's company
+      const filteredStores = userInfo?.company_id 
         ? storesData 
         : storesData.filter(store => store.company && userInfo?.role === 'superadmin');
       
@@ -228,7 +197,7 @@ export default function StoresPage(): React.JSX.Element {
       
       {/* Action Buttons and Search */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box>
           <Button 
             variant="contained" 
             startIcon={<PlusIcon weight="bold" />}
@@ -237,32 +206,6 @@ export default function StoresPage(): React.JSX.Element {
           >
             Add New Store
           </Button>
-          {stores.length > 0 && (
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel id="store-selector-label">Store</InputLabel>
-              <Select
-                labelId="store-selector-label"
-                id="store-selector"
-                value=""
-                onChange={(e) => {
-                  const storeId = e.target.value as string;
-                  const store = stores.find(s => s.id === storeId);
-                  if (store) {
-                    router.push(`/admin/stores/${storeId}`);
-                  }
-                }}
-                label="Store"
-                displayEmpty
-                renderValue={() => "Switch Store"}
-              >
-                {stores.map((store) => (
-                  <MenuItem key={store.id} value={store.id}>
-                    {store.name} ({store.location})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
         </Box>
         <Box>
           <TextField

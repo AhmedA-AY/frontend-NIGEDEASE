@@ -16,6 +16,7 @@ export type StoreContextType = {
   stores: Store[];
   selectedStore: Store | null;
   selectStore: (store: Store) => void;
+  refreshStores: () => void;
   isLoading: boolean;
 };
 
@@ -28,37 +29,47 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Load stores from storage
-    const loadStores = () => {
+  const loadStores = () => {
+    setIsLoading(true);
+    try {
+      // Load stores from storage
       const storesFromStorage = tokenStorage.getCompanyStores();
       setStores(storesFromStorage);
 
-      // If admin has access to stores, select the first one
-      if (storesFromStorage.length > 0 && !selectedStore) {
-        setSelectedStore(storesFromStorage[0]);
-        localStorage.setItem('lastSelectedStore', JSON.stringify(storesFromStorage[0]));
+      // Try to get last selected store from local storage
+      const lastSelectedStoreJson = localStorage.getItem('lastSelectedStore');
+      let lastSelectedStore = null;
+      
+      if (lastSelectedStoreJson) {
+        try {
+          lastSelectedStore = JSON.parse(lastSelectedStoreJson);
+        } catch (e) {
+          console.error('Failed to parse last selected store', e);
+        }
       }
 
       // For non-admin roles, check if there's an assigned store
       const assignedStore = tokenStorage.getAssignedStore();
+      
       if (assignedStore) {
+        // If there's an assigned store, use it as the default
         setSelectedStore(assignedStore);
-      } else {
-        // Try to get last selected store from local storage
-        const lastSelectedStore = localStorage.getItem('lastSelectedStore');
-        if (lastSelectedStore) {
-          try {
-            setSelectedStore(JSON.parse(lastSelectedStore));
-          } catch (e) {
-            console.error('Failed to parse last selected store', e);
-          }
-        }
+      } else if (lastSelectedStore && storesFromStorage.some(s => s.id === lastSelectedStore.id)) {
+        // If there's a last selected store and it still exists, use it
+        setSelectedStore(lastSelectedStore);
+      } else if (storesFromStorage.length > 0) {
+        // Otherwise, default to the first store
+        setSelectedStore(storesFromStorage[0]);
+        localStorage.setItem('lastSelectedStore', JSON.stringify(storesFromStorage[0]));
       }
-
+    } catch (error) {
+      console.error('Error loading stores:', error);
+    } finally {
       setIsLoading(false);
-    };
+    }
+  };
 
+  useEffect(() => {
     loadStores();
   }, []);
 
@@ -67,8 +78,18 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     localStorage.setItem('lastSelectedStore', JSON.stringify(store));
   };
 
+  const refreshStores = () => {
+    loadStores();
+  };
+
   return (
-    <StoreContext.Provider value={{ stores, selectedStore, selectStore, isLoading }}>
+    <StoreContext.Provider value={{ 
+      stores, 
+      selectedStore, 
+      selectStore, 
+      refreshStores,
+      isLoading 
+    }}>
       {children}
     </StoreContext.Provider>
   );
