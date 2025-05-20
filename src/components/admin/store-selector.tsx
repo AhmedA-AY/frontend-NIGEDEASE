@@ -5,7 +5,7 @@ import { useStore, Store } from '@/contexts/store-context';
 import { FormControl, InputLabel, Select, MenuItem, Box, Tooltip, Typography, SelectChangeEvent, IconButton, CircularProgress } from '@mui/material';
 import { Storefront, ArrowsClockwise } from '@phosphor-icons/react/dist/ssr';
 
-export default function StoreSelector() {
+export function StoreSelector() {
   const { stores, selectedStore, selectStore, refreshStores, isLoading } = useStore();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -86,4 +86,7 @@ export default function StoreSelector() {
       </IconButton>
     </div>
   );
-} 
+}
+
+// For backward compatibility
+export default StoreSelector; 
