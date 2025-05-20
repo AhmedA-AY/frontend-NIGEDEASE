@@ -217,8 +217,8 @@ export default function PurchasesPage(): React.JSX.Element {
       return;
     }
 
-    if (filteredStores.length === 0) {
-      enqueueSnackbar('No stores available for your company. Please contact your administrator.', { variant: 'error' });
+    if (stores.length === 0) {
+      enqueueSnackbar('No stores available. Please contact your administrator.', { variant: 'error' });
       return;
     }
 
@@ -234,8 +234,8 @@ export default function PurchasesPage(): React.JSX.Element {
 
     // Use the current user's company ID
     const userCompanyId = userInfo.company_id;
-    // Only get stores from user's company
-    const defaultStoreId = filteredStores[0].id;
+    // Get the first store from the stores array
+    const defaultStoreId = stores[0].id;
     const defaultCurrencyId = currencies[0].id;
     const defaultPaymentModeId = paymentModes[0].id;
     
