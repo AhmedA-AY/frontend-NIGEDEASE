@@ -172,7 +172,7 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
           } 
         }}
       >
-        <MenuItem component={RouterLink} href={paths.dashboard.account} onClick={onClose}>
+        <MenuItem component={RouterLink} href={paths.admin.profile} onClick={onClose}>
           <ListItemIcon>
             <UserIcon fontSize="var(--icon-fontSize-md)" />
           </ListItemIcon>

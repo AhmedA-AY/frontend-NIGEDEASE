@@ -10,6 +10,7 @@ export const paths = {
   },
   admin: {
     dashboard: '/admin/dashboard',
+    profile: '/admin/profile',
     productManager: '/admin/product-manager',
     categories: '/admin/product-manager/categories',
     products: '/admin/product-manager/products',
