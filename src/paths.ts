@@ -14,7 +14,7 @@ export const paths = {
     productManager: '/admin/product-manager',
     categories: '/admin/product-manager/categories',
     products: '/admin/product-manager/products',
-    productUnits: '/admin/product-manager/products/units',
+    productUnits: '/admin/product-manager/units',
     clothing: '/admin/product-manager/clothing',
     clothingColors: '/admin/product-manager/clothing/colors',
     clothingSeasons: '/admin/product-manager/clothing/seasons',

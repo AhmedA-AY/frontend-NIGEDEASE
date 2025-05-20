@@ -27,13 +27,11 @@ export const adminNavItems = [
     icon: 'package',
     items: [
       { key: 'admin-categories', title: 'Categories', href: paths.admin.categories },
+      { key: 'admin-product-units', title: 'Product Units', href: paths.admin.productUnits },
       { 
         key: 'admin-products', 
         title: 'Products', 
-        href: paths.admin.products,
-        items: [
-          { key: 'admin-product-units', title: 'Product Units', href: paths.admin.productUnits }
-        ]
+        href: paths.admin.products
       },
       { 
         key: 'admin-clothing', 
@@ -43,8 +41,6 @@ export const adminNavItems = [
           { key: 'admin-clothing-colors', title: 'Colors', href: paths.admin.clothingColors },
           { key: 'admin-clothing-seasons', title: 'Seasons', href: paths.admin.clothingSeasons },
           { key: 'admin-clothing-collections', title: 'Collections', href: paths.admin.clothingCollections },
-          { key: 'admin-clothing-sizes', title: 'Sizes', href: paths.admin.clothingSizes },
-          { key: 'admin-clothing-materials', title: 'Materials', href: paths.admin.clothingMaterials },
         ]
       },
     ]
@@ -61,29 +57,10 @@ export const adminNavItems = [
       { key: 'admin-expense-categories', title: 'Categories', href: paths.admin.expenseCategories }
     ]
   },
-  { 
-    key: 'admin-payments', 
-    title: 'Payments', 
-    href: paths.admin.payments, 
-    icon: 'credit-card',
-    items: [
-      { key: 'admin-payments-in', title: 'Payments In', href: paths.admin.paymentIn },
-      { key: 'admin-payments-out', title: 'Payments Out', href: paths.admin.paymentOut }
-    ]
-  },
-  { 
-    key: 'admin-parties', 
-    title: 'Parties', 
-    href: paths.admin.parties, 
-    icon: 'users',
-    items: [
-      { key: 'admin-customers', title: 'Customers', href: paths.admin.parties },
-      { key: 'admin-suppliers', title: 'Suppliers', href: paths.admin.parties }
-    ]
-  },
+  { key: 'admin-payments', title: 'Payments', href: paths.admin.payments, icon: 'credit-card' },
+  { key: 'admin-parties', title: 'Parties', href: paths.admin.parties, icon: 'users' },
   { key: 'admin-stores', title: 'Stores', href: paths.admin.stores, icon: 'storefront' },
   { key: 'admin-users', title: 'Users', href: paths.admin.users, icon: 'user-gear' },
-  { key: 'admin-profile', title: 'My Profile', href: paths.admin.profile, icon: 'user' },
 ] satisfies NavItemConfig[];
 
 export const stockManagerNavItems = [

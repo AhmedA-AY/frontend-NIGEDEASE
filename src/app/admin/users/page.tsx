@@ -381,32 +381,22 @@ export default function UsersPage() {
   }) | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
-  const [authInitialized, setAuthInitialized] = useState(false);
   
   const { enqueueSnackbar } = useSnackbar();
   const { userInfo } = useCurrentUser();
   const { stores } = useStore();
   
-  // Check if auth is initialized
-  useEffect(() => {
-    if (userInfo !== undefined) {
-      setAuthInitialized(true);
-    }
-  }, [userInfo]);
-  
   // Fetch users data
   const fetchUsers = useCallback(async () => {
-    if (!authInitialized) {
-      return; // Don't do anything until auth is initialized
-    }
-    
     if (!userInfo) {
-      enqueueSnackbar('User profile not available. Please log in again.', { variant: 'error' });
-      setIsLoading(false);
+      // Don't show error message on initial load
+      // User info might not be ready yet
+      setIsLoading(true);
       return;
     }
 
     if (!userInfo.company_id) {
+      // Only show error if we have userInfo but no company_id
       enqueueSnackbar('Company information not available. Please log in again.', { variant: 'error' });
       setIsLoading(false);
       return;
@@ -473,13 +463,11 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo, enqueueSnackbar, authInitialized]);
+  }, [userInfo, enqueueSnackbar]);
 
   useEffect(() => {
-    if (authInitialized) {
-      fetchUsers();
-    }
-  }, [fetchUsers, authInitialized]);
+    fetchUsers();
+  }, [fetchUsers]);
   
   // Filter users based on search query, role filter, and store filter
   const filterUsers = useCallback((userList: ExtendedUserResponse[], query: string, role: string, store: string) => {
