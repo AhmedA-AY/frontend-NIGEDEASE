@@ -28,14 +28,16 @@ export interface StoreUpdateData extends Partial<StoreCreateData> {}
 // Stores API
 export const storesApi = {
   // Get all stores
-  getStores: async (): Promise<Store[]> => {
+  getStores: async (companyId?: string): Promise<Store[]> => {
     try {
-      // Get company ID from token storage
-      const userInfo = tokenStorage.getUserInfo();
-      const companyId = userInfo?.company_id;
-      
+      // If no companyId is provided, try to get it from token storage
       if (!companyId) {
-        throw new Error('Company ID is required to fetch stores');
+        const userInfo = tokenStorage.getUserInfo();
+        companyId = userInfo?.company_id;
+        
+        if (!companyId) {
+          throw new Error('Company ID is required to fetch stores');
+        }
       }
       
       const response = await coreApiClient.get<Store[]>(`/companies/companies/${companyId}/stores/`);
@@ -49,18 +51,18 @@ export const storesApi = {
   // Get store by ID
   getStore: async (id: string): Promise<Store> => {
     try {
-      // Get company ID from token storage
+      // First try to get the store information to identify its company
       const userInfo = tokenStorage.getUserInfo();
       const companyId = userInfo?.company_id;
       
       if (!companyId) {
-        throw new Error('Company ID is required to fetch store details');
+        throw new Error('Company ID is required to fetch store');
       }
       
       const response = await coreApiClient.get<Store>(`/companies/companies/${companyId}/stores/${id}/`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching store details:', error);
+      console.error('Error getting store:', error);
       throw error;
     }
   },
@@ -69,7 +71,6 @@ export const storesApi = {
   createStore: async (data: StoreCreateData): Promise<Store> => {
     try {
       const companyId = data.company_id;
-      
       if (!companyId) {
         throw new Error('Company ID is required to create a store');
       }
@@ -85,19 +86,19 @@ export const storesApi = {
   // Update a store
   updateStore: async (id: string, data: StoreUpdateData): Promise<Store> => {
     try {
-      // If company_id is in the data, use it, otherwise get from token storage
-      let companyId = data.company_id;
-      
+      const companyId = data.company_id;
       if (!companyId) {
         const userInfo = tokenStorage.getUserInfo();
-        companyId = userInfo?.company_id;
+        const userCompanyId = userInfo?.company_id;
+        
+        if (!userCompanyId) {
+          throw new Error('Company ID is required to update a store');
+        }
+        
+        data.company_id = userCompanyId;
       }
       
-      if (!companyId) {
-        throw new Error('Company ID is required to update a store');
-      }
-      
-      const response = await coreApiClient.put<Store>(`/companies/companies/${companyId}/stores/${id}/`, data);
+      const response = await coreApiClient.put<Store>(`/companies/companies/${data.company_id}/stores/${id}/`, data);
       return response.data;
     } catch (error) {
       console.error('Error updating store:', error);
@@ -108,7 +109,6 @@ export const storesApi = {
   // Delete a store
   deleteStore: async (id: string): Promise<void> => {
     try {
-      // Get company ID from token storage
       const userInfo = tokenStorage.getUserInfo();
       const companyId = userInfo?.company_id;
       
@@ -126,7 +126,6 @@ export const storesApi = {
   // Toggle store active status
   toggleStoreStatus: async (id: string, isActive: boolean): Promise<Store> => {
     try {
-      // Get company ID from token storage
       const userInfo = tokenStorage.getUserInfo();
       const companyId = userInfo?.company_id;
       

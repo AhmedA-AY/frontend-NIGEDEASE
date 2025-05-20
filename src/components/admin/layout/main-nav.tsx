@@ -9,7 +9,7 @@ import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 
 import { usePopover } from '@/hooks/use-popover';
 import { useAuth } from '@/providers/auth-provider';
-import StoreSelector from '@/components/admin/store-selector';
+import { StoreSelector } from '@/components/admin/store-selector';
 
 import { MobileNav } from './mobile-nav';
 import { UserPopover } from '@/components/dashboard/layout/user-popover';

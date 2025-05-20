@@ -2,19 +2,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { useStore, Store } from '@/contexts/store-context';
-import { FormControl, InputLabel, Select, MenuItem, Box, Tooltip, Typography, SelectChangeEvent, IconButton, CircularProgress } from '@mui/material';
+import { FormControl, InputLabel, Select, MenuItem, Box, Tooltip, Typography, SelectChangeEvent, IconButton, CircularProgress, Alert } from '@mui/material';
 import { Storefront, ArrowsClockwise } from '@phosphor-icons/react/dist/ssr';
 
-export function StoreSelector() {
+export default function StoreSelector() {
   const { stores, selectedStore, selectStore, refreshStores, isLoading } = useStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Refresh stores when component mounts to ensure fresh data
-    refreshStores();
+    const loadStores = async () => {
+      try {
+        setError(null);
+        await refreshStores();
+      } catch (err) {
+        setError('Failed to load stores. Please try again.');
+        console.error('Error loading stores:', err);
+      }
+    };
+    
+    loadStores();
   }, [refreshStores]);
 
-  const handleStoreChange = (event: SelectChangeEvent) => {
+  const handleStoreChange = (event: SelectChangeEvent<string>) => {
     const storeId = event.target.value;
     const store = stores.find((s) => s.id === storeId);
     if (store) {
@@ -22,13 +33,21 @@ export function StoreSelector() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    refreshStores();
-    // Add a delay to show the refresh animation
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+    setError(null);
+    
+    try {
+      await refreshStores();
+    } catch (err) {
+      setError('Failed to refresh stores. Please try again.');
+      console.error('Error refreshing stores:', err);
+    } finally {
+      // Add a slight delay to show the refresh animation
+      setTimeout(() => {
+        setRefreshing(false);
+      }, 1000);
+    }
   };
 
   if (isLoading) {
@@ -40,14 +59,32 @@ export function StoreSelector() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center gap-2">
+        <Alert severity="error" sx={{ fontSize: '0.75rem', py: 0 }}>
+          {error}
+        </Alert>
+        <IconButton onClick={handleRefresh} size="small">
+          <ArrowsClockwise size={18} />
+        </IconButton>
+      </div>
+    );
+  }
+
   if (stores.length === 0) {
     return (
-      <Tooltip title="No stores available">
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Storefront size={20} />
-          <Typography variant="body2">No stores</Typography>
-        </Box>
-      </Tooltip>
+      <div className="flex items-center gap-2">
+        <Tooltip title="No stores available">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Storefront size={20} />
+            <Typography variant="body2">No stores</Typography>
+          </Box>
+        </Tooltip>
+        <IconButton onClick={handleRefresh} size="small">
+          <ArrowsClockwise size={18} />
+        </IconButton>
+      </div>
     );
   }
 
@@ -86,7 +123,4 @@ export function StoreSelector() {
       </IconButton>
     </div>
   );
-}
-
-// For backward compatibility
-export default StoreSelector; 
+} 
