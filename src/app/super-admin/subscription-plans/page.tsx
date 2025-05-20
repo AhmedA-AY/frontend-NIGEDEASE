@@ -175,34 +175,83 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
       if (data.id) {
         const { id, ...planData } = data;
         
-        // Format the data to match API expectations - ensure all numeric fields are numbers
-        const formattedData = {
-          ...planData,
-          // Ensure numeric fields are sent as proper data types
-          storage_limit_gb: Number(planData.storage_limit_gb),
-          price: String(planData.price),
-          duration_in_months: Number(planData.duration_in_months || 1),
-          max_products: Number(planData.max_products || 100),
-          max_stores: Number(planData.max_stores || 5),
-          max_users: Number(planData.max_users || 10),
-          features: String(planData.features),
-          is_active: Boolean(planData.is_active)
-        };
+        // Get the current plan data to compare
+        const currentPlan = subscriptionPlans?.find(p => p.id === id);
+        if (!currentPlan) {
+          throw new Error("Couldn't find the current plan data");
+        }
         
-        console.log('Sending data to update subscription plan:', formattedData);
+        // Compare and only include changed fields to minimize data sent
+        const changedFields: Record<string, any> = {};
         
-        // Use PATCH instead of PUT to handle partial updates better
-        await patchPlanMutation.mutateAsync({
-          id,
-          data: formattedData as SubscriptionPlanData
-        });
+        // Check each field for changes
+        if (planData.name !== currentPlan.name) changedFields.name = planData.name;
+        if (planData.description !== currentPlan.description) changedFields.description = planData.description;
+        if (planData.price !== currentPlan.price) changedFields.price = planData.price;
+        if (planData.billing_cycle !== currentPlan.billing_cycle) changedFields.billing_cycle = planData.billing_cycle;
+        if (planData.features !== currentPlan.features) changedFields.features = planData.features;
+        if (planData.is_active !== currentPlan.is_active) changedFields.is_active = planData.is_active;
         
-        setEditDialogOpen(false);
-        setSuccessMessage('Subscription plan updated successfully');
-        reset(defaultValues);
+        // For numeric fields, compare and convert if changed
+        if (planData.storage_limit_gb !== currentPlan.storage_limit_gb) 
+          changedFields.storage_limit_gb = Number(planData.storage_limit_gb);
+        
+        if (planData.duration_in_months !== currentPlan.duration_in_months) 
+          changedFields.duration_in_months = Number(planData.duration_in_months || 1);
+        
+        if (planData.max_products !== currentPlan.max_products) 
+          changedFields.max_products = Number(planData.max_products || 100);
+        
+        if (planData.max_stores !== currentPlan.max_stores) 
+          changedFields.max_stores = Number(planData.max_stores || 5);
+        
+        if (planData.max_users !== currentPlan.max_users) 
+          changedFields.max_users = Number(planData.max_users || 10);
+          
+        console.log('Sending only changed fields:', changedFields);
+        
+        // Try PUT with all data first (if any field changed)
+        if (Object.keys(changedFields).length > 0) {
+          try {
+            // First try with PUT and all data
+            await updatePlanMutation.mutateAsync({
+              id,
+              data: {
+                ...planData,
+                storage_limit_gb: Number(planData.storage_limit_gb),
+                price: String(planData.price),
+                duration_in_months: Number(planData.duration_in_months || 1),
+                max_products: Number(planData.max_products || 100),
+                max_stores: Number(planData.max_stores || 5),
+                max_users: Number(planData.max_users || 10),
+                features: String(planData.features),
+                is_active: Boolean(planData.is_active)
+              } as SubscriptionPlanData
+            });
+          } catch (putError) {
+            console.error('PUT request failed, trying PATCH with only changed fields:', putError);
+            // If PUT fails, try with PATCH and only changed fields
+            await patchPlanMutation.mutateAsync({
+              id,
+              data: changedFields
+            });
+          }
+          
+          setEditDialogOpen(false);
+          setSuccessMessage('Subscription plan updated successfully');
+          reset(defaultValues);
+        } else {
+          // No changes detected
+          setEditDialogOpen(false);
+          setSuccessMessage('No changes were made to the subscription plan');
+          reset(defaultValues);
+        }
       }
     } catch (error: any) {
       console.error('Error updating subscription plan:', error);
+      // Log more detailed error information
+      console.error('Error response data:', error?.response?.data);
+      console.error('Error status:', error?.response?.status);
       const errorMessage = error?.response?.data?.detail || 
                           error?.message || 
                           'Failed to update subscription plan';
@@ -227,13 +276,45 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
 
   const handleToggleStatus = async (plan: any) => {
     try {
-      await patchPlanMutation.mutateAsync({
-        id: plan.id,
-        data: { is_active: Boolean(!plan.is_active) }
-      });
-      setSuccessMessage(`Plan ${plan.name} ${!plan.is_active ? 'activated' : 'deactivated'} successfully`);
+      const newStatus = !plan.is_active;
+      const toggleData = { is_active: Boolean(newStatus) };
+      
+      console.log(`Toggling plan status for ${plan.name} to ${newStatus ? 'active' : 'inactive'}`);
+      
+      try {
+        // First try with PUT (requires all fields)
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: {
+            // Include all required fields
+            name: plan.name,
+            description: plan.description,
+            price: plan.price,
+            billing_cycle: plan.billing_cycle,
+            features: plan.features,
+            is_active: newStatus,
+            storage_limit_gb: Number(plan.storage_limit_gb),
+            duration_in_months: Number(plan.duration_in_months || 1),
+            max_products: Number(plan.max_products || 100),
+            max_stores: Number(plan.max_stores || 5),
+            max_users: Number(plan.max_users || 10)
+          } as SubscriptionPlanData
+        });
+      } catch (putError) {
+        console.error('PUT toggle failed, trying PATCH:', putError);
+        // If PUT fails, fallback to PATCH with just the status
+        await patchPlanMutation.mutateAsync({
+          id: plan.id,
+          data: toggleData
+        });
+      }
+      
+      setSuccessMessage(`Plan ${plan.name} ${newStatus ? 'activated' : 'deactivated'} successfully`);
     } catch (error: any) {
       console.error('Error toggling plan status:', error);
+      // Log more detailed error information
+      console.error('Error response data:', error?.response?.data);
+      console.error('Error status:', error?.response?.status);
       const errorMessage = error?.response?.data?.detail || 
                           error?.message || 
                           'Failed to update plan status';
