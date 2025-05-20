@@ -86,7 +86,7 @@ export default function PurchaseEditModal({
   },
   isNew = true
 }: PurchaseEditModalProps): React.JSX.Element {
-  const [formData, setFormData] = React.useState<PurchaseData>({
+  const [formData, setFormData] = useState<PurchaseData>({
     date: new Date().toISOString().split('T')[0],
     supplier: '',
     status: 'Ordered',
@@ -100,8 +100,8 @@ export default function PurchaseEditModal({
     currency_id: '',
     payment_mode_id: ''
   });
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const [selectedProduct, setSelectedProduct] = React.useState<string>('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -229,7 +229,7 @@ export default function PurchaseEditModal({
   }, [userInfo, stores, products]);
   
   // Reset form data when modal opens with new purchase data
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       // Update purchase data with user's company if creating new
       const updatedPurchase = { ...purchase };
