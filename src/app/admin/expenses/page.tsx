@@ -129,7 +129,11 @@ export default function ExpensesPage(): React.JSX.Element {
             modes: modesData.length 
           });
           
-          setExpenses(expensesData);
+          // Filter expenses by store_id to ensure we only show expenses for the current store
+          const filteredExpenses = expensesData.filter(expense => expense.store_id === storeId);
+          console.log(`Filtered expenses by store_id: ${filteredExpenses.length} of ${expensesData.length}`);
+          
+          setExpenses(filteredExpenses);
           setCategories(categoriesData);
           setCurrencies(currenciesData);
           setPaymentModes(modesData);
@@ -157,7 +161,11 @@ export default function ExpensesPage(): React.JSX.Element {
           modes: modesData.length 
         });
         
-        setExpenses(expensesData);
+        // Filter expenses by store_id to ensure we only show expenses for the current store
+        const filteredExpenses = expensesData.filter(expense => expense.store_id === currentStore.id);
+        console.log(`Filtered expenses by store_id: ${filteredExpenses.length} of ${expensesData.length}`);
+        
+        setExpenses(filteredExpenses);
         setCategories(categoriesData);
         setCurrencies(currenciesData);
         setPaymentModes(modesData);
