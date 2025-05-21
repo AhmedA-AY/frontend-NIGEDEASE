@@ -7,7 +7,7 @@ import Alert from '@mui/material/Alert';
 import { paths } from '@/paths';
 import { useAuth } from '@/providers/auth-provider';
 
-export type AllowedRole = 'super_admin' | 'admin' | 'salesman' | 'stock_manager';
+export type AllowedRole = 'super_admin' | 'admin' | 'sales' | 'stock_manager';
 
 export interface RoleGuardProps {
   children: React.ReactNode;
@@ -41,7 +41,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps): React.JSX
         router.replace(paths.superAdmin.dashboard);
       } else if (userRole === 'admin') {
         router.replace(paths.admin.dashboard);
-      } else if (userRole === 'salesman') {
+      } else if (userRole === 'sales') {
         router.replace(paths.salesman.dashboard);
       } else if (userRole === 'stock_manager') {
         router.replace(paths.stockManager.dashboard);

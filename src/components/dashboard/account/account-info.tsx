@@ -46,7 +46,7 @@ export function AccountInfo({ user, onProfileUpdate }: AccountInfoProps): React.
       case 'super_admin': return 'Super Admin';
       case 'admin': return 'Admin';
       case 'stock_manager': return 'Stock Manager';
-      case 'salesman': return 'Salesman';
+      case 'sales': return 'Sales';
       default: return role;
     }
   };

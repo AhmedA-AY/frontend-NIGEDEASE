@@ -10,7 +10,7 @@ import { SalesmanGuard } from '@/components/auth/salesman-guard';
 import { MainNav } from '@/components/salesman/layout/main-nav';
 import { SideNav } from '@/components/salesman/layout/side-nav';
 import { MobileNav } from '@/components/salesman/layout/mobile-nav';
-import { salesmanNavItems } from '@/components/dashboard/layout/config';
+import { salesNavItems } from '@/components/dashboard/layout/config';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -55,7 +55,7 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
           <MobileNav
             onClose={() => setOpenNav(false)}
             open={openNav}
-            items={salesmanNavItems}
+            items={salesNavItems}
           />
         </Box>
       </SalesmanGuard>

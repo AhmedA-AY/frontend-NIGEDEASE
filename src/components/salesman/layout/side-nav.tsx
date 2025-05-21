@@ -18,7 +18,7 @@ import { paths } from '@/paths';
 import { isNavItemActive } from '@/lib/is-nav-item-active';
 import { Logo } from '@/components/core/logo';
 
-import { salesmanNavItems } from '@/components/dashboard/layout/config';
+import { salesNavItems } from '@/components/dashboard/layout/config';
 import { navIcons } from '@/components/dashboard/layout/nav-icons';
 
 export function SideNav(): React.JSX.Element {
@@ -99,7 +99,7 @@ export function SideNav(): React.JSX.Element {
       </Stack>
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
       <Box component="nav" sx={{ flex: '1 1 auto', p: '16px' }}>
-        {renderNavItems({ pathname, items: salesmanNavItems })}
+        {renderNavItems({ pathname, items: salesNavItems })}
       </Box>
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
       <Stack spacing={2} sx={{ p: '16px', mb: 2 }}>

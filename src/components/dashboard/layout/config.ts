@@ -87,9 +87,9 @@ export const superAdminNavItems = [
   { key: 'admin-currencies', title: 'Currencies', href: paths.superAdmin.currencies, icon: 'currency-dollar' },
 ] satisfies NavItemConfig[];
 
-export const salesmanNavItems = [
-  { key: 'salesman-dashboard', title: 'Dashboard', href: paths.salesman.dashboard, icon: 'chart-pie' },
-  { key: 'salesman-parties', title: 'Parties', href: paths.salesman.parties, icon: 'users' },
-  { key: 'salesman-sales', title: 'Sales', href: paths.salesman.sales, icon: 'currency-dollar' },
-  { key: 'salesman-expenses', title: 'Expenses', href: paths.salesman.expenses, icon: 'bank' },
+export const salesNavItems = [
+  { key: 'sales-dashboard', title: 'Dashboard', href: paths.salesman.dashboard, icon: 'chart-pie' },
+  { key: 'sales-parties', title: 'Parties', href: paths.salesman.parties, icon: 'users' },
+  { key: 'sales-sales', title: 'Sales', href: paths.salesman.sales, icon: 'currency-dollar' },
+  { key: 'sales-expenses', title: 'Expenses', href: paths.salesman.expenses, icon: 'bank' },
 ] satisfies NavItemConfig[];

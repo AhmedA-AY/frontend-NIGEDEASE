@@ -46,7 +46,7 @@ import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore } from '@/providers/store-provider';
 
 // User type definition for form data
-type UserRole = 'super_admin' | 'admin' | 'salesman' | 'stock_manager' | string;
+type UserRole = 'super_admin' | 'admin' | 'sales' | 'stock_manager' | string;
 type UserFormData = Omit<CreateUserData, 'role'> & { 
   id?: string;
   role: UserRole;
@@ -133,8 +133,8 @@ function UserFormDialog({
       newErrors.last_name = 'Last name is required';
     }
 
-    // Validate assigned store for stock manager and salesman
-    if ((formData.role === 'stock_manager' || formData.role === 'salesman') && !formData.assigned_store_id) {
+    // Validate assigned store for stock manager and sales
+    if ((formData.role === 'stock_manager' || formData.role === 'sales') && !formData.assigned_store_id) {
       newErrors.assigned_store_id = 'Assigned store is required for this role';
     }
     
@@ -171,7 +171,7 @@ function UserFormDialog({
   };
 
   // Check if role requires an assigned store
-  const requiresAssignedStore = formData.role === 'stock_manager' || formData.role === 'salesman';
+  const requiresAssignedStore = formData.role === 'stock_manager' || formData.role === 'sales';
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -252,11 +252,11 @@ function UserFormDialog({
               label="Role"
             >
               <MenuItem value="stock_manager">Stock Manager</MenuItem>
-              <MenuItem value="salesman">Salesman</MenuItem>
+              <MenuItem value="sales">Sales</MenuItem>
             </Select>
           </FormControl>
           
-          {/* Store selector - only visible for stock manager and salesman */}
+          {/* Store selector - only visible for stock manager and sales */}
           {requiresAssignedStore && (
             <FormControl fullWidth error={!!errors.assigned_store_id}>
               <InputLabel id="store-label">Assigned Store</InputLabel>
@@ -410,9 +410,9 @@ export default function UsersPage() {
       const allUsers = await usersApi.getUsers(userInfo.company_id);
       console.log('Users retrieved:', allUsers.length);
       
-      // Additional filter for stock_manager and salesman roles on the client side
+      // Additional filter for stock_manager and sales roles on the client side
       const filteredByRole = allUsers.filter(user => 
-        user.role === 'stock_manager' || user.role === 'salesman'
+        user.role === 'stock_manager' || user.role === 'sales'
       );
       console.log('Users after role filtering:', filteredByRole.length);
       
@@ -588,8 +588,8 @@ export default function UsersPage() {
         company_id: userInfo?.company_id || '',
       };
 
-      // Add assigned_store if role requires it (stock_manager or salesman)
-      if (userData.role === 'stock_manager' || userData.role === 'salesman') {
+      // Add assigned_store if role requires it (stock_manager or sales)
+      if (userData.role === 'stock_manager' || userData.role === 'sales') {
         if (!userData.assigned_store_id) {
           enqueueSnackbar('Assigned store is required for this role', { variant: 'error' });
           throw new Error('Assigned store is required');
@@ -640,7 +640,7 @@ export default function UsersPage() {
   const getRoleDisplay = (role: string) => {
     switch(role) {
       case 'stock_manager': return 'Stock Manager';
-      case 'salesman': return 'Salesman';
+      case 'sales': return 'Sales';
       default: return role;
     }
   };
@@ -708,7 +708,7 @@ export default function UsersPage() {
               >
                 <MenuItem value="all">All Roles</MenuItem>
                 <MenuItem value="stock_manager">Stock Manager</MenuItem>
-                <MenuItem value="salesman">Salesman</MenuItem>
+                <MenuItem value="sales">Sales</MenuItem>
               </Select>
             </FormControl>
 

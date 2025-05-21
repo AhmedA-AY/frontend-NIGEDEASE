@@ -90,11 +90,11 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
         let storesArray: any[] = [];
         
         if (response.stores) {
-          // Check if stores is an object (for stock_manager/salesman) or array (for admin)
+          // Check if stores is an object (for stock_manager/sales) or array (for admin)
           if (Array.isArray(response.stores)) {
             storesArray = response.stores;
           } else {
-            // For stock manager and salesman, stores is a single object
+            // For stock manager and sales, stores is a single object
             storesArray = [response.stores];
           }
           
@@ -104,7 +104,7 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
           
           // If there's no assigned store but there are stores available, use the first one
           if (!response.assigned_store && 
-              (response.role === 'salesman' || response.role === 'stock_manager') && 
+              (response.role === 'sales' || response.role === 'stock_manager') && 
               storesArray.length > 0) {
             console.log('Using first available store as assigned store:', storesArray[0]);
             tokenStorage.saveAssignedStore(storesArray[0]);

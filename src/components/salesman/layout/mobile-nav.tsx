@@ -17,7 +17,7 @@ import { paths } from '@/paths';
 import { isNavItemActive } from '@/lib/is-nav-item-active';
 import { Logo } from '@/components/core/logo';
 
-import { salesmanNavItems } from '@/components/dashboard/layout/config';
+import { salesNavItems } from '@/components/dashboard/layout/config';
 import { navIcons } from '@/components/dashboard/layout/nav-icons';
 
 export interface MobileNavProps {
@@ -26,7 +26,7 @@ export interface MobileNavProps {
   items?: NavItemConfig[];
 }
 
-export function MobileNav({ onClose, open = false, items = salesmanNavItems }: MobileNavProps): React.JSX.Element {
+export function MobileNav({ onClose, open = false, items = salesNavItems }: MobileNavProps): React.JSX.Element {
   const pathname = usePathname();
 
   return (

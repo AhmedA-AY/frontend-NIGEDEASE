@@ -153,11 +153,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       let processedStores: Store[] = [];
       
       if (responseStores) {
-        // Check if stores is an array (admin) or a single object (stock_manager/salesman)
+        // Check if stores is an array (admin) or a single object (stock_manager/sales)
         if (Array.isArray(responseStores)) {
           processedStores = responseStores;
         } else {
-          // For stock_manager and salesman, stores is a single object
+          // For stock_manager and sales, stores is a single object
           processedStores = [responseStores];
         }
         console.log('Processed stores:', processedStores);
@@ -191,11 +191,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (processedStores.length > 0) {
         setStores(processedStores);
         
-        // For stock_manager and salesman, always use the first store as assigned store
+        // For stock_manager and sales, always use the first store as assigned store
         if ((role === 'stock_manager' || role === 'sales') && processedStores.length > 0) {
           setAssignedStore(processedStores[0]);
           tokenStorage.saveAssignedStore(processedStores[0]);
-          console.log('Setting assigned store for stock_manager/salesman:', processedStores[0]);
+          console.log('Setting assigned store for stock_manager/sales:', processedStores[0]);
         }
         // For admin users with multiple stores, set the first store as default if not already assigned
         else if (role === 'admin' && !response.assigned_store && !assignedStore && processedStores.length > 0) {

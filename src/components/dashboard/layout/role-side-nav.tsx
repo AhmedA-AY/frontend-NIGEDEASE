@@ -37,7 +37,7 @@ export function RoleSideNav(): React.JSX.Element {
       return <AdminSideNav />;
     case 'super_admin':
       return <SuperAdminSideNav />;
-    case 'salesman':
+    case 'sales':
       return <SalesmanSideNav />;
     case 'stock_manager':
       return <StockManagerSideNav />;

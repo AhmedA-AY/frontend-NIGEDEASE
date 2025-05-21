@@ -8,5 +8,5 @@ export interface SalesmanGuardProps {
 }
 
 export function SalesmanGuard({ children }: SalesmanGuardProps): React.JSX.Element {
-  return <RoleGuard allowedRoles={['salesman', 'admin', 'super_admin']}>{children}</RoleGuard>;
+  return <RoleGuard allowedRoles={['sales', 'admin', 'super_admin']}>{children}</RoleGuard>;
 } 

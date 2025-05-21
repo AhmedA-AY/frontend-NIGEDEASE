@@ -26,7 +26,7 @@ export function GuestGuard({ children }: GuestGuardProps): React.JSX.Element | n
         router.replace(paths.superAdmin.dashboard);
       } else if (userRole === 'admin') {
         router.replace(paths.admin.dashboard);
-      } else if (userRole === 'salesman') {
+      } else if (userRole === 'sales') {
         router.replace(paths.salesman.dashboard);
       } else if (userRole === 'stock_manager') {
         router.replace(paths.stockManager.dashboard);

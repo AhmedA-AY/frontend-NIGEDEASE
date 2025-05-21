@@ -27,7 +27,7 @@ export default function ExpensesReportPage(): React.JSX.Element {
 
   // Mock expense data
   const expenses = [
-    { id: '1', date: '26-04-2025', category: 'Travel', user: 'Salesman', amount: '$48.00' },
+    { id: '1', date: '26-04-2025', category: 'Travel', user: 'Sales', amount: '$48.00' },
     { id: '2', date: '26-04-2025', category: 'Utilities', user: 'Mafalda Bahringer DDS', amount: '$50.00' },
   ];
 
@@ -50,7 +50,7 @@ export default function ExpensesReportPage(): React.JSX.Element {
   // Sample list of users
   const users = [
     { value: '', label: 'Select User...' },
-    { value: 'salesman', label: 'Salesman' },
+    { value: 'sales', label: 'Sales' },
     { value: 'mafalda', label: 'Mafalda Bahringer DDS' },
     { value: 'admin', label: 'Admin' },
   ];
