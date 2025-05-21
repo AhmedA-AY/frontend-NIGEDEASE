@@ -29,6 +29,7 @@ import { inventoryApi, InventoryStore } from '@/services/api/inventory';
 import { useSnackbar } from 'notistack';
 import { paths } from '@/paths';
 import StoreEditModal from '@/components/admin/stores/StoreEditModal';
+import { useCheckCompanySubscription } from '@/hooks/use-companies';
 
 export default function StoresPage(): React.JSX.Element {
   const router = useRouter();
@@ -38,11 +39,14 @@ export default function StoresPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = React.useState(true);
   const [stores, setStores] = React.useState<InventoryStore[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [currentStore, setSelectedStore] = React.useState<InventoryStore | null>(null);
+  const [currentStore, setCurrentStore] = React.useState<InventoryStore | null>(null);
   const [isStoreModalOpen, setIsStoreModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [storeToDelete, setStoreToDelete] = React.useState<string | null>(null);
   const [anchorElMap, setAnchorElMap] = React.useState<{ [key: string]: HTMLElement | null }>({});
+  
+  // Get subscription details
+  const { data: subscriptionData, isLoading: isLoadingSubscription } = useCheckCompanySubscription(userInfo?.company_id);
   
   // Fetch stores data
   const fetchStores = React.useCallback(async () => {
@@ -90,12 +94,25 @@ export default function StoresPage(): React.JSX.Element {
   
   // Add/Edit/Delete handlers
   const handleAddNewStore = () => {
-    setSelectedStore(null);
+    // Check subscription limits for stores
+    if (subscriptionData && !isLoadingSubscription) {
+      const { current_stores_count, max_stores } = subscriptionData;
+      
+      if (current_stores_count >= max_stores) {
+        enqueueSnackbar(`You've reached the maximum number of stores (${max_stores}) allowed by your subscription plan. Please upgrade your plan to add more stores.`, { 
+          variant: 'error', 
+          autoHideDuration: 6000 
+        });
+        return;
+      }
+    }
+    
+    setCurrentStore(null);
     setIsStoreModalOpen(true);
   };
   
   const handleEditStore = (store: InventoryStore) => {
-    setSelectedStore(store);
+    setCurrentStore(store);
     setIsStoreModalOpen(true);
     handleMenuClose(store.id);
   };

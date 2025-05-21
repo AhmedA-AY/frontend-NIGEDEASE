@@ -237,4 +237,16 @@ export function usePatchSubscriptionPlan() {
       queryClient.invalidateQueries({ queryKey: companiesKeys.subscriptionPlans.lists() });
     },
   });
+}
+
+// Hook to check company subscription details
+export function useCheckCompanySubscription(companyId?: string) {
+  return useQuery<any, Error>({
+    queryKey: ['company-subscription', companyId],
+    queryFn: () => {
+      if (!companyId) throw new Error('Company ID is required');
+      return companiesApi.checkCompanySubscription(companyId);
+    },
+    enabled: !!companyId,
+  });
 } 

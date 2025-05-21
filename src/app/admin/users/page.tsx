@@ -44,6 +44,7 @@ import { authApi, UserResponse, CreateUserData } from '@/services/api/auth';
 import { useSnackbar } from 'notistack';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore } from '@/providers/store-provider';
+import { useCheckCompanySubscription } from '@/hooks/use-companies';
 
 // User type definition for form data
 type UserRole = 'super_admin' | 'admin' | 'sales' | 'stock_manager' | string;
@@ -386,6 +387,9 @@ export default function UsersPage() {
   const { userInfo } = useCurrentUser();
   const { stores } = useStore();
   
+  // Get subscription details
+  const { data: subscriptionData, isLoading: isLoadingSubscription } = useCheckCompanySubscription(userInfo?.company_id);
+  
   // Fetch users data
   const fetchUsers = useCallback(async () => {
     if (!userInfo) {
@@ -549,9 +553,21 @@ export default function UsersPage() {
   };
   
   const handleAddUser = () => {
+    // Check subscription limits for users
+    if (subscriptionData && !isLoadingSubscription) {
+      const { current_users_count, max_users } = subscriptionData;
+      
+      if (current_users_count >= max_users) {
+        enqueueSnackbar(`You've reached the maximum number of users (${max_users}) allowed by your subscription plan. Please upgrade your plan to add more users.`, { 
+          variant: 'error', 
+          autoHideDuration: 6000 
+        });
+        return;
+      }
+    }
+    
     setCurrentUser({
       company_id: userInfo?.company_id || '',
-      role: 'stock_manager'
     });
     setUserFormOpen(true);
   };
