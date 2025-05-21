@@ -23,6 +23,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr';
 
 import { paths } from '@/paths';
+import Chatbot from '@/components/Chatbot';
 
 export default function LandingPage(): React.JSX.Element {
   const [mobileMenuAnchor, setMobileMenuAnchor] = React.useState<null | HTMLElement>(null);
@@ -1093,6 +1094,9 @@ export default function LandingPage(): React.JSX.Element {
           </Grid>
         </Container>
       </Box>
+
+      {/* Add Chatbot component */}
+      <Chatbot />
 
       {/* Footer */}
       <Box sx={{ 

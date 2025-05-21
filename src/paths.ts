@@ -33,6 +33,7 @@ export const paths = {
     users: '/admin/users',
     companies: '/admin/companies',
     stores: '/admin/stores',
+    invoiceVerification: '/admin/invoice-verification',
   },
   stockManager: {
     dashboard: '/stock-manager/dashboard',
@@ -46,6 +47,7 @@ export const paths = {
     paymentReports: '/stock-manager/reports/payments',
     userReports: '/stock-manager/reports/users',
     expenseReports: '/stock-manager/reports/expenses',
+    invoiceVerification: '/stock-manager/invoice-verification',
   },
   superAdmin: {
     dashboard: '/super-admin/dashboard',
@@ -64,6 +66,7 @@ export const paths = {
     paymentReports: '/salesman/reports/payments',
     userReports: '/salesman/reports/users',
     expenseReports: '/salesman/reports/expenses',
+    invoiceVerification: '/salesman/invoice-verification',
   },
   errors: { notFound: '/errors/not-found' },
 } as const;
