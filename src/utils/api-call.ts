@@ -1,9 +1,10 @@
 import axios from 'axios';
 import tokenStorage from '@/utils/token-storage';
+import { CORE_API } from '@/services/api/client';
 
 // Create an axios instance with base URL and default headers
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || `${CORE_API}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
