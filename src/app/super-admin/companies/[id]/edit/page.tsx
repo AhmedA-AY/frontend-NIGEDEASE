@@ -17,10 +17,16 @@ import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { useRouter } from 'next/navigation';
-import { FormControl, InputLabel, Select, SelectChangeEvent } from '@mui/material';
+import { FormControl, InputLabel, Select, SelectChangeEvent, Table, TableBody, TableCell, TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, Divider, Tooltip } from '@mui/material';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import { PencilSimple as PencilIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 
 import { useUpdateCompany, useCompany, useCurrencies, useSubscriptionPlans } from '@/hooks/use-companies';
 import { paths } from '@/paths';
+import { usersApi, ExtendedUserResponse } from '@/services/api/users';
+import { authApi, CreateUserData } from '@/services/api/auth';
+import { useSnackbar } from 'notistack';
 
 export default function CompanyEditPage({ params }: { params: { id: string } }): React.JSX.Element {
   const router = useRouter();
@@ -29,6 +35,7 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
   const updateCompanyMutation = useUpdateCompany();
   const { data: currencies, isLoading: isLoadingCurrencies } = useCurrencies();
   const { data: subscriptionPlans, isLoading: isLoadingSubscriptionPlans } = useSubscriptionPlans();
+  const { enqueueSnackbar } = useSnackbar();
   
   const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [formData, setFormData] = React.useState({
@@ -39,6 +46,23 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
   });
   const [formErrors, setFormErrors] = React.useState<Record<string, string>>({});
 
+  // State for company admins
+  const [companyAdmins, setCompanyAdmins] = React.useState<ExtendedUserResponse[]>([]);
+  const [isLoadingAdmins, setIsLoadingAdmins] = React.useState(false);
+  const [openAddAdminDialog, setOpenAddAdminDialog] = React.useState(false);
+  const [adminFormData, setAdminFormData] = React.useState<Partial<CreateUserData>>({
+    role: 'admin',
+    email: '',
+    password: '',
+    first_name: '',
+    last_name: '',
+  });
+  const [adminFormErrors, setAdminFormErrors] = React.useState<Record<string, string>>({});
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
+  const [userToDelete, setUserToDelete] = React.useState<string | null>(null);
+  const [deletingUser, setDeletingUser] = React.useState(false);
+  const [creatingAdmin, setCreatingAdmin] = React.useState(false);
+
   // Set initial form data when company data loads
   React.useEffect(() => {
     if (company) {
@@ -48,8 +72,27 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
         is_active: company.is_active,
         subscription_plan: company.subscription_plan || ''
       });
+
+      // Load company admins
+      loadCompanyAdmins(id);
     }
   }, [company]);
+
+  // Load company administrators
+  const loadCompanyAdmins = async (companyId: string) => {
+    setIsLoadingAdmins(true);
+    try {
+      const users = await usersApi.getUsers(companyId);
+      // Filter for admins only
+      const adminUsers = users.filter(user => user.role === 'admin');
+      setCompanyAdmins(adminUsers);
+    } catch (error) {
+      console.error('Error fetching company admins:', error);
+      enqueueSnackbar('Failed to load company administrators', { variant: 'error' });
+    } finally {
+      setIsLoadingAdmins(false);
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent<boolean>
@@ -71,6 +114,26 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
     }
   };
 
+  const handleAdminFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  ) => {
+    const { name, value } = e.target;
+    if (name) {
+      setAdminFormData({
+        ...adminFormData,
+        [name]: value
+      });
+      
+      // Clear error when field is edited
+      if (adminFormErrors[name as string]) {
+        setAdminFormErrors({
+          ...adminFormErrors,
+          [name as string]: ''
+        });
+      }
+    }
+  };
+
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     
@@ -87,6 +150,33 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
     }
     
     setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateAdminForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!adminFormData.email?.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(adminFormData.email)) {
+      errors.email = 'Email is invalid';
+    }
+    
+    if (!adminFormData.password?.trim()) {
+      errors.password = 'Password is required';
+    } else if (adminFormData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    }
+    
+    if (!adminFormData.first_name?.trim()) {
+      errors.first_name = 'First name is required';
+    }
+    
+    if (!adminFormData.last_name?.trim()) {
+      errors.last_name = 'Last name is required';
+    }
+    
+    setAdminFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
@@ -112,6 +202,69 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
+  };
+
+  const handleOpenAddAdminDialog = () => {
+    setAdminFormData({
+      role: 'admin',
+      email: '',
+      password: '',
+      first_name: '',
+      last_name: '',
+    });
+    setAdminFormErrors({});
+    setOpenAddAdminDialog(true);
+  };
+
+  const handleCloseAddAdminDialog = () => {
+    setOpenAddAdminDialog(false);
+  };
+
+  const handleAddAdmin = async () => {
+    if (!validateAdminForm()) {
+      return;
+    }
+
+    setCreatingAdmin(true);
+    try {
+      await authApi.createUser({
+        ...adminFormData as CreateUserData,
+        company_id: id,
+        role: 'admin',
+      });
+      
+      enqueueSnackbar('Admin user added successfully', { variant: 'success' });
+      handleCloseAddAdminDialog();
+      loadCompanyAdmins(id);
+    } catch (error) {
+      console.error('Error creating admin user:', error);
+      enqueueSnackbar('Failed to create admin user', { variant: 'error' });
+    } finally {
+      setCreatingAdmin(false);
+    }
+  };
+
+  const handleDeleteAdmin = (userId: string) => {
+    setUserToDelete(userId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    setDeletingUser(true);
+    try {
+      await usersApi.deleteUser(userToDelete);
+      setCompanyAdmins(prevAdmins => prevAdmins.filter(admin => admin.id !== userToDelete));
+      enqueueSnackbar('Admin user deleted successfully', { variant: 'success' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      enqueueSnackbar('Failed to delete admin user', { variant: 'error' });
+    } finally {
+      setDeletingUser(false);
+      setDeleteConfirmOpen(false);
+      setUserToDelete(null);
+    }
   };
 
   const isLoading = isLoadingCompany || isLoadingCurrencies || isLoadingSubscriptionPlans || updateCompanyMutation.isPending;
@@ -276,6 +429,69 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
               </CardContent>
             </Card>
           </form>
+
+          {/* Company Administrators Section */}
+          <Card>
+            <CardHeader 
+              title="Company Administrators" 
+              action={
+                <Button
+                  color="primary"
+                  size="small"
+                  startIcon={<PlusIcon />}
+                  onClick={handleOpenAddAdminDialog}
+                  variant="contained"
+                >
+                  Add Admin
+                </Button>
+              }
+            />
+            <Divider />
+            <CardContent>
+              {isLoadingAdmins ? (
+                <Box display="flex" justifyContent="center" p={3}>
+                  <CircularProgress />
+                </Box>
+              ) : companyAdmins.length === 0 ? (
+                <Alert severity="info">No administrators found for this company</Alert>
+              ) : (
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Email</TableCell>
+                      <TableCell>Created</TableCell>
+                      <TableCell>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {companyAdmins.map((admin) => (
+                      <TableRow key={admin.id}>
+                        <TableCell>
+                          {admin.first_name} {admin.last_name}
+                        </TableCell>
+                        <TableCell>{admin.email}</TableCell>
+                        <TableCell>
+                          {new Date(admin.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title="Delete admin">
+                            <IconButton
+                              color="error"
+                              onClick={() => handleDeleteAdmin(admin.id)}
+                              size="small"
+                            >
+                              <TrashIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </Stack>
       </Container>
       
@@ -289,6 +505,101 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
           Company updated successfully!
         </Alert>
       </Snackbar>
+
+      {/* Add Admin Dialog */}
+      <Dialog open={openAddAdminDialog} onClose={handleCloseAddAdminDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Company Administrator</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="First Name"
+                  name="first_name"
+                  onChange={handleAdminFormChange}
+                  required
+                  value={adminFormData.first_name || ''}
+                  error={!!adminFormErrors.first_name}
+                  helperText={adminFormErrors.first_name}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  name="last_name"
+                  onChange={handleAdminFormChange}
+                  required
+                  value={adminFormData.last_name || ''}
+                  error={!!adminFormErrors.last_name}
+                  helperText={adminFormErrors.last_name}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  type="email"
+                  onChange={handleAdminFormChange}
+                  required
+                  value={adminFormData.email || ''}
+                  error={!!adminFormErrors.email}
+                  helperText={adminFormErrors.email}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Password"
+                  name="password"
+                  type="password"
+                  onChange={handleAdminFormChange}
+                  required
+                  value={adminFormData.password || ''}
+                  error={!!adminFormErrors.password}
+                  helperText={adminFormErrors.password}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseAddAdminDialog}>Cancel</Button>
+          <Button 
+            onClick={handleAddAdmin} 
+            variant="contained" 
+            color="primary"
+            disabled={creatingAdmin}
+            startIcon={creatingAdmin ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            {creatingAdmin ? 'Adding...' : 'Add Admin'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this administrator? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={confirmDeleteUser} 
+            color="error" 
+            variant="contained"
+            disabled={deletingUser}
+            startIcon={deletingUser ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            {deletingUser ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 } 
