@@ -91,5 +91,6 @@ export const salesNavItems = [
   { key: 'sales-dashboard', title: 'Dashboard', href: paths.salesman.dashboard, icon: 'chart-pie' },
   { key: 'sales-parties', title: 'Parties', href: paths.salesman.parties, icon: 'users' },
   { key: 'sales-sales', title: 'Sales', href: paths.salesman.sales, icon: 'currency-dollar' },
+  { key: 'sales-payments', title: 'Payment In', href: paths.salesman.paymentIn, icon: 'credit-card' },
   { key: 'sales-expenses', title: 'Expenses', href: paths.salesman.expenses, icon: 'bank' },
 ] satisfies NavItemConfig[];
