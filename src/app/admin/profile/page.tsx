@@ -24,6 +24,7 @@ import { authApi } from '@/services/api/auth';
 import { paths } from '@/paths';
 import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { UploadSimple as UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr/UploadSimple';
+import { ShieldStar as ShieldStarIcon } from '@phosphor-icons/react/dist/ssr/ShieldStar';
 
 export default function ProfilePage() {
   const { userInfo } = useAuth();
@@ -43,6 +44,8 @@ export default function ProfilePage() {
     email: '',
     profile_image: '',
   });
+
+  const isSuperAdmin = userInfo?.role === 'super_admin';
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -127,10 +130,18 @@ export default function ProfilePage() {
     }
   };
 
+  // Format role display
+  const formatRoleDisplay = (role: string | null | undefined) => {
+    if (!role) return '';
+    return role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+  };
+
   return (
     <Container>
       <Box sx={{ py: 3 }}>
-        <Typography variant="h4" gutterBottom>My Profile</Typography>
+        <Typography variant="h4" gutterBottom>
+          {isSuperAdmin ? 'Super Admin Profile' : 'My Profile'}
+        </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
           Manage your account settings and profile information
         </Typography>
@@ -151,11 +162,16 @@ export default function ProfilePage() {
                       width: 100,
                       mx: 'auto',
                       mb: 2,
-                      boxShadow: 3
+                      boxShadow: 3,
+                      bgcolor: isSuperAdmin ? 'primary.main' : undefined
                     }}
                   >
                     {!profileData.profile_image && (
-                      <UserIcon weight="bold" fontSize="3.5rem" />
+                      isSuperAdmin ? (
+                        <ShieldStarIcon weight="bold" fontSize="3.5rem" />
+                      ) : (
+                        <UserIcon weight="bold" fontSize="3.5rem" />
+                      )
                     )}
                   </Avatar>
                   <Typography variant="h6">
@@ -164,16 +180,34 @@ export default function ProfilePage() {
                   <Typography variant="body2" color="text.secondary">
                     {profileData.email}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    {userInfo?.role?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mt: 1, 
+                      fontWeight: 'bold',
+                      color: isSuperAdmin ? 'primary.main' : 'text.secondary'
+                    }}
+                  >
+                    {formatRoleDisplay(userInfo?.role)}
                   </Typography>
+                  
+                  {isSuperAdmin && (
+                    <Box sx={{ mt: 2, p: 1, bgcolor: 'primary.lighter', borderRadius: 1 }}>
+                      <Typography variant="body2" color="primary.main">
+                        System Administrator with full access to all features
+                      </Typography>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
             
             <Grid item xs={12} md={8}>
               <Card component="form" onSubmit={handleSubmit}>
-                <CardHeader title="Edit Profile" />
+                <CardHeader 
+                  title="Edit Profile" 
+                  subheader={isSuperAdmin ? "Update your super admin account details" : undefined}
+                />
                 <Divider />
                 <CardContent sx={{ p: 3 }}>
                   {updateSuccess && (
