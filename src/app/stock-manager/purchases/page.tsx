@@ -349,9 +349,9 @@ export default function PurchasesPage(): React.JSX.Element {
     
     if (!purchaseData.supplier) {
       enqueueSnackbar('Please select a supplier', { variant: 'error' });
-      return;
-    }
-
+        return;
+      }
+      
     if (!purchaseData.products || purchaseData.products.length === 0) {
       enqueueSnackbar('Please add at least one product', { variant: 'error' });
       return;
@@ -359,9 +359,9 @@ export default function PurchasesPage(): React.JSX.Element {
 
     if (!purchaseData.payment_mode_id) {
       enqueueSnackbar('Please select a payment mode', { variant: 'error' });
-      return;
-    }
-    
+        return;
+      }
+      
     setIsLoading(true);
     try {
       // Calculate total amount from items
@@ -620,7 +620,7 @@ export default function PurchasesPage(): React.JSX.Element {
       {/* Purchase Modal */}
       {isPurchaseModalOpen && (
         <Dialog 
-          open={isPurchaseModalOpen} 
+          open={isPurchaseModalOpen}
           onClose={() => setIsPurchaseModalOpen(false)}
           maxWidth="md"
           fullWidth

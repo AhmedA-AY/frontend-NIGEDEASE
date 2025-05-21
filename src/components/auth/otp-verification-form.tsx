@@ -74,7 +74,7 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
           role: string;
           company_id: string;
           assigned_store?: any;
-          stores?: any[];
+          stores?: any; // Can be array or single object
         }
 
         const response = await verifyOtpMutation.mutateAsync({
@@ -86,27 +86,40 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
         console.log('User role:', response.role);
         console.log('OTP verification response:', response);
         
-        // For all user roles, check and save the store information
+        // Process stores data based on response format
+        let storesArray: any[] = [];
+        
+        if (response.stores) {
+          // Check if stores is an object (for stock_manager/salesman) or array (for admin)
+          if (Array.isArray(response.stores)) {
+            storesArray = response.stores;
+          } else {
+            // For stock manager and salesman, stores is a single object
+            storesArray = [response.stores];
+          }
+          
+          console.log('Processed stores:', storesArray);
+          // Save all available stores
+          tokenStorage.saveCompanyStores(storesArray);
+          
+          // If there's no assigned store but there are stores available, use the first one
+          if (!response.assigned_store && 
+              (response.role === 'salesman' || response.role === 'stock_manager') && 
+              storesArray.length > 0) {
+            console.log('Using first available store as assigned store:', storesArray[0]);
+            tokenStorage.saveAssignedStore(storesArray[0]);
+          }
+        }
+        
+        // For all user roles, check and save the assigned store information
         if (response.assigned_store) {
           console.log('Saving assigned store:', response.assigned_store);
           // Save the assigned store in token storage
           tokenStorage.saveAssignedStore(response.assigned_store);
         }
         
-        if (response.stores && response.stores.length > 0) {
-          console.log('Saving company stores:', response.stores);
-          // Save all available stores
-          tokenStorage.saveCompanyStores(response.stores);
-          
-          // If there's no assigned store but there are stores available, use the first one
-          if (!response.assigned_store && (response.role === 'salesman' || response.role === 'stock_manager')) {
-            console.log('No assigned store found, using first available store');
-            tokenStorage.saveAssignedStore(response.stores[0]);
-          }
-        }
-        
         // Complete the verification process
-        verifyOtp(email, values.otp, response.stores || [], response.assigned_store);
+        verifyOtp(email, values.otp, storesArray, response.assigned_store);
       } catch (error: any) {
         const errorMessage = error?.error || 'Invalid OTP. Please try again.';
         setError('root', { type: 'server', message: errorMessage });
