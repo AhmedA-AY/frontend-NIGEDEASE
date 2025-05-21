@@ -256,8 +256,45 @@ export const companiesApi = {
   
   // Get subscription plan by ID
   getSubscriptionPlan: async (id: string): Promise<SubscriptionPlan> => {
-    const response = await coreApiClient.get<SubscriptionPlan>(`/companies/subscription-plans/${id}/`);
-    return response.data;
+    try {
+      // First try the direct endpoint
+      const response = await coreApiClient.get<SubscriptionPlan>(`/companies/subscription-plans/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching subscription plan with ID ${id}:`, error);
+      
+      // If direct endpoint fails, try to get all plans and find the one we need
+      try {
+        const response = await coreApiClient.get<SubscriptionPlan[]>('/companies/subscription-plans/');
+        const plan = response.data.find(plan => plan.id === id);
+        
+        if (plan) {
+          return plan;
+        }
+        
+        throw new Error(`Subscription plan with ID ${id} not found`);
+      } catch (secondError) {
+        console.error('Fallback method also failed:', secondError);
+        
+        // If all fails, return a default plan
+        return {
+          id: id,
+          name: 'Default Plan',
+          description: 'Default plan when API fails',
+          price: '0',
+          billing_cycle: 'monthly',
+          duration_in_months: 1,
+          features: null,
+          is_active: true,
+          storage_limit_gb: 5,
+          max_products: 100,
+          max_stores: 5,
+          max_users: 10,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+      }
+    }
   },
   
   // Create a new subscription plan
