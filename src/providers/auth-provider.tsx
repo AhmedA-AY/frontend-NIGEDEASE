@@ -147,6 +147,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await authApi.verifyOtp(email, otp);
       const { access, refresh, role, company_id, stores: responseStores } = response;
       
+      console.log('OTP verification response:', response);
+      
+      // Process stores data - handle both array and single object formats
+      let processedStores: Store[] = [];
+      
+      if (responseStores) {
+        // Check if stores is an array (admin) or a single object (stock_manager/salesman)
+        if (Array.isArray(responseStores)) {
+          processedStores = responseStores;
+        } else {
+          // For stock_manager and salesman, stores is a single object
+          processedStores = [responseStores];
+        }
+        console.log('Processed stores:', processedStores);
+      } else if (stores && stores.length > 0) {
+        processedStores = stores;
+      }
+      
       // Store tokens
       tokenStorage.saveTokens(
         access, 
@@ -154,7 +172,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         role,
         company_id,
         assignedStore || response.assigned_store, 
-        stores || responseStores
+        processedStores
       );
       
       // Update state
@@ -170,14 +188,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       // Set stores and assigned store - prioritize API response
-      const storesFromResponse = responseStores || stores || [];
-      if (storesFromResponse && storesFromResponse.length > 0) {
-        setStores(storesFromResponse);
+      if (processedStores.length > 0) {
+        setStores(processedStores);
         
+        // For stock_manager and salesman, always use the first store as assigned store
+        if ((role === 'stock_manager' || role === 'sales') && processedStores.length > 0) {
+          setAssignedStore(processedStores[0]);
+          tokenStorage.saveAssignedStore(processedStores[0]);
+          console.log('Setting assigned store for stock_manager/salesman:', processedStores[0]);
+        }
         // For admin users with multiple stores, set the first store as default if not already assigned
-        if (role === 'admin' && !response.assigned_store && !assignedStore && storesFromResponse.length > 0) {
-          setAssignedStore(storesFromResponse[0]);
-          tokenStorage.saveAssignedStore(storesFromResponse[0]);
+        else if (role === 'admin' && !response.assigned_store && !assignedStore && processedStores.length > 0) {
+          setAssignedStore(processedStores[0]);
+          tokenStorage.saveAssignedStore(processedStores[0]);
         }
       }
       
