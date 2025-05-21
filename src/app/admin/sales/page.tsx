@@ -333,14 +333,38 @@ export default function SalesPage(): React.JSX.Element {
         }))
       };
       
+      let saleId;
+      
       if (saleData.id) {
         // Update existing sale
         await transactionsApi.updateSale(currentStore.id, saleData.id, formattedData);
+        saleId = saleData.id;
         enqueueSnackbar('Sale updated successfully', { variant: 'success' });
       } else {
         // Create new sale
-        await transactionsApi.createSale(currentStore.id, formattedData);
+        const newSale = await transactionsApi.createSale(currentStore.id, formattedData);
+        saleId = newSale.id;
         enqueueSnackbar('Sale created successfully', { variant: 'success' });
+      }
+      
+      // If this is a credit sale, create a receivable record
+      if (saleData.is_credit && saleId) {
+        try {
+          // Create receivable for credit sale
+          const receivableData = {
+            store_id: currentStore.id,
+            sale: saleId,
+            amount: saleData.totalAmount.toString(),
+            currency: saleData.currency_id
+          };
+          
+          await financialsApi.createReceivable(currentStore.id, receivableData);
+          console.log('Receivable created successfully for credit sale:', saleId);
+          enqueueSnackbar('Receivable record created for credit sale', { variant: 'info' });
+        } catch (receivableError) {
+          console.error('Error creating receivable:', receivableError);
+          enqueueSnackbar('Sale saved but failed to create receivable record', { variant: 'warning' });
+        }
       }
       
       setIsSaleModalOpen(false);

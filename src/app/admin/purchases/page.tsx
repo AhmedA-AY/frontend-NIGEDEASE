@@ -444,14 +444,38 @@ export default function PurchasesPage(): React.JSX.Element {
         }))
       };
       
+      let purchaseId;
+      
       if (purchaseData.id) {
         // Update existing purchase
         await transactionsApi.updatePurchase(currentStore.id, purchaseData.id, formattedData);
+        purchaseId = purchaseData.id;
         enqueueSnackbar('Purchase updated successfully', { variant: 'success' });
       } else {
         // Create new purchase
-        await transactionsApi.createPurchase(currentStore.id, formattedData);
+        const newPurchase = await transactionsApi.createPurchase(currentStore.id, formattedData);
+        purchaseId = newPurchase.id;
         enqueueSnackbar('Purchase created successfully', { variant: 'success' });
+      }
+      
+      // If this is a credit purchase, create a payable record
+      if (purchaseData.is_credit && purchaseId) {
+        try {
+          // Create payable for credit purchase
+          const payableData = {
+            store_id: currentStore.id,
+            purchase: purchaseId,
+            amount: totalAmount.toString(),
+            currency: purchaseData.currency_id
+          };
+          
+          await financialsApi.createPayable(currentStore.id, payableData);
+          console.log('Payable created successfully for credit purchase:', purchaseId);
+          enqueueSnackbar('Payable record created for credit purchase', { variant: 'info' });
+        } catch (payableError) {
+          console.error('Error creating payable:', payableError);
+          enqueueSnackbar('Purchase saved but failed to create payable record', { variant: 'warning' });
+        }
       }
       
       setIsPurchaseModalOpen(false);
