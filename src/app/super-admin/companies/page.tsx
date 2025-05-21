@@ -26,12 +26,13 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { ArrowsCounterClockwise as RefreshIcon } from '@phosphor-icons/react/dist/ssr/ArrowsCounterClockwise';
 import Tooltip from '@mui/material/Tooltip';
 
-import { useCompanies } from '@/hooks/use-companies';
+import { useCompanies, useSubscriptionPlans } from '@/hooks/use-companies';
 import { paths } from '@/paths';
 
 export default function CompaniesPage(): React.JSX.Element {
   const router = useRouter();
   const { data: companies, isLoading, error, refetch } = useCompanies();
+  const { data: subscriptionPlans, isLoading: isLoadingPlans } = useSubscriptionPlans();
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
@@ -48,6 +49,14 @@ export default function CompaniesPage(): React.JSX.Element {
   const paginatedCompanies = companies
     ? companies.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
     : [];
+
+  // Function to get subscription plan name by id
+  const getSubscriptionPlanName = (planId: string | null) => {
+    if (!planId) return null;
+    
+    const plan = subscriptionPlans?.find(plan => plan.id === planId);
+    return plan ? plan.name : planId;
+  };
 
   return (
     <Box
@@ -84,7 +93,7 @@ export default function CompaniesPage(): React.JSX.Element {
           </Stack>
           <Card>
             <Box sx={{ position: 'relative' }}>
-              {isLoading && (
+              {(isLoading || isLoadingPlans) && (
                 <Box
                   sx={{
             display: 'flex', 
@@ -130,6 +139,8 @@ export default function CompaniesPage(): React.JSX.Element {
               </TableHead>
               <TableBody>
                   {paginatedCompanies.map((company) => {
+                    const planName = getSubscriptionPlanName(company.subscription_plan);
+                    
                     return (
                       <TableRow key={company.id} hover>
                         <TableCell>
@@ -137,9 +148,9 @@ export default function CompaniesPage(): React.JSX.Element {
                         </TableCell>
                         <TableCell>{company.description}</TableCell>
                         <TableCell>
-                          {company.subscription_plan ? (
+                          {planName ? (
                             <Chip 
-                              label={company.subscription_plan} 
+                              label={planName} 
                               color="primary" 
                               size="small"
                             />
