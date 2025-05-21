@@ -73,6 +73,7 @@ export interface Product {
   sale_price: string;
   color: string;
   collection: string;
+  reorder_level?: string;
   created_at: string;
   updated_at: string;
 }
