@@ -35,6 +35,18 @@ export interface SubscriptionPlan {
   updated_at: string;
 }
 
+export interface SubscriptionCheckResponse {
+  current_users_count: number;
+  max_users: number;
+  current_stores_count: number;
+  max_stores: number;
+  current_products_count: number;
+  max_products: number;
+  current_storage_usage_gb: number;
+  storage_limit_gb: number;
+  subscription_plan: SubscriptionPlan;
+}
+
 export interface SubscriptionPlanCreateData {
   name: string;
   description: string;
@@ -122,9 +134,48 @@ export const companiesApi = {
   },
   
   // Check company subscription
-  checkCompanySubscription: async (id: string): Promise<any> => {
-    const response = await coreApiClient.get(`/companies/companies/${id}/subscription/check/`);
-    return response.data;
+  checkCompanySubscription: async (id: string): Promise<SubscriptionCheckResponse> => {
+    try {
+      // First, get the company details to get the subscription plan ID
+      const company = await companiesApi.getCompany(id);
+      
+      if (!company.subscription_plan) {
+        throw new Error('Company has no subscription plan');
+      }
+      
+      // Get the subscription plan details
+      const subscriptionPlan = await companiesApi.getSubscriptionPlan(company.subscription_plan);
+      
+      // Get users count for this company
+      const users = await usersApi.getUsers();
+      const companyUsers = users.filter(user => user.company_id === id);
+      
+      // Get stores count for this company
+      const stores = await inventoryApi.getStores(id);
+      
+      // Get products count for this company
+      let totalProducts = 0;
+      for (const store of stores) {
+        const products = await inventoryApi.getProducts(store.id);
+        totalProducts += products.length;
+      }
+      
+      // Create and return a subscription check response
+      return {
+        current_users_count: companyUsers.length,
+        max_users: subscriptionPlan.max_users,
+        current_stores_count: stores.length,
+        max_stores: subscriptionPlan.max_stores,
+        current_products_count: totalProducts,
+        max_products: subscriptionPlan.max_products,
+        current_storage_usage_gb: 0, // Placeholder, update if you have a way to track storage usage
+        storage_limit_gb: subscriptionPlan.storage_limit_gb,
+        subscription_plan: subscriptionPlan,
+      };
+    } catch (error) {
+      console.error('Error checking company subscription:', error);
+      throw error;
+    }
   },
   
   // Renew company subscription

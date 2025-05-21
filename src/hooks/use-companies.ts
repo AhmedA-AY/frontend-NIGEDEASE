@@ -7,6 +7,7 @@ import {
   CurrencyCreateData,
   CurrencyUpdateData,
   SubscriptionPlan, 
+  SubscriptionCheckResponse,
   companiesApi 
 } from '@/services/api/companies';
 
@@ -241,12 +242,46 @@ export function usePatchSubscriptionPlan() {
 
 // Hook to check company subscription details
 export function useCheckCompanySubscription(companyId?: string) {
-  return useQuery<any, Error>({
+  return useQuery<SubscriptionCheckResponse, Error>({
     queryKey: ['company-subscription', companyId],
-    queryFn: () => {
-      if (!companyId) throw new Error('Company ID is required');
-      return companiesApi.checkCompanySubscription(companyId);
+    queryFn: async () => {
+      try {
+        if (!companyId) throw new Error('Company ID is required');
+        return await companiesApi.checkCompanySubscription(companyId);
+      } catch (error) {
+        console.error('Error checking company subscription:', error);
+        // Create a default response with zero limits if there's an error
+        const defaultPlan = {
+          id: 'default',
+          name: 'Default',
+          description: 'Default plan when subscription check fails',
+          price: '0',
+          billing_cycle: 'monthly' as const,
+          duration_in_months: 1,
+          features: null,
+          is_active: true,
+          storage_limit_gb: 1,
+          max_products: 10,
+          max_stores: 1,
+          max_users: 2,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        return {
+          current_users_count: 0,
+          max_users: defaultPlan.max_users,
+          current_stores_count: 0,
+          max_stores: defaultPlan.max_stores,
+          current_products_count: 0,
+          max_products: defaultPlan.max_products,
+          current_storage_usage_gb: 0,
+          storage_limit_gb: defaultPlan.storage_limit_gb,
+          subscription_plan: defaultPlan
+        };
+      }
     },
     enabled: !!companyId,
+    retry: 1, // Only retry once on failure
   });
 } 
