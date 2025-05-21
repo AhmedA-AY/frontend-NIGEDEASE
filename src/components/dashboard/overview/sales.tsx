@@ -157,6 +157,8 @@ function useChartOptions(): ApexOptions {
         width: 12,
         height: 12,
         strokeWidth: 0,
+        strokeColor: '#fff',
+        fillColors: undefined,
         radius: 12,
         offsetX: 0,
         offsetY: 0
