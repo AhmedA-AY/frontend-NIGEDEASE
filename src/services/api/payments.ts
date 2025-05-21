@@ -1,68 +1,184 @@
 import { apiCall } from '@/utils/api-call';
 
-export interface Payment {
+export interface PaymentIn {
   id: string;
+  store_id: string;
+  receivable?: string;
+  sale?: string;
   amount: string;
-  type: 'in' | 'out';
-  reference: string;
-  payment_date: string;
+  currency: string;
+  payment_mode: {
+    id: string;
+    store_id: string;
+    name: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
+  };
   created_at: string;
   updated_at: string;
-  store_id: string;
-  payment_mode_id: string;
-  payment_mode?: {
-    id: string;
-    name: string;
-  };
-  user_id: string;
-  notes?: string;
 }
+
+export interface PaymentOut {
+  id: string;
+  store_id: string;
+  payable?: string;
+  purchase?: string;
+  amount: string;
+  currency: string;
+  payment_mode: {
+    id: string;
+    store_id: string;
+    name: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreatePaymentInData {
+  store_id: string;
+  receivable?: string;
+  sale?: string;
+  amount: string;
+  currency: string;
+  payment_mode_id: string;
+}
+
+export interface CreatePaymentOutData {
+  store_id: string;
+  payable?: string;
+  purchase?: string;
+  amount: string;
+  currency: string;
+  payment_mode_id: string;
+}
+
+// Extended types with type property
+export interface PaymentInWithType extends PaymentIn {
+  type: 'in';
+}
+
+export interface PaymentOutWithType extends PaymentOut {
+  type: 'out';
+}
+
+export type Payment = PaymentInWithType | PaymentOutWithType;
 
 // Payments API service
 export const paymentsApi = {
   // Get all payments for a store
   async getPayments(storeId: string): Promise<Payment[]> {
+    try {
+      const [paymentsIn, paymentsOut] = await Promise.all([
+        this.getPaymentsIn(storeId),
+        this.getPaymentsOut(storeId)
+      ]);
+      
+      // Combine and mark payment types
+      const combinedPayments = [
+        ...paymentsIn.map(payment => ({ ...payment, type: 'in' as const })),
+        ...paymentsOut.map(payment => ({ ...payment, type: 'out' as const }))
+      ];
+      
+      return combinedPayments;
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      return [];
+    }
+  },
+
+  // Get all incoming payments for a store
+  async getPaymentsIn(storeId: string): Promise<PaymentIn[]> {
     const response = await apiCall({
       method: 'GET',
-      url: `/payments?store_id=${storeId}`,
+      url: `/financials/stores/${storeId}/payments-in/`,
+    });
+    return response.data;
+  },
+
+  // Get all outgoing payments for a store
+  async getPaymentsOut(storeId: string): Promise<PaymentOut[]> {
+    const response = await apiCall({
+      method: 'GET',
+      url: `/financials/stores/${storeId}/payments-out/`,
     });
     return response.data;
   },
 
   // Get payment by ID
-  async getPaymentById(id: string): Promise<Payment> {
+  async getPaymentInById(storeId: string, id: string): Promise<PaymentIn> {
     const response = await apiCall({
       method: 'GET',
-      url: `/payments/${id}`,
+      url: `/financials/stores/${storeId}/payments-in/${id}/`,
     });
     return response.data;
   },
 
-  // Create a new payment
-  async createPayment(paymentData: Omit<Payment, 'id' | 'created_at' | 'updated_at'>): Promise<Payment> {
+  // Get payment by ID
+  async getPaymentOutById(storeId: string, id: string): Promise<PaymentOut> {
+    const response = await apiCall({
+      method: 'GET',
+      url: `/financials/stores/${storeId}/payments-out/${id}/`,
+    });
+    return response.data;
+  },
+
+  // Create a new incoming payment
+  async createPaymentIn(paymentData: CreatePaymentInData): Promise<PaymentIn> {
     const response = await apiCall({
       method: 'POST',
-      url: '/payments',
+      url: `/financials/stores/${paymentData.store_id}/payments-in/`,
       data: paymentData,
     });
     return response.data;
   },
 
-  // Update an existing payment
-  async updatePayment(id: string, paymentData: Partial<Payment>): Promise<Payment> {
+  // Create a new outgoing payment
+  async createPaymentOut(paymentData: CreatePaymentOutData): Promise<PaymentOut> {
+    const response = await apiCall({
+      method: 'POST',
+      url: `/financials/stores/${paymentData.store_id}/payments-out/`,
+      data: paymentData,
+    });
+    return response.data;
+  },
+
+  // Update an existing incoming payment
+  async updatePaymentIn(storeId: string, id: string, paymentData: Partial<CreatePaymentInData>): Promise<PaymentIn> {
     const response = await apiCall({
       method: 'PUT',
-      url: `/payments/${id}`,
+      url: `/financials/stores/${storeId}/payments-in/${id}/`,
       data: paymentData,
     });
     return response.data;
   },
 
-  // Delete a payment
-  async deletePayment(id: string): Promise<void> {
+  // Update an existing outgoing payment
+  async updatePaymentOut(storeId: string, id: string, paymentData: Partial<CreatePaymentOutData>): Promise<PaymentOut> {
+    const response = await apiCall({
+      method: 'PUT',
+      url: `/financials/stores/${storeId}/payments-out/${id}/`,
+      data: paymentData,
+    });
+    return response.data;
+  },
+
+  // Delete an incoming payment
+  async deletePaymentIn(storeId: string, id: string): Promise<void> {
     await apiCall({
       method: 'DELETE',
-      url: `/payments/${id}`,
+      url: `/financials/stores/${storeId}/payments-in/${id}/`,
+    });
+  },
+
+  // Delete an outgoing payment
+  async deletePaymentOut(storeId: string, id: string): Promise<void> {
+    await apiCall({
+      method: 'DELETE',
+      url: `/financials/stores/${storeId}/payments-out/${id}/`,
     });
   },
 }; 

@@ -82,19 +82,19 @@ export default function StockManagerDashboardPage() {
       const stockAlerts = generateStockAlerts(products, inventories);
       
       // Calculate payment totals
-      const paymentReceived = payments
+      const totalPaymentsIn = payments
         ? payments.filter((p: Payment) => p.type === 'in').reduce((sum: number, p: Payment) => sum + parseFloat(p.amount || '0'), 0)
         : 0;
       
-      const paymentSent = payments
+      const totalPaymentsOut = payments
         ? payments.filter((p: Payment) => p.type === 'out').reduce((sum: number, p: Payment) => sum + parseFloat(p.amount || '0'), 0)
         : 0;
       
       setStats({
         totalSales: sales.reduce((sum: number, sale: any) => sum + parseFloat(sale.total_amount || '0'), 0),
         totalExpenses: expenses.reduce((sum: number, expense: any) => sum + parseFloat(expense.amount || '0'), 0),
-        paymentSent,
-        paymentReceived,
+        paymentSent: totalPaymentsOut,
+        paymentReceived: totalPaymentsIn,
         topSellingProducts,
         recentSales,
         stockAlerts,
