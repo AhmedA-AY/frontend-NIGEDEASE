@@ -18,6 +18,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { PaymentInCreateData, Receivable, financialsApi } from '@/services/api/financials';
 import { Sale, transactionsApi, PaymentMode } from '@/services/api/transactions';
 import { Company, companiesApi, Currency } from '@/services/api/companies';
+import { useStore } from '@/providers/store-provider';
+import { useSnackbar } from 'notistack';
 
 interface PaymentInEditModalProps {
   open: boolean;
@@ -34,64 +36,52 @@ export default function PaymentInEditModal({
 }: PaymentInEditModalProps): React.JSX.Element {
   const [formData, setFormData] = useState<PaymentInCreateData & { id?: string }>(payment);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
   const [receivables, setReceivables] = useState<Receivable[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { currentStore } = useStore();
+  const { enqueueSnackbar } = useSnackbar();
   
   // Fetch data
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       try {
-        // Get companies first to get the store ID
-        const companiesData = await companiesApi.getCompanies();
-        setCompanies(companiesData);
-        
-        // Find a company to use for store ID
-        let companyId = '';
-        if (companiesData.length > 0) {
-          companyId = companiesData[0].id;
+        if (!currentStore) {
+          enqueueSnackbar('No store selected', { variant: 'warning' });
+          return;
         }
         
-        if (companyId) {
-          // Get stores for the company
-          const stores = await companiesApi.getStores(companyId);
-          
-          if (stores.length > 0) {
-            const storeId = stores[0].id;
-            
-            // Now get payment modes, receivables, sales and currencies
-            const [paymentModesData, receivablesData, salesData, currenciesData] = await Promise.all([
-              transactionsApi.getPaymentModes(storeId),
-              financialsApi.getReceivables(storeId),
-              transactionsApi.getSales(storeId),
-              companiesApi.getCurrencies()
-            ]);
-            
-            // Update form data with store_id
-            setFormData(prev => ({
-              ...prev,
-              store_id: storeId
-            }));
-            
-            setPaymentModes(paymentModesData);
-            setReceivables(receivablesData);
-            setSales(salesData);
-            setCurrencies(currenciesData);
-          }
-        }
+        // Now get payment modes, receivables, sales and currencies
+        const [paymentModesData, receivablesData, salesData, currenciesData] = await Promise.all([
+          transactionsApi.getPaymentModes(currentStore.id),
+          financialsApi.getReceivables(currentStore.id),
+          transactionsApi.getSales(currentStore.id),
+          companiesApi.getCurrencies()
+        ]);
+        
+        // Update form data with store_id
+        setFormData(prev => ({
+          ...prev,
+          store_id: currentStore.id
+        }));
+        
+        setPaymentModes(paymentModesData);
+        setReceivables(receivablesData);
+        setSales(salesData);
+        setCurrencies(currenciesData);
       } catch (error) {
         console.error('Error fetching data:', error);
+        enqueueSnackbar('Failed to load data', { variant: 'error' });
       } finally {
         setIsLoading(false);
       }
     }
     
     fetchData();
-  }, []);
+  }, [currentStore, enqueueSnackbar]);
   
   // Reset form data when modal opens with new payment data
   useEffect(() => {
