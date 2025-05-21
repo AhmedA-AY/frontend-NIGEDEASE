@@ -33,7 +33,8 @@ import {
   Alert,
   CircularProgress,
   MenuItem,
-  Select
+  Select,
+  Grid
 } from '@mui/material';
 import { PencilSimple, Plus, Trash } from '@phosphor-icons/react/dist/ssr';
 import { z as zod } from 'zod';
@@ -76,6 +77,8 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [successMessage, setSuccessMessage] = useState('');
   
   const defaultValues: SubscriptionPlanFormValues = {
@@ -134,6 +137,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     setValue('id', plan.id);
     setValue('name', plan.name);
     setDeleteDialogOpen(true);
+  };
+  
+  const handleViewDetails = (plan: any) => {
+    setSelectedPlan(plan);
+    setDetailsDialogOpen(true);
   };
   
   const handleCreateSubmit = async (data: SubscriptionPlanFormValues) => {
@@ -274,54 +282,6 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     }
   };
 
-  const handleToggleStatus = async (plan: any) => {
-    try {
-      const newStatus = !plan.is_active;
-      const toggleData = { is_active: Boolean(newStatus) };
-      
-      console.log(`Toggling plan status for ${plan.name} to ${newStatus ? 'active' : 'inactive'}`);
-      
-      try {
-        // First try with PUT (requires all fields)
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: {
-            // Include all required fields
-            name: plan.name,
-            description: plan.description,
-            price: plan.price,
-            billing_cycle: plan.billing_cycle,
-            features: plan.features,
-            is_active: newStatus,
-            storage_limit_gb: Number(plan.storage_limit_gb),
-            duration_in_months: Number(plan.duration_in_months || 1),
-            max_products: Number(plan.max_products || 100),
-            max_stores: Number(plan.max_stores || 5),
-            max_users: Number(plan.max_users || 10)
-          } as SubscriptionPlanData
-        });
-      } catch (putError) {
-        console.error('PUT toggle failed, trying PATCH:', putError);
-        // If PUT fails, fallback to PATCH with just the status
-        await patchPlanMutation.mutateAsync({
-          id: plan.id,
-          data: toggleData
-        });
-      }
-      
-      setSuccessMessage(`Plan ${plan.name} ${newStatus ? 'activated' : 'deactivated'} successfully`);
-    } catch (error: any) {
-      console.error('Error toggling plan status:', error);
-      // Log more detailed error information
-      console.error('Error response data:', error?.response?.data);
-      console.error('Error status:', error?.response?.status);
-      const errorMessage = error?.response?.data?.detail || 
-                          error?.message || 
-                          'Failed to update plan status';
-      alert(`Error: ${errorMessage}`);
-    }
-  };
-
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 8 }}>
       <Container maxWidth="lg">
@@ -383,6 +343,9 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                         <TableCell>Price</TableCell>
                         <TableCell>Billing Cycle</TableCell>
                         <TableCell>Storage (GB)</TableCell>
+                        <TableCell>Max Products</TableCell>
+                        <TableCell>Max Stores</TableCell>
+                        <TableCell>Max Users</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell align="right">Actions</TableCell>
                 </TableRow>
@@ -396,14 +359,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                             {plan.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly'}
                     </TableCell>
                           <TableCell>{plan.storage_limit_gb}</TableCell>
+                          <TableCell>{plan.max_products}</TableCell>
+                          <TableCell>{plan.max_stores}</TableCell>
+                          <TableCell>{plan.max_users}</TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={1} alignItems="center">
-                              <Switch
-                                checked={plan.is_active}
-                                onChange={() => handleToggleStatus(plan)}
-                                color="success"
-                                size="small"
-                              />
                               <Box
                                 sx={{
                                   backgroundColor: plan.is_active ? 'success.light' : 'error.light',
@@ -420,20 +380,30 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                           </TableCell>
                           <TableCell align="right">
                             <IconButton
-                          color="primary"
+                              color="info"
+                              onClick={() => handleViewDetails(plan)}
+                              size="small"
+                              sx={{ mr: 1 }}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M228,128c0,4.4-3.8,8-7.9,8a8.3,8.3,0,0,1-8.1-8,84,84,0,0,0-168,0,8.3,8.3,0,0,1-8.1,8c-4.1,0-7.9-3.6-7.9-8a100,100,0,0,1,200,0Zm-100,60a60,60,0,1,0-60-60A60.1,60.1,0,0,0,128,188Zm0-92a32,32,0,1,0,32,32A32,32,0,0,0,128,96Z"></path>
+                              </svg>
+                            </IconButton>
+                            <IconButton
+                              color="primary"
                               onClick={() => handleEditDialogOpen(plan)}
                             >
                               <PencilSimple />
                             </IconButton>
                             <IconButton
-                          color="error"
+                              color="error"
                               onClick={() => handleDeleteDialogOpen(plan)}
                             >
                               <Trash />
                             </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                       {subscriptionPlans?.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={6} align="center">
@@ -649,16 +619,22 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                           <Typography variant="body2" gutterBottom>
                             Status
                           </Typography>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                {...field}
-                                checked={value}
-                                onChange={(e) => onChange(e.target.checked)}
-                              />
-                            }
-                            label={value ? "Active" : "Inactive"}
-                          />
+                          <Box
+                            sx={{
+                              backgroundColor: value ? 'success.light' : 'error.light',
+                              borderRadius: 1,
+                              color: 'white',
+                              display: 'inline-block',
+                              px: 2,
+                              py: 1,
+                              mt: 1
+                            }}
+                          >
+                            {value ? 'Active' : 'Inactive'}
+                          </Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                            Status cannot be changed once a plan is created
+                          </Typography>
                         </FormControl>
                       )}
                     />
@@ -715,6 +691,184 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
           {successMessage}
         </Alert>
       </Snackbar>
+
+      {/* Details Dialog */}
+      <Dialog 
+        open={detailsDialogOpen} 
+        onClose={() => setDetailsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        {selectedPlan && (
+          <>
+            <DialogTitle>
+              Subscription Plan Details
+            </DialogTitle>
+            <Divider />
+            <DialogContent sx={{ pt: 2 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>
+                    {selectedPlan.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {selectedPlan.description}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Divider />
+                </Grid>
+                
+                <Grid item xs={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Price
+                  </Typography>
+                  <Typography variant="body1">
+                    ${selectedPlan.price}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Billing Cycle
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedPlan.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly'}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Duration
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedPlan.duration_in_months} month{selectedPlan.duration_in_months !== 1 ? 's' : ''}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Storage Limit
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedPlan.storage_limit_gb} GB
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Max Products
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedPlan.max_products}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Max Stores
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedPlan.max_stores}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Max Users
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedPlan.max_users}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Status
+                  </Typography>
+                  <Box
+                    sx={{
+                      backgroundColor: selectedPlan.is_active ? 'success.light' : 'error.light',
+                      borderRadius: 1,
+                      color: 'white',
+                      display: 'inline-block',
+                      px: 1.5,
+                      py: 0.5,
+                      mt: 0.5
+                    }}
+                  >
+                    {selectedPlan.is_active ? 'Active' : 'Inactive'}
+                  </Box>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Divider />
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Features
+                  </Typography>
+                  {typeof selectedPlan.features === 'string' && selectedPlan.features.split(',').map((feature: string, index: number) => (
+                    <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                      <Box
+                        component="span"
+                        sx={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          backgroundColor: 'primary.main',
+                          display: 'inline-block',
+                          mr: 1.5
+                        }}
+                      />
+                      {feature.trim()}
+                    </Typography>
+                  ))}
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Divider />
+                </Grid>
+                
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Created At
+                  </Typography>
+                  <Typography variant="body2">
+                    {new Date(selectedPlan.created_at).toLocaleString()}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Last Updated
+                  </Typography>
+                  <Typography variant="body2">
+                    {new Date(selectedPlan.updated_at).toLocaleString()}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDetailsDialogOpen(false)}>
+                Close
+              </Button>
+              <Button 
+                color="primary"
+                variant="contained"
+                onClick={() => {
+                  setDetailsDialogOpen(false);
+                  handleEditDialogOpen(selectedPlan);
+                }}
+              >
+                Edit Plan
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
         </Stack>
       </Container>
     </Box>
