@@ -95,6 +95,7 @@ export const paymentsApi = {
     const response = await apiCall({
       method: 'GET',
       url: `/financials/stores/${storeId}/payments-in/`,
+      removeApiPrefix: true
     });
     return response.data;
   },
@@ -104,6 +105,7 @@ export const paymentsApi = {
     const response = await apiCall({
       method: 'GET',
       url: `/financials/stores/${storeId}/payments-out/`,
+      removeApiPrefix: true
     });
     return response.data;
   },
@@ -113,6 +115,7 @@ export const paymentsApi = {
     const response = await apiCall({
       method: 'GET',
       url: `/financials/stores/${storeId}/payments-in/${id}/`,
+      removeApiPrefix: true
     });
     return response.data;
   },
@@ -122,6 +125,7 @@ export const paymentsApi = {
     const response = await apiCall({
       method: 'GET',
       url: `/financials/stores/${storeId}/payments-out/${id}/`,
+      removeApiPrefix: true
     });
     return response.data;
   },
@@ -132,6 +136,7 @@ export const paymentsApi = {
       method: 'POST',
       url: `/financials/stores/${paymentData.store_id}/payments-in/`,
       data: paymentData,
+      removeApiPrefix: true
     });
     return response.data;
   },
@@ -142,6 +147,7 @@ export const paymentsApi = {
       method: 'POST',
       url: `/financials/stores/${paymentData.store_id}/payments-out/`,
       data: paymentData,
+      removeApiPrefix: true
     });
     return response.data;
   },
@@ -152,6 +158,7 @@ export const paymentsApi = {
       method: 'PUT',
       url: `/financials/stores/${storeId}/payments-in/${id}/`,
       data: paymentData,
+      removeApiPrefix: true
     });
     return response.data;
   },
@@ -162,6 +169,7 @@ export const paymentsApi = {
       method: 'PUT',
       url: `/financials/stores/${storeId}/payments-out/${id}/`,
       data: paymentData,
+      removeApiPrefix: true
     });
     return response.data;
   },
@@ -171,6 +179,7 @@ export const paymentsApi = {
     await apiCall({
       method: 'DELETE',
       url: `/financials/stores/${storeId}/payments-in/${id}/`,
+      removeApiPrefix: true
     });
   },
 
@@ -179,6 +188,7 @@ export const paymentsApi = {
     await apiCall({
       method: 'DELETE',
       url: `/financials/stores/${storeId}/payments-out/${id}/`,
+      removeApiPrefix: true
     });
   },
 }; 

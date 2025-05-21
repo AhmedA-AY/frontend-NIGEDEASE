@@ -26,17 +26,30 @@ interface ApiCallOptions {
   data?: any;
   params?: any;
   headers?: Record<string, string>;
+  removeApiPrefix?: boolean; // Option to bypass the /api prefix
 }
 
 // API call function that returns data property from response
 export const apiCall = async (options: ApiCallOptions) => {
   try {
-    const response = await apiClient.request({
+    // If removeApiPrefix is true, use the CORE_API directly without /api
+    const baseURL = options.removeApiPrefix 
+      ? CORE_API 
+      : (process.env.NEXT_PUBLIC_API_URL || `${CORE_API}/api`);
+      
+    const response = await axios.request({
       method: options.method,
+      baseURL: baseURL,
       url: options.url,
       data: options.data,
       params: options.params,
-      headers: options.headers,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+        ...tokenStorage.getAccessToken() ? { 
+          Authorization: `Bearer ${tokenStorage.getAccessToken()}` 
+        } : {}
+      },
     });
     return response;
   } catch (error: any) {
