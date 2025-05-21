@@ -58,75 +58,52 @@ export default function SalesmanDashboardPage() {
     try {
       console.log('Fetching dashboard data with period:', selectedPeriod);
       
-      // Use either direct API calls or the dashboardApi service
-      if (dashboardApi.getDashboardStats) {
-        // If using the dashboard API service
-      const [dashboardStats, sales] = await Promise.all([
-          dashboardApi.getDashboardStats({ 
-            period: selectedPeriod as DashboardFilters['period'],
-            storeId: currentStore.id 
-          }),
-          dashboardApi.getSalesStats({ 
-            period: selectedPeriod as DashboardFilters['period'],
-            storeId: currentStore.id
-          }),
-        ]);
+      // Fetch data in parallel from different APIs
+      const [sales, expenses, customers, products, payments] = await Promise.all([
+        transactionsApi.getSales(currentStore.id),
+        financialsApi.getExpenses(currentStore.id),
+        transactionsApi.getCustomers(currentStore.id),
+        inventoryApi.getProducts(currentStore.id),
+        paymentsApi.getPaymentsIn(currentStore.id),
+      ]);
+      
+      console.log('Data fetched:', {
+        salesCount: sales.length,
+        expensesCount: expenses.length,
+        customersCount: customers.length,
+        productsCount: products.length,
+        paymentsCount: payments?.length || 0
+      });
+      
+      // Process the data
+      const dailySalesData = processRecentSalesData(sales, expenses, selectedPeriod);
+      const monthlySalesData = processMonthlySalesData(sales, expenses);
+      const topSellingProducts = generateTopSellingProducts(sales, products);
+      const recentSales = generateRecentSales(sales);
+      const topCustomers = generateTopCustomers(sales, customers);
+      const salesGrowth = calculateGrowth(monthlySalesData);
+      
+      // Calculate payment received from payments-in
+      const paymentReceived = Array.isArray(payments) 
+        ? payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+        : 0;
       
       setStats({
-        ...dashboardStats,
-        totalCustomers: dashboardStats.topCustomers.length,
-        salesGrowth: calculateGrowth(sales.monthlySales),
-        paymentReceived: 0, // Will be updated if available
+        totalSales: sales.reduce((sum: number, sale: any) => sum + parseFloat(sale.total_amount || '0'), 0),
+        totalExpenses: expenses.reduce((sum: number, expense: any) => sum + parseFloat(expense.amount || '0'), 0),
+        totalCustomers: customers.length,
+        salesGrowth,
+        paymentReceived,
+        topSellingProducts,
+        recentSales,
+        stockAlerts: [], // Not relevant for salesman dashboard
+        topCustomers,
       });
-      setSalesStats(sales);
-      } else {
-        // Direct API calls if dashboard service isn't available
-        const [sales, expenses, customers, products, payments] = await Promise.all([
-          transactionsApi.getSales(currentStore.id),
-          financialsApi.getExpenses(currentStore.id),
-          transactionsApi.getCustomers(currentStore.id),
-          inventoryApi.getProducts(currentStore.id),
-          paymentsApi.getPayments(currentStore.id),
-        ]);
-        
-        console.log('Data fetched:', {
-          salesCount: sales.length,
-          expensesCount: expenses.length,
-          customersCount: customers.length,
-          productsCount: products.length,
-          paymentsCount: payments?.length || 0
-        });
-        
-        // Process the data
-        const dailySalesData = processRecentSalesData(sales, expenses, selectedPeriod);
-        const monthlySalesData = processMonthlySalesData(sales, expenses);
-        const topSellingProducts = generateTopSellingProducts(sales, products);
-        const recentSales = generateRecentSales(sales);
-        const topCustomers = generateTopCustomers(sales, customers);
-        const salesGrowth = calculateGrowth(monthlySalesData);
-        
-        // Calculate payment received
-        const paymentReceived = payments
-          ? payments.filter((p: Payment) => p.type === 'in').reduce((sum: number, p: Payment) => sum + parseFloat(p.amount || '0'), 0)
-          : 0;
-        
-        setStats({
-          totalSales: sales.reduce((sum: number, sale: any) => sum + parseFloat(sale.total_amount || '0'), 0),
-          totalExpenses: expenses.reduce((sum: number, expense: any) => sum + parseFloat(expense.amount || '0'), 0),
-          totalCustomers: customers.length,
-          salesGrowth,
-          paymentReceived,
-          topSellingProducts,
-          recentSales,
-          stockAlerts: [], // Not relevant for salesman dashboard
-          topCustomers,
-        });
-        
-        setSalesStats({
-          dailySales: dailySalesData,
-          monthlySales: monthlySalesData,
-        });
-      }
+      
+      setSalesStats({
+        dailySales: dailySalesData,
+        monthlySales: monthlySalesData,
+      });
       
       setLastUpdated(new Date());
     } catch (err) {
