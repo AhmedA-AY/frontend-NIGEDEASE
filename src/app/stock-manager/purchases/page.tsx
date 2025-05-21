@@ -63,6 +63,7 @@ export default function PurchasesPage(): React.JSX.Element {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [currentQuantity, setCurrentQuantity] = useState<number>(1);
   const [selectedSupplier, setSelectedSupplier] = useState<string>('');
@@ -94,6 +95,10 @@ export default function PurchasesPage(): React.JSX.Element {
       // Fetch products
       const productsData = await inventoryApi.getProducts(currentStore.id);
       setProducts(productsData);
+      
+      // Fetch currencies
+      const currenciesData = await companiesApi.getCurrencies();
+      setCurrencies(currenciesData);
     } catch (error) {
       console.error('Error fetching data:', error);
       enqueueSnackbar('Failed to load data', { variant: 'error' });
@@ -178,6 +183,7 @@ export default function PurchasesPage(): React.JSX.Element {
     }
     
     const defaultPaymentModeId = paymentModes.length > 0 ? paymentModes[0].id : '';
+    const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
     
     setCurrentPurchase({
       date: new Date().toISOString().split('T')[0],
@@ -190,7 +196,7 @@ export default function PurchasesPage(): React.JSX.Element {
       paymentStatus: 'Unpaid',
       store_id: currentStore.id,
       payment_mode_id: defaultPaymentModeId,
-      currency_id: 'USD', // Default currency
+      currency_id: defaultCurrencyId,
       is_credit: false
     });
     setIsPurchaseModalOpen(true);
@@ -362,6 +368,11 @@ export default function PurchasesPage(): React.JSX.Element {
         return;
       }
       
+    if (!purchaseData.currency_id && currencies.length === 0) {
+      enqueueSnackbar('No currencies available', { variant: 'error' });
+      return;
+    }
+      
     setIsLoading(true);
     try {
       // Calculate total amount from items
@@ -371,6 +382,13 @@ export default function PurchasesPage(): React.JSX.Element {
         return sum + (item.quantity * price);
       }, 0);
       
+      // Default currency if not provided but currencies are available
+      const currencyId = purchaseData.currency_id || (currencies.length > 0 ? currencies[0].id : null);
+      
+      if (!currencyId) {
+        throw new Error('No valid currency available');
+      }
+      
       // Make sure we have all required fields
       const formattedData = {
         store_id: currentStore.id,
@@ -378,7 +396,7 @@ export default function PurchasesPage(): React.JSX.Element {
         total_amount: totalAmount.toString(),
         payment_mode_id: purchaseData.payment_mode_id,
         is_credit: purchaseData.is_credit,
-        currency_id: purchaseData.currency_id || 'USD', // Add default or get from store
+        currency_id: currencyId,
         items: purchaseData.products.map((product: any) => ({
           product_id: product.id,
           quantity: product.quantity.toString()
