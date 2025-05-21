@@ -195,9 +195,9 @@ export default function ExpensesPage(): React.JSX.Element {
       amount: 0,
       date: new Date().toISOString().split('T')[0],
       store_id: currentStore.id,
-      category_id: defaultCategoryId,
-      currency_id: defaultCurrencyId,
-      payment_mode_id: defaultPaymentModeId
+      expense_category: defaultCategoryId,
+      currency: defaultCurrencyId,
+      payment_mode: defaultPaymentModeId
     });
     setIsCreateModalOpen(true);
   };
@@ -211,9 +211,9 @@ export default function ExpensesPage(): React.JSX.Element {
         amount: parseFloat(expense.amount),
         date: new Date(expense.created_at).toISOString().split('T')[0],
         store_id: expense.store_id,
-        category_id: expense.expense_category || '',
-        currency_id: expense.currency,
-        payment_mode_id: expense.payment_mode
+        expense_category: expense.expense_category || '',
+        currency: expense.currency,
+        payment_mode: expense.payment_mode
       });
       setIsCreateModalOpen(true);
       handleMenuClose(id);
@@ -259,14 +259,20 @@ export default function ExpensesPage(): React.JSX.Element {
     
     setIsLoading(true);
     try {
+      // Log what we're getting from the form
+      console.log('Expense data from form:', expenseData);
+      
       const formattedData = {
         store_id: currentStore.id,
-        expense_category: expenseData.category_id,
+        expense_category: expenseData.expense_category,
         amount: expenseData.amount.toString(),
         description: expenseData.description,
-        currency: expenseData.currency_id,
-        payment_mode: expenseData.payment_mode_id
+        currency: expenseData.currency,
+        payment_mode: expenseData.payment_mode
       };
+      
+      // Log what we're sending to the API
+      console.log('Formatted data for API:', formattedData);
       
       if (expenseData.id) {
         // Update existing expense
