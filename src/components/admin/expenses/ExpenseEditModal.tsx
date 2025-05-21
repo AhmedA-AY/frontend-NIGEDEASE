@@ -26,6 +26,8 @@ interface ExpenseEditModalProps {
   onSave: (data: ExpenseCreateData & { id?: string }) => void;
   expense: Partial<ExpenseCreateData> & { id?: string };
   categories: ExpenseCategory[];
+  paymentModes?: PaymentMode[];
+  currencies?: Currency[];
 }
 
 export default function ExpenseEditModal({
@@ -33,19 +35,28 @@ export default function ExpenseEditModal({
   onClose,
   onSave,
   expense,
-  categories
+  categories,
+  paymentModes: propPaymentModes = [],
+  currencies: propCurrencies = []
 }: ExpenseEditModalProps): React.JSX.Element {
   const [formData, setFormData] = useState<Partial<ExpenseCreateData> & { id?: string }>(expense);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>(propPaymentModes);
+  const [currencies, setCurrencies] = useState<Currency[]>(propCurrencies);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [currentStoreId, setCurrentStoreId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const { userInfo, isLoading: isUserLoading } = useCurrentUser();
   
-  // Fetch payment modes, currencies, and companies
+  // Load payment modes and currencies from API if needed
   useEffect(() => {
+    // Skip API calls if data is already provided via props
+    if (propPaymentModes.length > 0 && propCurrencies.length > 0) {
+      setPaymentModes(propPaymentModes);
+      setCurrencies(propCurrencies);
+      return;
+    }
+    
     async function fetchData() {
       setIsLoading(true);
       try {
@@ -87,7 +98,7 @@ export default function ExpenseEditModal({
     }
     
     fetchData();
-  }, [userInfo]);
+  }, [userInfo, propPaymentModes, propCurrencies]);
   
   // Reset form data when modal opens with new expense data
   useEffect(() => {

@@ -465,15 +465,15 @@ export default function ExpensesPage(): React.JSX.Element {
       </Card>
 
       {/* Expense Edit Modal */}
-      {isCreateModalOpen && (
-        <ExpenseEditModal
-          open={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onSave={handleSaveExpense}
-          expense={currentExpense}
-          categories={categories}
-        />
-      )}
+      <ExpenseEditModal
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSave={handleSaveExpense}
+        expense={currentExpense || {}}
+        categories={categories}
+        paymentModes={paymentModes}
+        currencies={currencies}
+      />
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal

@@ -369,19 +369,23 @@ export default function SalesmanDashboardPage() {
   // Listen for store changes
   React.useEffect(() => {
     const handleStoreChange = () => {
-      fetchDashboardData();
+      if (currentStore) {
+        console.log('Store changed, fetching dashboard data...');
+        fetchDashboardData();
+      }
     };
+
+    // Fetch on mount as well
+    if (currentStore) {
+      fetchDashboardData();
+    }
 
     window.addEventListener(STORE_CHANGED_EVENT, handleStoreChange);
     
     return () => {
       window.removeEventListener(STORE_CHANGED_EVENT, handleStoreChange);
     };
-  }, [fetchDashboardData]);
-
-  React.useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+  }, [fetchDashboardData, currentStore]);
 
   const handlePeriodChange = (period: 'today' | 'week' | 'month' | 'year') => {
     setSelectedPeriod(period);

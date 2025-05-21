@@ -310,8 +310,8 @@ export default function SalesPage(): React.JSX.Element {
         status: saleData.status,
         items: saleData.products.map((product: any) => ({
           product_id: product.id,
-          quantity: product.quantity.toString(),
-          unit_price: product.price.toString()
+          quantity: (product.quantity || 0).toString(),
+          unit_price: (product.price || product.unitPrice || 0).toString()
         }))
       };
       
