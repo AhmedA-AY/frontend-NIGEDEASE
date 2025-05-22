@@ -236,10 +236,10 @@ export default function SubscriptionPage() {
                   </Grid>
                   <Grid item xs={12} sm={6} md={4}>
                     <Typography variant="subtitle2" color="text.secondary">
-                      Max Users
+                      Storage Limit
                     </Typography>
                     <Typography variant="body1">
-                      {currentPlan?.max_users || 'Unlimited'}
+                      {currentPlan?.storage_limit_gb ? `${currentPlan.storage_limit_gb} GB` : 'Unlimited'}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6} md={4}>
@@ -248,14 +248,6 @@ export default function SubscriptionPage() {
                     </Typography>
                     <Typography variant="body1">
                       {currentPlan?.max_customers || 'Unlimited'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Storage Limit
-                    </Typography>
-                    <Typography variant="body1">
-                      {currentPlan?.storage_limit ? `${currentPlan.storage_limit} GB` : 'Unlimited'}
                     </Typography>
                   </Grid>
                 </Grid>

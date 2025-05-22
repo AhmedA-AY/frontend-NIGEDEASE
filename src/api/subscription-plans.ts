@@ -7,7 +7,7 @@ import { SubscriptionPlan } from '@/types/subscription-plan';
  */
 export async function getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
   const response = await apiCall({
-    url: '/api/subscription-plans',
+    url: '/companies/subscription-plans/',
     method: 'GET',
   });
   return response.data;
@@ -20,7 +20,7 @@ export async function getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
  */
 export async function getSubscriptionPlan(planId: string): Promise<SubscriptionPlan> {
   const response = await apiCall({
-    url: `/api/subscription-plans/${planId}`,
+    url: `/companies/subscription-plans/${planId}/`,
     method: 'GET',
   });
   return response.data;
