@@ -28,6 +28,7 @@ import { inventoryApi } from '@/services/api/inventory';
 import { paths } from '@/paths';
 import { companiesApi, Company, CompanyCreateData } from '@/services/api/companies';
 import { CreateCompanyUserForm } from './create-company-user-form';
+import { usersApi } from '@/services/api/users';
 
 interface CompanyFormData {
   name: string;
@@ -54,6 +55,7 @@ export const CreateCompanyWithUser: React.FC = () => {
   const { data: subscriptionPlans, isLoading: isLoadingSubscriptionPlans } = useSubscriptionPlans();
   
   const [activeStep, setActiveStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdCompany, setCreatedCompany] = useState<any>(null);
   
   const [companyFormData, setCompanyFormData] = useState<CompanyFormData>({
@@ -73,8 +75,18 @@ export const CreateCompanyWithUser: React.FC = () => {
     location: '',
     is_active: "active"
   });
+
+  const [userData, setUserData] = useState({
+    email: '',
+    password: '',
+    first_name: '',
+    last_name: '',
+    role: 'admin'
+  });
   
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const [userFormData, setUserFormData] = useState<any>(null);
 
   const handleCompanyFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
     const { name, value } = e.target;
@@ -110,6 +122,22 @@ export const CreateCompanyWithUser: React.FC = () => {
         });
       }
     }
+  };
+
+  // New handler for user form data
+  const handleUserFormChange = (field: string, value: string) => {
+    setUserData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleUserFormSubmit = (userData: any) => {
+    // Simply store the user data for later
+    setUserFormData(userData);
+    
+    // Move to the next step
+    setActiveStep(activeStep + 1);
   };
 
   const validateCompanyForm = (): boolean => {
@@ -186,72 +214,85 @@ export const CreateCompanyWithUser: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleCreateCompany = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleContinueToStore = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     if (!validateCompanyForm()) {
       return;
     }
     
-    try {
-      const companyData: CompanyCreateData = {
-        name: companyFormData.name.trim(),
-        description: companyFormData.description?.trim() || companyFormData.short_name.trim(),
-        subscription_plan: companyFormData.subscription_plan_id,
-        // Add any other required fields
-      };
-      
-      const companyResponse = await createCompanyMutation.mutateAsync(companyData);
-      setCreatedCompany(companyResponse);
-      setActiveStep(1); // Move to store creation step
-    } catch (error: any) {
-      console.error('Error creating company:', error);
-      // Show error in UI
-      setFormErrors({
-        ...formErrors,
-        submit: error?.response?.data?.detail || error?.message || 'Failed to create company'
-      });
-    }
+    // Move to store creation step
+    setActiveStep(1);
   };
 
-  const handleCreateStore = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleContinueToUser = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     if (!validateStoreForm()) {
       return;
     }
     
+    // Move to user creation step
+    setActiveStep(2);
+  };
+
+  const handleCreateAll = async (userData: any) => {
     try {
+      setIsSubmitting(true);
+      
+      // Use stored user data if available, or fall back to the userData parameter
+      const finalUserData = userFormData || userData;
+      
+      // 1. Create company
+      const companyData: CompanyCreateData = {
+        name: companyFormData.name.trim(),
+        description: companyFormData.description?.trim() || companyFormData.short_name.trim(),
+        subscription_plan: companyFormData.subscription_plan_id,
+      };
+      
+      const companyResponse = await createCompanyMutation.mutateAsync(companyData);
+      
+      // 2. Create store
       const storeData = {
         name: storeFormData.name.trim(),
         address: storeFormData.address.trim(),
         phone_number: storeFormData.phone_number.trim(),
         email: storeFormData.email.trim(),
         location: storeFormData.location.trim(),
-        company_id: createdCompany.id,
+        company_id: companyResponse.id,
         is_active: storeFormData.is_active as "active" | "inactive"
       };
       
       await inventoryApi.createStore(storeData);
-      setActiveStep(2); // Move to user creation step
+      
+      // 3. Create user
+      // Use the usersApi directly to create a user
+      await usersApi.createUser({
+        ...finalUserData,
+        company_id: companyResponse.id
+      });
+      
+      // Show success message
+      setSuccessMessage('Company, store and user created successfully');
+      
+      // Redirect to companies list
+      setTimeout(() => {
+        router.push(paths.superAdmin.companies);
+      }, 1500);
     } catch (error: any) {
-      console.error('Error creating store:', error);
-      // Show error in UI
+      console.error('Error creating company resources:', error);
       setFormErrors({
         ...formErrors,
-        submit: error?.response?.data?.detail || error?.message || 'Failed to create store'
+        submit: error?.response?.data?.detail || error?.message || 'Failed to create company'
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleUserCreationSuccess = () => {
-    // Navigate back to companies list after successful creation
-    setTimeout(() => {
-      router.push(paths.superAdmin.companies);
-    }, 1500);
-  };
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const isLoading = isLoadingCurrencies || isLoadingSubscriptionPlans || createCompanyMutation.isPending;
+  const isLoading = isLoadingCurrencies || isLoadingSubscriptionPlans || createCompanyMutation.isPending || isSubmitting;
 
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 8 }}>
@@ -286,9 +327,16 @@ export const CreateCompanyWithUser: React.FC = () => {
               {formErrors.submit}
             </Alert>
           )}
+
+          {/* Success message */}
+          {successMessage && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {successMessage}
+            </Alert>
+          )}
           
           {activeStep === 0 ? (
-            <form onSubmit={handleCreateCompany}>
+            <form onSubmit={handleContinueToStore}>
               <Card>
                 <CardHeader title="Company Information" />
                 <CardContent>
@@ -406,23 +454,15 @@ export const CreateCompanyWithUser: React.FC = () => {
                         disabled={isLoading}
                         startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
                       >
-                        {isLoading ? 'Creating...' : 'Create Company & Continue'}
+                        {isLoading ? 'Processing...' : 'Continue'}
                       </Button>
                     </Grid>
-                    
-                    {createCompanyMutation.isError && (
-                      <Grid item xs={12}>
-                        <Alert severity="error">
-                          Error creating company: {(createCompanyMutation.error as any)?.error || 'An error occurred'}
-                        </Alert>
-                      </Grid>
-                    )}
                   </Grid>
                 </CardContent>
               </Card>
             </form>
           ) : activeStep === 1 ? (
-            <form onSubmit={handleCreateStore}>
+            <form onSubmit={handleContinueToUser}>
               <Card>
                 <CardHeader title="Create Store" />
                 <CardContent>
@@ -496,13 +536,20 @@ export const CreateCompanyWithUser: React.FC = () => {
                       />
                     </Grid>
                     
-                    <Grid item xs={12}>
+                    <Grid item xs={12} sx={{ display: 'flex', gap: 2 }}>
+                      <Button
+                        size="large"
+                        onClick={() => setActiveStep(0)}
+                        variant="outlined"
+                      >
+                        Back
+                      </Button>
                       <Button
                         size="large"
                         type="submit"
                         variant="contained"
                       >
-                        Create Store & Continue
+                        Continue
                       </Button>
                     </Grid>
                   </Grid>
@@ -513,35 +560,36 @@ export const CreateCompanyWithUser: React.FC = () => {
             <Box>
               <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Company and Store Created Successfully
+                  Finalize Company Creation
                 </Typography>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body1">
-                    <strong>Company Name:</strong> {createdCompany?.name}
-                  </Typography>
-                  <Typography variant="body1">
-                    <strong>Company ID:</strong> {createdCompany?.id}
+                    <strong>Company Name:</strong> {companyFormData.name}
                   </Typography>
                   <Typography variant="body1">
                     <strong>Store Name:</strong> {storeFormData.name}
                   </Typography>
                 </Box>
                 <Alert severity="info" sx={{ mb: 3 }}>
-                  Please create an admin user for this company below
+                  Create an admin user to complete company setup. All information will be saved when you click "Create Company".
                 </Alert>
               </Paper>
               
-              <CreateCompanyUserForm 
-                companyId={createdCompany?.id} 
-                onSuccess={handleUserCreationSuccess}
+              <CreateCompanyUserForm
+                onSuccess={activeStep === 2 ? handleCreateAll : handleUserFormSubmit}
+                isSubmitting={isSubmitting}
+                formMode={activeStep === 2 ? 'submit' : 'collect'}
+                buttonText={activeStep === 2 ? 'Create Company' : 'Continue'}
+                companyId={undefined}
               />
               
               <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
                 <Button 
                   color="inherit"
-                  onClick={() => router.push(paths.superAdmin.companies)}
+                  onClick={() => setActiveStep(1)}
+                  variant="outlined"
                 >
-                  Skip & Go to Companies
+                  Back
                 </Button>
               </Box>
             </Box>

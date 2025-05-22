@@ -16,11 +16,20 @@ import {
 import { useCreateUser } from '@/hooks/use-users';
 
 interface CreateCompanyUserFormProps {
-  companyId: string;
-  onSuccess?: () => void;
+  companyId?: string;
+  onSuccess?: (userData: any) => void;
+  formMode?: 'submit' | 'collect';
+  isSubmitting?: boolean;
+  buttonText?: string;
 }
 
-export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ companyId, onSuccess }) => {
+export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ 
+  companyId, 
+  onSuccess, 
+  formMode = 'submit',
+  isSubmitting = false,
+  buttonText = 'Create Admin User'
+}) => {
   const createUserMutation = useCreateUser();
   const [formData, setFormData] = useState({
     first_name: '',
@@ -95,7 +104,29 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
       return;
     }
     
+    // If we're just collecting data, pass it to the parent
+    if (formMode === 'collect' && onSuccess) {
+      // Pass the collected user data to the parent
+      const userData = {
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        phone: formData.phone.trim(),
+        role: formData.role,
+        profile_image: formData.profile_image.trim() || undefined
+      };
+      
+      onSuccess(userData);
+      return;
+    }
+    
+    // Normal submission mode
     try {
+      if (!companyId) {
+        throw new Error('Company ID is required');
+      }
+      
       await createUserMutation.mutateAsync({
         ...formData,
         company_id: companyId,
@@ -103,12 +134,14 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
       });
       
       if (onSuccess) {
-        onSuccess();
+        onSuccess(formData);
       }
     } catch (error) {
       console.error('Error creating user:', error);
     }
   };
+
+  const isProcessing = createUserMutation.isPending || isSubmitting;
 
   return (
     <form onSubmit={handleSubmit}>
@@ -138,7 +171,7 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
                 value={formData.first_name}
                 error={!!formErrors.first_name}
                 helperText={formErrors.first_name}
-                disabled={createUserMutation.isPending}
+                disabled={isProcessing}
               />
             </Grid>
             
@@ -152,7 +185,7 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
                 value={formData.last_name}
                 error={!!formErrors.last_name}
                 helperText={formErrors.last_name}
-                disabled={createUserMutation.isPending}
+                disabled={isProcessing}
               />
             </Grid>
             
@@ -167,7 +200,7 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
                 value={formData.email}
                 error={!!formErrors.email}
                 helperText={formErrors.email}
-                disabled={createUserMutation.isPending}
+                disabled={isProcessing}
               />
             </Grid>
             
@@ -181,7 +214,7 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
                 value={formData.phone}
                 error={!!formErrors.phone}
                 helperText={formErrors.phone}
-                disabled={createUserMutation.isPending}
+                disabled={isProcessing}
               />
             </Grid>
             
@@ -196,7 +229,7 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
                 value={formData.password}
                 error={!!formErrors.password}
                 helperText={formErrors.password}
-                disabled={createUserMutation.isPending}
+                disabled={isProcessing}
               />
             </Grid>
             
@@ -211,7 +244,7 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
                 value={formData.confirm_password}
                 error={!!formErrors.confirm_password}
                 helperText={formErrors.confirm_password}
-                disabled={createUserMutation.isPending}
+                disabled={isProcessing}
               />
             </Grid>
             
@@ -224,7 +257,7 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
                 value={formData.profile_image}
                 placeholder="https://example.com/profile.jpg"
                 helperText="Enter a URL for the user's profile picture"
-                disabled={createUserMutation.isPending}
+                disabled={isProcessing}
               />
             </Grid>
             
@@ -234,13 +267,13 @@ export const CreateCompanyUserForm: React.FC<CreateCompanyUserFormProps> = ({ co
                   size="large"
                   type="submit"
                   variant="contained"
-                  disabled={createUserMutation.isPending}
-                  startIcon={createUserMutation.isPending ? <CircularProgress size={20} color="inherit" /> : null}
+                  disabled={isProcessing}
+                  startIcon={isProcessing ? <CircularProgress size={20} color="inherit" /> : null}
                 >
-                  {createUserMutation.isPending ? 'Creating...' : 'Create Admin User'}
+                  {isProcessing ? 'Processing...' : buttonText}
                 </Button>
                 
-                {createUserMutation.isSuccess && (
+                {createUserMutation.isSuccess && formMode === 'submit' && (
                   <Alert severity="success" sx={{ flex: 1 }}>
                     Admin user created successfully!
                   </Alert>
