@@ -24,7 +24,7 @@ import { authApi } from '@/services/api/auth';
 import { paths } from '@/paths';
 import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { UploadSimple as UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr/UploadSimple';
-import { ShieldStar as ShieldStarIcon } from '@phosphor-icons/react/dist/ssr/ShieldStar';
+import { Package as PackageIcon } from '@phosphor-icons/react/dist/ssr/Package';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { useRouter } from 'next/navigation';
 
@@ -48,20 +48,7 @@ export default function ProfilePage() {
     profile_image: '',
   });
 
-  const isSuperAdmin = userInfo?.role === 'super_admin';
   const isStockManager = userInfo?.role === 'stock_manager';
-  const isSalesman = userInfo?.role === 'salesman';
-
-  // Redirect users to their dedicated profile pages
-  useEffect(() => {
-    if (isSuperAdmin) {
-      router.push(paths.superAdmin.profile);
-    } else if (isStockManager) {
-      router.push(paths.stockManager.profile);
-    } else if (isSalesman) {
-      router.push(paths.salesman.profile);
-    }
-  }, [isSuperAdmin, isStockManager, isSalesman, router]);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -149,21 +136,12 @@ export default function ProfilePage() {
   // Format role display
   const formatRoleDisplay = (role: string | null | undefined) => {
     if (!role) return '';
-    return role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+    return role.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
   };
 
   const handleBack = () => {
-    router.push(paths.admin.dashboard);
+    router.push(paths.stockManager.dashboard);
   };
-
-  // If user is being redirected, show loading
-  if (isSuperAdmin || isStockManager || isSalesman) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Typography>Redirecting to appropriate profile page...</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Container>
@@ -177,7 +155,7 @@ export default function ProfilePage() {
             Back to Dashboard
           </Button>
           <Typography variant="h4">
-            My Profile
+            Stock Manager Profile
           </Typography>
         </Box>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
@@ -201,15 +179,11 @@ export default function ProfilePage() {
                       mx: 'auto',
                       mb: 2,
                       boxShadow: 3,
-                      bgcolor: isSuperAdmin ? 'primary.main' : undefined
+                      bgcolor: 'success.main'
                     }}
                   >
                     {!profileData.profile_image && (
-                      isSuperAdmin ? (
-                        <ShieldStarIcon weight="bold" fontSize="3.5rem" />
-                      ) : (
-                        <UserIcon weight="bold" fontSize="3.5rem" />
-                      )
+                      <PackageIcon weight="bold" fontSize="3.5rem" />
                     )}
                   </Avatar>
                   <Typography variant="h6">
@@ -223,11 +197,17 @@ export default function ProfilePage() {
                     sx={{ 
                       mt: 1, 
                       fontWeight: 'bold',
-                      color: isSuperAdmin ? 'primary.main' : 'text.secondary'
+                      color: 'success.main'
                     }}
                   >
                     {formatRoleDisplay(userInfo?.role)}
                   </Typography>
+                  
+                  <Box sx={{ mt: 2, p: 1, bgcolor: 'success.lighter', borderRadius: 1 }}>
+                    <Typography variant="body2" color="success.main">
+                      Inventory manager with access to stock management features
+                    </Typography>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>
@@ -236,7 +216,7 @@ export default function ProfilePage() {
               <Card component="form" onSubmit={handleSubmit}>
                 <CardHeader 
                   title="Edit Profile" 
-                  subheader="Update your account details"
+                  subheader="Update your stock manager account details"
                 />
                 <Divider />
                 <CardContent sx={{ p: 3 }}>

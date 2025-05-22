@@ -48,12 +48,14 @@ export const paths = {
     userReports: '/stock-manager/reports/users',
     expenseReports: '/stock-manager/reports/expenses',
     invoiceVerification: '/stock-manager/invoice-verification',
+    profile: '/stock-manager/profile',
   },
   superAdmin: {
     dashboard: '/super-admin/dashboard',
     companies: '/super-admin/companies',
     subscriptionPlans: '/super-admin/subscription-plans',
     currencies: '/super-admin/currencies',
+    profile: '/super-admin/profile',
   },
   salesman: {
     dashboard: '/salesman/dashboard',
@@ -67,6 +69,7 @@ export const paths = {
     userReports: '/salesman/reports/users',
     expenseReports: '/salesman/reports/expenses',
     invoiceVerification: '/salesman/invoice-verification',
+    profile: '/salesman/profile',
   },
   errors: { notFound: '/errors/not-found' },
 } as const;

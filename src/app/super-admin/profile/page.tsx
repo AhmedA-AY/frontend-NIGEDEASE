@@ -49,19 +49,6 @@ export default function ProfilePage() {
   });
 
   const isSuperAdmin = userInfo?.role === 'super_admin';
-  const isStockManager = userInfo?.role === 'stock_manager';
-  const isSalesman = userInfo?.role === 'salesman';
-
-  // Redirect users to their dedicated profile pages
-  useEffect(() => {
-    if (isSuperAdmin) {
-      router.push(paths.superAdmin.profile);
-    } else if (isStockManager) {
-      router.push(paths.stockManager.profile);
-    } else if (isSalesman) {
-      router.push(paths.salesman.profile);
-    }
-  }, [isSuperAdmin, isStockManager, isSalesman, router]);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -153,17 +140,8 @@ export default function ProfilePage() {
   };
 
   const handleBack = () => {
-    router.push(paths.admin.dashboard);
+    router.push(paths.superAdmin.dashboard);
   };
-
-  // If user is being redirected, show loading
-  if (isSuperAdmin || isStockManager || isSalesman) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Typography>Redirecting to appropriate profile page...</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Container>
@@ -177,7 +155,7 @@ export default function ProfilePage() {
             Back to Dashboard
           </Button>
           <Typography variant="h4">
-            My Profile
+            Super Admin Profile
           </Typography>
         </Box>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
@@ -201,15 +179,11 @@ export default function ProfilePage() {
                       mx: 'auto',
                       mb: 2,
                       boxShadow: 3,
-                      bgcolor: isSuperAdmin ? 'primary.main' : undefined
+                      bgcolor: 'primary.main'
                     }}
                   >
                     {!profileData.profile_image && (
-                      isSuperAdmin ? (
-                        <ShieldStarIcon weight="bold" fontSize="3.5rem" />
-                      ) : (
-                        <UserIcon weight="bold" fontSize="3.5rem" />
-                      )
+                      <ShieldStarIcon weight="bold" fontSize="3.5rem" />
                     )}
                   </Avatar>
                   <Typography variant="h6">
@@ -223,11 +197,17 @@ export default function ProfilePage() {
                     sx={{ 
                       mt: 1, 
                       fontWeight: 'bold',
-                      color: isSuperAdmin ? 'primary.main' : 'text.secondary'
+                      color: 'primary.main'
                     }}
                   >
                     {formatRoleDisplay(userInfo?.role)}
                   </Typography>
+                  
+                  <Box sx={{ mt: 2, p: 1, bgcolor: 'primary.lighter', borderRadius: 1 }}>
+                    <Typography variant="body2" color="primary.main">
+                      System Administrator with full access to all features
+                    </Typography>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>
@@ -236,7 +216,7 @@ export default function ProfilePage() {
               <Card component="form" onSubmit={handleSubmit}>
                 <CardHeader 
                   title="Edit Profile" 
-                  subheader="Update your account details"
+                  subheader="Update your super admin account details"
                 />
                 <Divider />
                 <CardContent sx={{ p: 3 }}>
