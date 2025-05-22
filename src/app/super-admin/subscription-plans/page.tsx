@@ -34,7 +34,8 @@ import {
   CircularProgress,
   MenuItem,
   Select,
-  Grid
+  Grid,
+  TablePagination
 } from '@mui/material';
 import { PencilSimple, Plus, Trash, MagnifyingGlass } from '@phosphor-icons/react/dist/ssr';
 import { z as zod } from 'zod';
@@ -81,6 +82,8 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   
   const defaultValues: SubscriptionPlanFormValues = {
     name: '',
@@ -113,6 +116,15 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     deletePlanMutation.isPending ||
     patchPlanMutation.isPending;
   
+  const handleChangePage = (_: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+  
   // Filter subscription plans based on search query
   const filteredPlans = React.useMemo(() => {
     if (!subscriptionPlans) return [];
@@ -127,8 +139,14 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     );
   }, [subscriptionPlans, searchQuery]);
 
+  // Calculate pagination
+  const paginatedPlans = filteredPlans
+    ? filteredPlans.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+    : [];
+
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
+    setPage(0); // Reset to first page when searching
   };
   
   const handleCreateDialogOpen = () => {
@@ -368,12 +386,12 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
               {isLoadingPlans ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                   <CircularProgress />
-          </Box>
+                </Box>
               ) : (
                 <TableContainer component={Paper}>
                   <Table>
-              <TableHead>
-                <TableRow>
+                    <TableHead>
+                      <TableRow>
                         <TableCell>Name</TableCell>
                         <TableCell>Price</TableCell>
                         <TableCell>Billing Cycle</TableCell>
@@ -383,20 +401,20 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                         <TableCell>Max Customers</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                      {filteredPlans?.map((plan) => (
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedPlans?.map((plan) => (
                         <TableRow key={plan.id}>
                           <TableCell>{plan.name}</TableCell>
                           <TableCell>{plan.price}</TableCell>
-                    <TableCell>
+                          <TableCell>
                             {plan.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-                    </TableCell>
-                          <TableCell>{plan.storage_limit_gb}</TableCell>
-                          <TableCell>{plan.max_products}</TableCell>
-                          <TableCell>{plan.max_stores}</TableCell>
-                          <TableCell>{plan.max_users}</TableCell>
+                          </TableCell>
+                          <TableCell>{plan.storage_limit_gb || 0}</TableCell>
+                          <TableCell>{plan.max_products || 0}</TableCell>
+                          <TableCell>{plan.max_stores || 0}</TableCell>
+                          <TableCell>{plan.max_users || 0}</TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={1} alignItems="center">
                               <Box
@@ -439,7 +457,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {filteredPlans?.length === 0 && (
+                      {paginatedPlans?.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={9} align="center">
                             {searchQuery 
@@ -448,12 +466,21 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                           </TableCell>
                         </TableRow>
                       )}
-              </TableBody>
-            </Table>
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={filteredPlans?.length || 0}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    page={page}
+                    rowsPerPage={rowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25]}
+                  />
                 </TableContainer>
               )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
           
           {/* Create/Edit Dialog Form */}
           {(createDialogOpen || editDialogOpen) && (
@@ -816,7 +843,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                     Max Customers
                   </Typography>
                   <Typography variant="body1">
-                    {selectedPlan.max_users}
+                    {selectedPlan.max_users || 0}
                   </Typography>
                 </Grid>
                 
