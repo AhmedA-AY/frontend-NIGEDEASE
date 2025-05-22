@@ -6,7 +6,6 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
-import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 
 import { usePopover } from '@/hooks/use-popover';
@@ -80,25 +79,6 @@ export function MainNav(): React.JSX.Element {
             >
               <ListIcon />
             </IconButton>
-            <Tooltip title="Search">
-              <IconButton
-                sx={{
-                  borderRadius: '12px',
-                  width: '40px',
-                  height: '40px',
-                  color: '#14B8A6',
-                  transition: 'all 0.2s',
-                  border: '1px solid rgba(20, 184, 166, 0.2)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(20, 184, 166, 0.05)',
-                    transform: 'translateY(-2px)',
-                    borderColor: 'rgba(20, 184, 166, 0.4)',
-                  }
-                }}
-              >
-                <MagnifyingGlassIcon />
-              </IconButton>
-            </Tooltip>
           </Stack>
           <Avatar
             onClick={userPopover.handleOpen}

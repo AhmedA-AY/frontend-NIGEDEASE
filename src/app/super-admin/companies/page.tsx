@@ -25,6 +25,9 @@ import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import { ArrowsCounterClockwise as RefreshIcon } from '@phosphor-icons/react/dist/ssr/ArrowsCounterClockwise';
 import Tooltip from '@mui/material/Tooltip';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 
 import { useCompanies, useSubscriptionPlans } from '@/hooks/use-companies';
 import { paths } from '@/paths';
@@ -35,6 +38,7 @@ export default function CompaniesPage(): React.JSX.Element {
   const { data: subscriptionPlans, isLoading: isLoadingPlans } = useSubscriptionPlans();
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -45,9 +49,27 @@ export default function CompaniesPage(): React.JSX.Element {
     setPage(0);
   };
 
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+    setPage(0); // Reset to first page when searching
+  };
+
+  // Filter companies based on search query
+  const filteredCompanies = React.useMemo(() => {
+    if (!companies) return [];
+    
+    if (!searchQuery) return companies;
+    
+    const query = searchQuery.toLowerCase();
+    return companies.filter(company => 
+      company.name.toLowerCase().includes(query) || 
+      company.description.toLowerCase().includes(query)
+    );
+  }, [companies, searchQuery]);
+
   // Calculate pagination
-  const paginatedCompanies = companies
-    ? companies.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  const paginatedCompanies = filteredCompanies
+    ? filteredCompanies.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
     : [];
 
   // Function to get subscription plan name by id
@@ -91,6 +113,23 @@ export default function CompaniesPage(): React.JSX.Element {
               </Button>
             </div>
           </Stack>
+
+          {/* Search field */}
+          <TextField
+            fullWidth
+            placeholder="Search companies by name or description..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <MagnifyingGlassIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ mb: 2 }}
+          />
+
           <Card>
             <Box sx={{ position: 'relative' }}>
               {(isLoading || isLoadingPlans) && (
@@ -199,7 +238,7 @@ export default function CompaniesPage(): React.JSX.Element {
                     <TableRow>
                       <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                         <Typography variant="subtitle1" color="text.secondary">
-                          No companies found
+                          {searchQuery ? 'No companies found matching your search' : 'No companies found'}
                         </Typography>
                         <Button
                           onClick={() => router.push(paths.superAdmin.companies + '/create')}
@@ -216,7 +255,7 @@ export default function CompaniesPage(): React.JSX.Element {
               
               <TablePagination
                 component="div"
-                count={companies?.length || 0}
+                count={filteredCompanies?.length || 0}
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 page={page}

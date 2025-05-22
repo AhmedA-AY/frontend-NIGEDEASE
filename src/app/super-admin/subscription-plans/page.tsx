@@ -36,7 +36,7 @@ import {
   Select,
   Grid
 } from '@mui/material';
-import { PencilSimple, Plus, Trash } from '@phosphor-icons/react/dist/ssr';
+import { PencilSimple, Plus, Trash, MagnifyingGlass } from '@phosphor-icons/react/dist/ssr';
 import { z as zod } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -80,6 +80,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   
   const defaultValues: SubscriptionPlanFormValues = {
     name: '',
@@ -111,6 +112,24 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     updatePlanMutation.isPending || 
     deletePlanMutation.isPending ||
     patchPlanMutation.isPending;
+  
+  // Filter subscription plans based on search query
+  const filteredPlans = React.useMemo(() => {
+    if (!subscriptionPlans) return [];
+    
+    if (!searchQuery) return subscriptionPlans;
+    
+    const query = searchQuery.toLowerCase();
+    return subscriptionPlans.filter(plan => 
+      plan.name.toLowerCase().includes(query) || 
+      plan.description.toLowerCase().includes(query) ||
+      String(plan.price).includes(query)
+    );
+  }, [subscriptionPlans, searchQuery]);
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
   
   const handleCreateDialogOpen = () => {
     reset(defaultValues);
@@ -308,6 +327,22 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
             </Button>
           </Stack>
           
+          {/* Search field */}
+          <TextField
+            fullWidth
+            placeholder="Search plans by name, description or price..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <MagnifyingGlass />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ mb: 2 }}
+          />
+          
           {plansError && (
             <Alert severity="error">{(plansError as any)?.message || 'Failed to load subscription plans'}</Alert>
           )}
@@ -351,7 +386,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                 </TableRow>
               </TableHead>
               <TableBody>
-                      {subscriptionPlans?.map((plan) => (
+                      {filteredPlans?.map((plan) => (
                         <TableRow key={plan.id}>
                           <TableCell>{plan.name}</TableCell>
                           <TableCell>{plan.price}</TableCell>
@@ -404,10 +439,12 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {subscriptionPlans?.length === 0 && (
+                      {filteredPlans?.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} align="center">
-                            No subscription plans found
+                          <TableCell colSpan={9} align="center">
+                            {searchQuery 
+                              ? 'No subscription plans found matching your search' 
+                              : 'No subscription plans found'}
                           </TableCell>
                         </TableRow>
                       )}
