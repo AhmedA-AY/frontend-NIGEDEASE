@@ -553,19 +553,7 @@ export default function UsersPage() {
   };
   
   const handleAddUser = () => {
-    // Check subscription limits for users
-    if (subscriptionData && !isLoadingSubscription) {
-      const { current_users_count, max_customers } = subscriptionData;
-      
-      if (current_users_count >= max_customers) {
-        enqueueSnackbar(`You've reached the maximum number of users (${max_customers}) allowed by your subscription plan. Please upgrade your plan to add more users.`, { 
-          variant: 'error', 
-          autoHideDuration: 6000 
-        });
-        return;
-      }
-    }
-    
+    // Remove subscription limit check for users since there's no restriction on user creation
     setCurrentUser({
       company_id: userInfo?.company_id || '',
     });
