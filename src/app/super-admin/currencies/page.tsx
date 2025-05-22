@@ -203,7 +203,37 @@ export default function CurrenciesPage(): React.JSX.Element {
           )}
           
           <Card>
-            <CardContent>
+            <CardContent sx={{ position: 'relative' }}>
+              {/* Global loading overlay */}
+              {(createCurrencyMutation.isPending || 
+                updateCurrencyMutation.isPending || 
+                deleteCurrencyMutation.isPending || 
+                patchCurrencyMutation.isPending) && (
+                <Box 
+                  sx={{ 
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bgcolor: 'rgba(255, 255, 255, 0.7)',
+                    zIndex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Stack alignItems="center" spacing={2}>
+                    <CircularProgress />
+                    <Typography variant="body2" color="text.secondary">
+                      {createCurrencyMutation.isPending ? 'Creating currency...' :
+                        updateCurrencyMutation.isPending ? 'Updating currency...' :
+                        deleteCurrencyMutation.isPending ? 'Deleting currency...' :
+                        'Updating currency code...'}
+                    </Typography>
+                  </Stack>
+                </Box>
+              )}
               {isLoadingCurrencies ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                   <CircularProgress />

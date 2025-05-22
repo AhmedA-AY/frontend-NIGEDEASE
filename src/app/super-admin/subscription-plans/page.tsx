@@ -53,17 +53,17 @@ import {
 
 const subscriptionPlanSchema = zod.object({
   id: zod.string().optional(),
-  name: zod.string().min(1, 'Plan name is required'),
-  description: zod.string().min(1, 'Description is required'),
-  price: zod.string().min(1, 'Price is required'),
+  name: zod.string().min(1, 'Plan name is required').max(100, 'Plan name must be 100 characters or less'),
+  description: zod.string().min(1, 'Description is required').max(500, 'Description must be 500 characters or less'),
+  price: zod.string().min(1, 'Price is required').refine(val => !isNaN(Number(val)), { message: 'Price must be a valid number' }),
   billing_cycle: zod.enum(['monthly', 'yearly'], { required_error: 'Billing cycle is required' }),
-  features: zod.string().min(1, 'Features are required'),
+  features: zod.string().min(1, 'Features are required').max(1000, 'Features must be 1000 characters or less'),
   is_active: zod.boolean(),
-  storage_limit_gb: zod.number().min(1, 'Storage limit is required'),
-  duration_in_months: zod.number().optional(),
-  max_products: zod.number().optional(),
-  max_stores: zod.number().optional(),
-  max_customers: zod.number().optional()
+  storage_limit_gb: zod.number().min(1, 'Storage limit must be at least 1GB'),
+  duration_in_months: zod.number().min(1, 'Duration must be at least 1 month'),
+  max_products: zod.number().min(1, 'Max products must be at least 1'),
+  max_stores: zod.number().min(1, 'Max stores must be at least 1'),
+  max_customers: zod.number().min(1, 'Max customers must be at least 1')
 });
 
 type SubscriptionPlanFormValues = zod.infer<typeof subscriptionPlanSchema>;
@@ -199,8 +199,6 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
         is_active: Boolean(planData.is_active)
       };
       
-      console.log('Sending data to create subscription plan:', formattedData);
-      
       await createPlanMutation.mutateAsync(formattedData as SubscriptionPlanData);
       setCreateDialogOpen(false);
       setSuccessMessage('Subscription plan created successfully');
@@ -211,7 +209,8 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                           error?.message || 
                           'Failed to create subscription plan';
       setSuccessMessage('');
-      alert(`Error: ${errorMessage}`);
+      // Use the Snackbar system instead of alert for consistent UX
+      setSuccessMessage(`Error: ${errorMessage}`);
     }
   };
   

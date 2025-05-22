@@ -23,7 +23,8 @@ import {
   TableRow,
   Typography,
   useTheme,
-  Chip
+  Chip,
+  Alert
 } from '@mui/material';
 
 import { 
@@ -141,9 +142,9 @@ const StatCard = ({
 
 export default function SuperAdminDashboard(): React.JSX.Element {
   const router = useRouter();
-  const { data: companies, isLoading: isLoadingCompanies } = useCompanies();
-  const { data: currencies, isLoading: isLoadingCurrencies } = useCurrencies();
-  const { data: subscriptionPlans, isLoading: isLoadingPlans } = useSubscriptionPlans();
+  const { data: companies, isLoading: isLoadingCompanies, error: companiesError } = useCompanies();
+  const { data: currencies, isLoading: isLoadingCurrencies, error: currenciesError } = useCurrencies();
+  const { data: subscriptionPlans, isLoading: isLoadingPlans, error: plansError } = useSubscriptionPlans();
   
   // Function to get status counts
   const getStatusCounts = (companies: Company[] = []) => {
@@ -178,6 +179,8 @@ export default function SuperAdminDashboard(): React.JSX.Element {
     }
   });
 
+  const hasErrors = !!companiesError || !!currenciesError || !!plansError;
+
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 4 }}>
       <Container maxWidth="lg">
@@ -194,6 +197,18 @@ export default function SuperAdminDashboard(): React.JSX.Element {
               </Stack>
             </Stack>
           </Stack>
+          
+          {/* Display any fetch errors */}
+          {hasErrors && (
+            <Alert 
+              severity="error" 
+              sx={{ mb: 2 }}
+            >
+              {companiesError ? `Error loading companies: ${(companiesError as any)?.message || 'Unknown error'}` : 
+               currenciesError ? `Error loading currencies: ${(currenciesError as any)?.message || 'Unknown error'}` : 
+               `Error loading subscription plans: ${(plansError as any)?.message || 'Unknown error'}`}
+            </Alert>
+          )}
           
           <Grid container spacing={3}>
             <Grid item xs={12} md={3}>

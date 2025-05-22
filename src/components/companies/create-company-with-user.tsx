@@ -117,14 +117,20 @@ export const CreateCompanyWithUser: React.FC = () => {
     
     if (!companyFormData.name.trim()) {
       errors.name = 'Company name is required';
+    } else if (companyFormData.name.length > 100) {
+      errors.name = 'Company name must be 100 characters or less';
     }
     
     if (!companyFormData.short_name.trim()) {
       errors.short_name = 'Short name is required';
+    } else if (companyFormData.short_name.length > 20) {
+      errors.short_name = 'Short name must be 20 characters or less';
     }
     
     if (!companyFormData.address.trim()) {
       errors.address = 'Address is required';
+    } else if (companyFormData.address.length > 200) {
+      errors.address = 'Address must be 200 characters or less';
     }
     
     if (!companyFormData.subscription_plan_id) {
@@ -133,6 +139,10 @@ export const CreateCompanyWithUser: React.FC = () => {
     
     if (!companyFormData.currency_id) {
       errors.currency_id = 'Currency is required';
+    }
+    
+    if (companyFormData.description && companyFormData.description.length > 500) {
+      errors.description = 'Description must be 500 characters or less';
     }
     
     setFormErrors(errors);
@@ -144,24 +154,32 @@ export const CreateCompanyWithUser: React.FC = () => {
     
     if (!storeFormData.name.trim()) {
       errors.name = 'Store name is required';
+    } else if (storeFormData.name.length > 100) {
+      errors.name = 'Store name must be 100 characters or less';
     }
     
     if (!storeFormData.address.trim()) {
       errors.address = 'Address is required';
+    } else if (storeFormData.address.length > 200) {
+      errors.address = 'Address must be 200 characters or less';
     }
     
     if (!storeFormData.phone_number.trim()) {
       errors.phone_number = 'Phone number is required';
+    } else if (!/^\+?[\d\s-]{7,15}$/.test(storeFormData.phone_number)) {
+      errors.phone_number = 'Enter a valid phone number';
     }
     
     if (!storeFormData.email.trim()) {
       errors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(storeFormData.email)) {
-      errors.email = 'Invalid email format';
+      errors.email = 'Enter a valid email address';
     }
     
     if (!storeFormData.location.trim()) {
       errors.location = 'Location is required';
+    } else if (storeFormData.location.length > 100) {
+      errors.location = 'Location must be 100 characters or less';
     }
     
     setFormErrors(errors);
@@ -177,16 +195,22 @@ export const CreateCompanyWithUser: React.FC = () => {
     
     try {
       const companyData: CompanyCreateData = {
-        name: companyFormData.name,
-        description: companyFormData.description || companyFormData.short_name, // Use short_name as fallback
-        subscription_plan: companyFormData.subscription_plan_id
+        name: companyFormData.name.trim(),
+        description: companyFormData.description?.trim() || companyFormData.short_name.trim(),
+        subscription_plan: companyFormData.subscription_plan_id,
+        // Add any other required fields
       };
       
       const companyResponse = await createCompanyMutation.mutateAsync(companyData);
       setCreatedCompany(companyResponse);
       setActiveStep(1); // Move to store creation step
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating company:', error);
+      // Show error in UI
+      setFormErrors({
+        ...formErrors,
+        submit: error?.response?.data?.detail || error?.message || 'Failed to create company'
+      });
     }
   };
 
@@ -199,15 +223,24 @@ export const CreateCompanyWithUser: React.FC = () => {
     
     try {
       const storeData = {
-        ...storeFormData,
+        name: storeFormData.name.trim(),
+        address: storeFormData.address.trim(),
+        phone_number: storeFormData.phone_number.trim(),
+        email: storeFormData.email.trim(),
+        location: storeFormData.location.trim(),
         company_id: createdCompany.id,
         is_active: storeFormData.is_active as "active" | "inactive"
       };
       
       await inventoryApi.createStore(storeData);
       setActiveStep(2); // Move to user creation step
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating store:', error);
+      // Show error in UI
+      setFormErrors({
+        ...formErrors,
+        submit: error?.response?.data?.detail || error?.message || 'Failed to create store'
+      });
     }
   };
 
@@ -246,6 +279,13 @@ export const CreateCompanyWithUser: React.FC = () => {
               <StepLabel>Create Admin User</StepLabel>
             </Step>
           </Stepper>
+          
+          {/* Global error message */}
+          {formErrors.submit && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {formErrors.submit}
+            </Alert>
+          )}
           
           {activeStep === 0 ? (
             <form onSubmit={handleCreateCompany}>

@@ -82,12 +82,21 @@ export default function ProfilePage() {
     
     if (!profileData.email) {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
+    } else if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(profileData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    if (profileData.profile_image && !/^https?:\/\/.+/.test(profileData.profile_image)) {
+    if (profileData.profile_image && !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(profileData.profile_image)) {
       newErrors.profile_image = 'Please enter a valid URL';
+    }
+
+    // Additional validations
+    if (profileData.first_name && profileData.first_name.length > 50) {
+      newErrors.first_name = 'First name must be 50 characters or less';
+    }
+
+    if (profileData.last_name && profileData.last_name.length > 50) {
+      newErrors.last_name = 'Last name must be 50 characters or less';
     }
 
     setErrors(newErrors);
@@ -100,6 +109,14 @@ export default function ProfilePage() {
       ...prev,
       [name]: value,
     }));
+
+    // Clear error when field is edited
+    if (errors[name as keyof typeof errors]) {
+      setErrors({
+        ...errors,
+        [name]: '',
+      });
+    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -114,20 +131,23 @@ export default function ProfilePage() {
     
     try {
       const updatedProfile = await authApi.updateProfile({
-        first_name: profileData.first_name,
-        last_name: profileData.last_name,
-        email: profileData.email,
-        profile_image: profileData.profile_image
+        first_name: profileData.first_name?.trim(),
+        last_name: profileData.last_name?.trim(),
+        email: profileData.email.trim(),
+        profile_image: profileData.profile_image?.trim() || undefined
       });
       
       enqueueSnackbar('Profile updated successfully', { variant: 'success' });
       setUpdateSuccess(true);
       
       // Refresh page to show updated user info
-      window.location.reload();
-    } catch (error) {
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error: any) {
       console.error('Error updating profile:', error);
-      enqueueSnackbar('Failed to update profile', { variant: 'error' });
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update profile';
+      enqueueSnackbar(`Error: ${errorMessage}`, { variant: 'error' });
     } finally {
       setIsSaving(false);
     }
