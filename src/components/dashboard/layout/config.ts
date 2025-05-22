@@ -20,6 +20,7 @@ export interface NavSearchConfig {
 
 export const adminNavItems = [
   { key: 'admin-dashboard', title: 'Dashboard', href: paths.admin.dashboard, icon: 'chart-pie' },
+  { key: 'admin-subscription', title: 'Subscription', href: paths.admin.subscription, icon: 'calendar-check' },
   { 
     key: 'admin-product-manager', 
     title: 'Product Manager', 

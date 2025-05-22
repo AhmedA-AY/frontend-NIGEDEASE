@@ -13,6 +13,8 @@ import { Bank as BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
 import { CreditCard as CreditCardIcon } from '@phosphor-icons/react/dist/ssr/CreditCard';
 import { Storefront as StorefrontIcon } from '@phosphor-icons/react/dist/ssr/Storefront';
 import { UserGear as UserGearIcon } from '@phosphor-icons/react/dist/ssr/UserGear';
+import { CalendarCheck as CalendarCheckIcon } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
+import { FileText as FileTextIcon } from '@phosphor-icons/react/dist/ssr/FileText';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -29,4 +31,6 @@ export const navIcons = {
   bank: BankIcon,
   'credit-card': CreditCardIcon,
   'storefront': StorefrontIcon,
+  'calendar-check': CalendarCheckIcon,
+  'file-text': FileTextIcon,
 } as Record<string, Icon>;
