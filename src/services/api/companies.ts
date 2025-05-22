@@ -30,14 +30,14 @@ export interface SubscriptionPlan {
   storage_limit_gb: number;
   max_products: number;
   max_stores: number;
-  max_users: number;
+  max_customers: number;
   created_at: string;
   updated_at: string;
 }
 
 export interface SubscriptionCheckResponse {
   current_users_count: number;
-  max_users: number;
+  max_customers: number;
   current_stores_count: number;
   max_stores: number;
   current_products_count: number;
@@ -58,7 +58,7 @@ export interface SubscriptionPlanCreateData {
   storage_limit_gb?: number;
   max_products?: number;
   max_stores?: number;
-  max_users?: number;
+  max_customers?: number;
 }
 
 export interface SubscriptionPlanUpdateData extends Partial<SubscriptionPlanCreateData> {}
@@ -171,7 +171,7 @@ export const companiesApi = {
         // Create and return a subscription check response
         return {
           current_users_count: companyUsers.length,
-          max_users: subscriptionPlan.max_users,
+          max_customers: subscriptionPlan.max_customers,
           current_stores_count: stores.length,
           max_stores: subscriptionPlan.max_stores,
           current_products_count: totalProducts,
@@ -196,14 +196,14 @@ export const companiesApi = {
           storage_limit_gb: 5,
           max_products: 100,
           max_stores: 5,
-          max_users: 10,
+          max_customers: 10,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
         
         return {
           current_users_count: 0,
-          max_users: defaultPlan.max_users,
+          max_customers: defaultPlan.max_customers,
           current_stores_count: 0,
           max_stores: defaultPlan.max_stores,
           current_products_count: 0,
@@ -334,7 +334,7 @@ export const companiesApi = {
           storage_limit_gb: 5,
           max_products: 100,
           max_stores: 5,
-          max_users: 10,
+          max_customers: 10,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };

@@ -555,10 +555,10 @@ export default function UsersPage() {
   const handleAddUser = () => {
     // Check subscription limits for users
     if (subscriptionData && !isLoadingSubscription) {
-      const { current_users_count, max_users } = subscriptionData;
+      const { current_users_count, max_customers } = subscriptionData;
       
-      if (current_users_count >= max_users) {
-        enqueueSnackbar(`You've reached the maximum number of users (${max_users}) allowed by your subscription plan. Please upgrade your plan to add more users.`, { 
+      if (current_users_count >= max_customers) {
+        enqueueSnackbar(`You've reached the maximum number of users (${max_customers}) allowed by your subscription plan. Please upgrade your plan to add more users.`, { 
           variant: 'error', 
           autoHideDuration: 6000 
         });

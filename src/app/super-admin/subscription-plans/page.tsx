@@ -63,7 +63,7 @@ const subscriptionPlanSchema = zod.object({
   duration_in_months: zod.number().optional(),
   max_products: zod.number().optional(),
   max_stores: zod.number().optional(),
-  max_users: zod.number().optional()
+  max_customers: zod.number().optional()
 });
 
 type SubscriptionPlanFormValues = zod.infer<typeof subscriptionPlanSchema>;
@@ -96,7 +96,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     duration_in_months: 1,
     max_products: 100,
     max_stores: 5,
-    max_users: 10
+    max_customers: 10
   };
   
   const {
@@ -166,7 +166,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     setValue('duration_in_months', plan.duration_in_months || 1);
     setValue('max_products', plan.max_products || 100);
     setValue('max_stores', plan.max_stores || 5);
-    setValue('max_users', plan.max_users || 10);
+    setValue('max_customers', plan.max_customers || 10);
     setEditDialogOpen(true);
   };
   
@@ -194,7 +194,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
         duration_in_months: Number(planData.duration_in_months || 1),
         max_products: Number(planData.max_products || 100),
         max_stores: Number(planData.max_stores || 5),
-        max_users: Number(planData.max_users || 10),
+        max_customers: Number(planData.max_customers || 10),
         features: String(planData.features),
         is_active: Boolean(planData.is_active)
       };
@@ -250,8 +250,8 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
         if (planData.max_stores !== currentPlan.max_stores) 
           changedFields.max_stores = Number(planData.max_stores || 5);
         
-        if (planData.max_users !== currentPlan.max_users) 
-          changedFields.max_users = Number(planData.max_users || 10);
+        if (planData.max_customers !== currentPlan.max_customers) 
+          changedFields.max_customers = Number(planData.max_customers || 10);
           
         console.log('Sending only changed fields:', changedFields);
         
@@ -268,7 +268,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                 duration_in_months: Number(planData.duration_in_months || 1),
                 max_products: Number(planData.max_products || 100),
                 max_stores: Number(planData.max_stores || 5),
-                max_users: Number(planData.max_users || 10),
+                max_customers: Number(planData.max_customers || 10),
                 features: String(planData.features),
                 is_active: Boolean(planData.is_active)
               } as SubscriptionPlanData
@@ -414,7 +414,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                           <TableCell>{plan.storage_limit_gb || 0}</TableCell>
                           <TableCell>{plan.max_products || 0}</TableCell>
                           <TableCell>{plan.max_stores || 0}</TableCell>
-                          <TableCell>{plan.max_users || 0}</TableCell>
+                          <TableCell>{plan.max_customers || 0}</TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={1} alignItems="center">
                               <Box
@@ -658,7 +658,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       />
                       
                       <Controller
-                        name="max_users"
+                        name="max_customers"
                         control={control}
                         render={({ field: { onChange, value, ...rest } }) => (
                           <TextField
@@ -667,8 +667,8 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                             onChange={(e) => onChange(Number(e.target.value))}
                             label="Max Customers"
                             type="number"
-                            error={!!errors.max_users}
-                            helperText={errors.max_users?.message}
+                            error={!!errors.max_customers}
+                            helperText={errors.max_customers?.message}
                             fullWidth
                           />
                         )}
@@ -843,7 +843,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                     Max Customers
                   </Typography>
                   <Typography variant="body1">
-                    {selectedPlan.max_users || 0}
+                    {selectedPlan.max_customers}
                   </Typography>
                 </Grid>
                 

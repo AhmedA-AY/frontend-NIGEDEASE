@@ -185,7 +185,7 @@ export interface SubscriptionPlanData {
   storage_limit_gb: number;
   max_products: number;
   max_stores: number;
-  max_users: number;
+  max_customers: number;
 }
 
 export function useCreateSubscriptionPlan() {
@@ -263,14 +263,14 @@ export function useCheckCompanySubscription(companyId?: string) {
           storage_limit_gb: 1,
           max_products: 10,
           max_stores: 1,
-          max_users: 2,
+          max_customers: 2,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
         
         return {
           current_users_count: 0,
-          max_users: defaultPlan.max_users,
+          max_customers: defaultPlan.max_customers,
           current_stores_count: 0,
           max_stores: defaultPlan.max_stores,
           current_products_count: 0,
