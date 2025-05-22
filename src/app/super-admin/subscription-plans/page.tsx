@@ -345,7 +345,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                         <TableCell>Storage (GB)</TableCell>
                         <TableCell>Max Products</TableCell>
                         <TableCell>Max Stores</TableCell>
-                        <TableCell>Max Users</TableCell>
+                        <TableCell>Max Customers</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell align="right">Actions</TableCell>
                 </TableRow>
@@ -601,7 +601,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                             {...rest}
                             value={value}
                             onChange={(e) => onChange(Number(e.target.value))}
-                            label="Max Users"
+                            label="Max Customers"
                             type="number"
                             error={!!errors.max_users}
                             helperText={errors.max_users?.message}
@@ -776,7 +776,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                 
                 <Grid item xs={6} md={4}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    Max Users
+                    Max Customers
                   </Typography>
                   <Typography variant="body1">
                     {selectedPlan.max_users}
