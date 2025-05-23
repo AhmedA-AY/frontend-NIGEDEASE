@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   FormControl,
@@ -21,6 +21,11 @@ export const StoreSelector = () => {
   const { currentStore, stores, selectStore, refreshStores, isLoading } = useStore();
   const { userRole } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  useEffect(() => {
+    // Refresh stores when component mounts
+    refreshStores();
+  }, []);
 
   // Only show store selector for admin who can have multiple stores
   if (userRole !== 'admin' && userRole !== 'super_admin') {

@@ -42,16 +42,9 @@ import ProductEditModal from '@/components/admin/product-manager/ProductEditModa
 import { useCurrentUser } from '@/hooks/use-auth';
 import { companiesApi } from '@/services/api/companies';
 import { useStore } from '@/providers/store-provider';
-import { useCheckCompanySubscription } from '@/hooks/use-companies';
 
 export default function ProductsPage(): React.JSX.Element {
   const { currentStore } = useStore();
-  const { userInfo } = useCurrentUser();
-  
-  // Add subscription check
-  const { data: subscriptionData, isLoading: isLoadingSubscription } = 
-    useCheckCompanySubscription(userInfo?.company_id);
-    
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
@@ -74,6 +67,7 @@ export default function ProductsPage(): React.JSX.Element {
   });
   const [companies, setCompanies] = useState<any[]>([]);
   const [productUnits, setProductUnits] = useState<any[]>([]);
+  const { userInfo } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
   
   // Fetch products and categories
@@ -154,19 +148,6 @@ export default function ProductsPage(): React.JSX.Element {
     if (!currentStore) {
       enqueueSnackbar('Please select a store first', { variant: 'warning' });
       return;
-    }
-    
-    // Check subscription limits for products
-    if (subscriptionData && !isLoadingSubscription) {
-      const { current_products_count, max_products } = subscriptionData;
-      
-      if (current_products_count >= max_products) {
-        enqueueSnackbar(`You've reached the maximum number of products (${max_products}) allowed by your subscription plan. Please upgrade your plan to add more products.`, { 
-          variant: 'error', 
-          autoHideDuration: 6000 
-        });
-        return;
-      }
     }
     
     console.log('handleAddProduct called');

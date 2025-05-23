@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -29,6 +29,7 @@ import { companiesApi, Company, Currency } from '@/services/api/companies';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore } from '@/providers/store-provider';
 import { useSnackbar } from 'notistack';
+import { InputAdornment } from '@mui/material';
 
 interface ProductItem {
   id: string;
@@ -49,6 +50,9 @@ interface PurchaseData {
   note?: string;
   products: ProductItem[];
   totalAmount: number;
+  tax: string;
+  subtotal?: number;
+  taxAmount?: number;
   paidAmount: number;
   dueAmount: number;
   paymentStatus: string;
@@ -77,6 +81,9 @@ const PurchaseEditModal = ({
     status: 'Ordered',
     products: [],
     totalAmount: 0,
+    tax: '0',
+    subtotal: 0,
+    taxAmount: 0,
     paidAmount: 0,
     dueAmount: 0,
     paymentStatus: 'Unpaid',
@@ -99,6 +106,7 @@ const PurchaseEditModal = ({
   const [paymentModes, setPaymentModes] = React.useState<PaymentMode[]>([]);
   const [currencies, setCurrencies] = React.useState<Currency[]>([]);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [selectedProduct, setSelectedProduct] = React.useState('');
   
   // Load data when modal opens
   React.useEffect(() => {
@@ -139,9 +147,80 @@ const PurchaseEditModal = ({
     }
   }, [open, currentStore, userInfo, enqueueSnackbar]);
   
+  // Reset form data when modal opens with new purchase data
+  React.useEffect(() => {
+    if (open) {
+      // Ensure products is always an array
+      const purchaseWithProducts = {
+        ...purchase,
+        products: purchase.products || []
+      };
+      
+      // Always set the company_id to the current user's company_id if available
+      if (userInfo?.company_id) {
+        purchaseWithProducts.company_id = userInfo.company_id;
+      }
+      
+      // If we have products, calculate the totals directly
+      if (purchaseWithProducts.products.length > 0) {
+        let subtotal = 0;
+        purchaseWithProducts.products.forEach(item => {
+          subtotal += item.subtotal;
+        });
+        
+        const taxPercentage = parseFloat(purchaseWithProducts.tax || '0') || 0;
+        const taxAmount = (subtotal * taxPercentage) / 100;
+        const total = subtotal + taxAmount;
+        
+        purchaseWithProducts.subtotal = subtotal;
+        purchaseWithProducts.taxAmount = taxAmount;
+        purchaseWithProducts.totalAmount = total;
+        purchaseWithProducts.dueAmount = total - (purchaseWithProducts.paidAmount || 0);
+      }
+      
+      setFormData(purchaseWithProducts);
+      setErrors({});
+    }
+  }, [purchase, open, userInfo]);
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'paidAmount') {
+      const paidAmount = parseFloat(value) || 0;
+      
+      setFormData(prev => {
+        const paymentStatus = paidAmount >= prev.totalAmount 
+          ? 'Paid' 
+          : (paidAmount > 0 ? 'Partially Paid' : 'Unpaid');
+          
+        return {
+          ...prev,
+          paidAmount,
+          dueAmount: prev.totalAmount - paidAmount,
+          paymentStatus
+        };
+      });
+    } else if (name === 'tax') {
+      // For tax updates, update the tax value and recalculate in one atomic operation
+      setFormData(prev => {
+        const newTax = value;
+        const taxPercentage = parseFloat(newTax) || 0;
+        const subtotal = prev.subtotal || 0;
+        const taxAmount = (subtotal * taxPercentage) / 100;
+        const total = subtotal + taxAmount;
+        
+        return { 
+          ...prev, 
+          tax: newTax,
+          taxAmount: taxAmount,
+          totalAmount: total,
+          dueAmount: total - (prev.paidAmount || 0)
+        };
+      });
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     
     // Clear error when field is edited
     if (errors[name]) {
@@ -196,42 +275,140 @@ const PurchaseEditModal = ({
     return Object.keys(newErrors).length === 0;
   };
   
+  const handleProductQuantityChange = (id: string, quantity: number) => {
+    setFormData(prev => {
+      const updatedProducts = prev.products.map(product => {
+        if (product.id === id) {
+          return { 
+            ...product, 
+            quantity: quantity,
+            subtotal: quantity * product.unitPrice - product.discount
+          };
+        }
+        return product;
+      });
+      
+      // Calculate new totals directly
+      let subtotal = 0;
+      updatedProducts.forEach(item => {
+        subtotal += item.subtotal;
+      });
+      
+      const taxPercentage = parseFloat(prev.tax) || 0;
+      const taxAmount = (subtotal * taxPercentage) / 100;
+      const total = subtotal + taxAmount;
+      
+      return {
+        ...prev, 
+        products: updatedProducts,
+        subtotal,
+        taxAmount,
+        totalAmount: total,
+        dueAmount: total - (prev.paidAmount || 0)
+      };
+    });
+  };
+  
+  const handleProductPriceChange = (id: string, price: number) => {
+    setFormData(prev => {
+      const updatedProducts = prev.products.map(product => {
+        if (product.id === id) {
+          return { 
+            ...product, 
+            unitPrice: price,
+            subtotal: product.quantity * price - product.discount
+          };
+        }
+        return product;
+      });
+      
+      // Calculate new totals directly
+      let subtotal = 0;
+      updatedProducts.forEach(item => {
+        subtotal += item.subtotal;
+      });
+      
+      const taxPercentage = parseFloat(prev.tax) || 0;
+      const taxAmount = (subtotal * taxPercentage) / 100;
+      const total = subtotal + taxAmount;
+      
+      return {
+        ...prev, 
+        products: updatedProducts,
+        subtotal,
+        taxAmount,
+        totalAmount: total,
+        dueAmount: total - (prev.paidAmount || 0)
+      };
+    });
+  };
+
   const handleAddProduct = () => {
-    // Get the selected product from a dropdown instead of using supplier ID
-    // For now, just select the first product in the list as a fallback
-    if (products.length === 0) {
-      enqueueSnackbar('No products available', { variant: 'error' });
-      return;
+    if (selectedProduct) {
+      const product = products.find(p => p.id === selectedProduct);
+      if (product) {
+        const unitPrice = parseFloat(product.purchase_price) || 0;
+        const newProduct: ProductItem = {
+          id: product.id,
+          name: product.name,
+          quantity: 1,
+          unitPrice,
+          discount: 0,
+          tax: 0,
+          subtotal: unitPrice
+        };
+        
+        setFormData(prev => {
+          const updatedProducts = [...prev.products, newProduct];
+          
+          // Calculate new totals directly
+          let subtotal = 0;
+          updatedProducts.forEach(item => {
+            subtotal += item.subtotal;
+          });
+          
+          const taxPercentage = parseFloat(prev.tax) || 0;
+          const taxAmount = (subtotal * taxPercentage) / 100;
+          const total = subtotal + taxAmount;
+          
+          return {
+            ...prev, 
+            products: updatedProducts,
+            subtotal,
+            taxAmount,
+            totalAmount: total,
+            dueAmount: total - (prev.paidAmount || 0)
+          };
+        });
+        
+        setSelectedProduct('');
+      }
     }
-    
-    const product = products[0]; // Default to first product
-    
-    const newProduct: ProductItem = {
-      id: product.id,
-      name: product.name,
-      quantity: 1,
-      unitPrice: parseFloat(product.purchase_price) || 0,
-      discount: 0,
-      tax: 0,
-      subtotal: parseFloat(product.purchase_price) || 0
-    };
-    
-    setFormData(prev => ({
-      ...prev,
-      products: [...prev.products, newProduct],
-      totalAmount: prev.totalAmount + newProduct.subtotal
-    }));
   };
   
   const handleRemoveProduct = (id: string) => {
-    const productToRemove = formData.products.find(p => p.id === id);
-    const subtotal = productToRemove ? productToRemove.subtotal : 0;
-    
-    setFormData(prev => ({
-      ...prev,
-      products: prev.products.filter(p => p.id !== id),
-      totalAmount: prev.totalAmount - subtotal
-    }));
+    setFormData(prev => {
+      const updatedProducts = prev.products.filter(p => p.id !== id);
+      
+      // Calculate new totals directly
+      let subtotal = 0;
+      updatedProducts.forEach(item => {
+        subtotal += item.subtotal;
+      });
+      
+      const taxPercentage = parseFloat(prev.tax) || 0;
+      const taxAmount = (subtotal * taxPercentage) / 100;
+      const total = subtotal + taxAmount;
+      
+      return {
+        ...prev, 
+        products: updatedProducts,
+        subtotal,
+        taxAmount,
+        totalAmount: total,
+        dueAmount: total - (prev.paidAmount || 0)
+      };
+    });
   };
   
   const handleSave = () => {
@@ -366,17 +543,54 @@ const PurchaseEditModal = ({
             </FormControl>
           </Grid>
           
+          {/* Tax Percentage */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="tax"
+              label="Tax Percentage"
+              type="number"
+              value={formData.tax || '0'}
+              onChange={handleInputChange}
+              fullWidth
+              InputProps={{ 
+                inputProps: { min: 0, step: 0.01 },
+                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+              }}
+              helperText="Tax percentage to apply to the purchase"
+            />
+          </Grid>
+          
           {/* Products */}
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Products</Typography>
-              <Button 
-                variant="contained" 
-                startIcon={<PlusIcon />}
-                onClick={handleAddProduct}
-              >
-                Add Product
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <FormControl sx={{ minWidth: 200 }}>
+                  <InputLabel id="product-select-label">Select Product</InputLabel>
+                  <Select
+                    labelId="product-select-label"
+                    id="selectedProduct"
+                    value={selectedProduct}
+                    label="Select Product"
+                    onChange={(e) => setSelectedProduct(e.target.value as string)}
+                    size="small"
+                  >
+                    {products.map(product => (
+                      <MenuItem key={product.id} value={product.id}>
+                        {product.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Button 
+                  variant="contained" 
+                  startIcon={<PlusIcon />}
+                  onClick={handleAddProduct}
+                  disabled={!selectedProduct}
+                >
+                  Add Product
+                </Button>
+              </Box>
             </Box>
             
             {errors.products && (
@@ -400,8 +614,26 @@ const PurchaseEditModal = ({
                   formData.products.map(product => (
                     <TableRow key={product.id}>
                       <TableCell>{product.name}</TableCell>
-                      <TableCell align="right">{product.quantity}</TableCell>
-                      <TableCell align="right">{product.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell align="right">
+                        <TextField
+                          type="number"
+                          value={product.quantity}
+                          onChange={(e) => handleProductQuantityChange(product.id, parseFloat(e.target.value) || 0)}
+                          size="small"
+                          InputProps={{ inputProps: { min: 1, style: { textAlign: 'right' } } }}
+                          sx={{ width: '80px' }}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <TextField
+                          type="number"
+                          value={product.unitPrice}
+                          onChange={(e) => handleProductPriceChange(product.id, parseFloat(e.target.value) || 0)}
+                          size="small" 
+                          InputProps={{ inputProps: { min: 0, step: 0.01, style: { textAlign: 'right' } } }}
+                          sx={{ width: '100px' }}
+                        />
+                      </TableCell>
                       <TableCell align="right">{product.subtotal.toFixed(2)}</TableCell>
                       <TableCell align="right">
                         <IconButton 
@@ -422,15 +654,38 @@ const PurchaseEditModal = ({
                   </TableRow>
                 )}
                 
+                {/* Calculate subtotal, tax, and total */}
+                {formData.products.length > 0 && (
+                <>
+                <TableRow>
+                  <TableCell colSpan={3} align="right">
+                    <strong>Subtotal:</strong>
+                  </TableCell>
+                  <TableCell align="right">
+                    <strong>${(formData.subtotal || 0).toFixed(2)}</strong>
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
+                <TableRow>
+                  <TableCell colSpan={3} align="right">
+                    <strong>Tax ({formData.tax || 0}%):</strong>
+                  </TableCell>
+                  <TableCell align="right">
+                    <strong>${(formData.taxAmount || 0).toFixed(2)}</strong>
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
                 <TableRow>
                   <TableCell colSpan={3} align="right">
                     <strong>Total:</strong>
                   </TableCell>
                   <TableCell align="right">
-                    <strong>{formData.totalAmount.toFixed(2)}</strong>
+                    <strong>${formData.totalAmount.toFixed(2)}</strong>
                   </TableCell>
                   <TableCell />
                 </TableRow>
+                </>
+                )}
               </TableBody>
             </Table>
           </Grid>

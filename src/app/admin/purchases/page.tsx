@@ -49,6 +49,17 @@ import InputLabel from '@mui/material/InputLabel';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import TableContainer from '@mui/material/TableContainer';
 import Paper from '@mui/material/Paper';
+import { 
+  usePurchases, 
+  useCreatePurchase, 
+  useUpdatePurchase, 
+  useDeletePurchase,
+  usePurchaseItems,
+  useSuppliers,
+  usePaymentModes,
+  useProducts,
+  useCurrencies
+} from '@/hooks/queries';
 
 // Purchase modal props interface
 interface PurchaseModalProps {
@@ -77,15 +88,6 @@ export default function PurchasesPage(): React.JSX.Element {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [currentPurchase, setCurrentPurchase] = React.useState<any>(null);
   const [purchaseToDelete, setPurchaseToDelete] = React.useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [stores, setStores] = useState<InventoryStore[]>([]);
-  const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [currentQuantity, setCurrentQuantity] = useState<number>(1);
   const [selectedSupplier, setSelectedSupplier] = useState<string>('');
@@ -94,43 +96,71 @@ export default function PurchasesPage(): React.JSX.Element {
   // Get current user's company
   const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
   
-  // Fetch purchases and suppliers
-  const fetchData = useCallback(async () => {
+  // TanStack Query Hooks
+  const { 
+    data: purchases = [], 
+    isLoading: isLoadingPurchases 
+  } = usePurchases(currentStore?.id);
+  
+  const { 
+    data: suppliers = [], 
+    isLoading: isLoadingSuppliers 
+  } = useSuppliers(currentStore?.id);
+
+  const { 
+    data: paymentModes = [], 
+    isLoading: isLoadingPaymentModes 
+  } = usePaymentModes(currentStore?.id);
+  
+  const {
+    data: products = [],
+    isLoading: isLoadingProducts
+  } = useProducts(currentStore?.id);
+  
+  const {
+    data: currencies = [],
+    isLoading: isLoadingCurrencies
+  } = useCurrencies();
+
+  // Regular state for entities that don't yet have query hooks
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [stores, setStores] = useState<InventoryStore[]>([]);
+  const [filteredStores, setFilteredStores] = useState<InventoryStore[]>([]);
+
+  // Mutations
+  const createPurchaseMutation = useCreatePurchase();
+  const updatePurchaseMutation = useUpdatePurchase();
+  const deletePurchaseMutation = useDeletePurchase();
+
+  const isLoading = 
+    isLoadingUser || 
+    isLoadingPurchases || 
+    isLoadingSuppliers || 
+    isLoadingPaymentModes ||
+    isLoadingProducts ||
+    isLoadingCurrencies ||
+    createPurchaseMutation.isPending ||
+    updatePurchaseMutation.isPending ||
+    deletePurchaseMutation.isPending;
+
+  // Fetch remaining data
+  const fetchRemainingData = useCallback(async () => {
     if (!currentStore) {
       enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
-      setIsLoading(false);
       return;
     }
     
-    setIsLoading(true);
     try {
-      console.log(`Fetching purchase data for store: ${currentStore.name} (${currentStore.id})`);
       const [
-        purchasesData, 
-        suppliersData, 
         companiesData, 
-        storesData, 
-        currenciesData, 
-        paymentModesData,
-        productsData
+        storesData
       ] = await Promise.all([
-        transactionsApi.getPurchases(currentStore.id),
-        transactionsApi.getSuppliers(currentStore.id),
         companiesApi.getCompanies(),
-        inventoryApi.getStores(),
-        companiesApi.getCurrencies(),
-        transactionsApi.getPaymentModes(currentStore.id),
-        inventoryApi.getProducts(currentStore.id)
+        inventoryApi.getStores()
       ]);
       
-      console.log('Purchases data received:', purchasesData);
-      setPurchases(purchasesData);
-      setSuppliers(suppliersData);
       setCompanies(companiesData);
       setStores(storesData);
-      setCurrencies(currenciesData);
-      setPaymentModes(paymentModesData);
-      setProducts(productsData);
       
       // Filter stores based on user's company
       if (userInfo?.company_id) {
@@ -141,28 +171,20 @@ export default function PurchasesPage(): React.JSX.Element {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      enqueueSnackbar('Failed to load data', { variant: 'error' });
-    } finally {
-      setIsLoading(false);
+      enqueueSnackbar('Failed to load some data', { variant: 'error' });
     }
   }, [enqueueSnackbar, currentStore, userInfo]);
 
   useEffect(() => {
     if (!isLoadingUser && currentStore) {
-      fetchData();
+      fetchRemainingData();
     }
-  }, [fetchData, isLoadingUser, currentStore]);
+  }, [fetchRemainingData, isLoadingUser, currentStore]);
 
   // Listen for store change events
   useEffect(() => {
     const handleStoreChange = (event: Event) => {
-      // Force refetch data when store changes
-      if (currentStore) {
-        // Small delay to ensure store context has been updated
-        setTimeout(() => {
-          fetchData();
-        }, 100);
-      }
+      // State will be automatically refetched by the queries when currentStore changes
     };
 
     window.addEventListener(STORE_CHANGED_EVENT, handleStoreChange);
@@ -170,7 +192,7 @@ export default function PurchasesPage(): React.JSX.Element {
     return () => {
       window.removeEventListener(STORE_CHANGED_EVENT, handleStoreChange);
     };
-  }, [fetchData]);
+  }, []);
 
   // Filter stores when userInfo changes
   useEffect(() => {
@@ -209,12 +231,20 @@ export default function PurchasesPage(): React.JSX.Element {
   const totalPaid = 0; // Not available in the API directly
   const totalDue = totalAmount - totalPaid;
 
-  const calculateTotalAmount = (products: any[]) => {
-    return products.reduce((sum, item) => {
+  // Calculate total amount with tax
+  const calculateTotalAmount = (products: any[], taxPercentage: number = 0) => {
+    // Calculate subtotal from products
+    const subtotal = products.reduce((sum, item) => {
       const product = products.find(p => p.id === item.id);
       const price = product ? parseFloat(product.purchase_price || '0') : 0;
       return sum + (item.quantity * price);
     }, 0);
+    
+    // Calculate tax amount
+    const taxAmount = (subtotal * taxPercentage) / 100;
+    
+    // Return total including tax
+    return subtotal + taxAmount;
   };
 
   const addProductToOrder = () => {
@@ -249,15 +279,28 @@ export default function PurchasesPage(): React.JSX.Element {
       });
     }
     
-    const totalAmount = calculateTotalAmount(newProducts);
+    // Calculate subtotal
+    const subtotal = newProducts.reduce((sum, product) => {
+      return sum + (product.quantity * product.unitPrice);
+    }, 0);
     
+    // Calculate tax amount based on the tax percentage
+    const taxPercentage = parseFloat(currentPurchase.tax) || 0;
+    const taxAmount = (subtotal * taxPercentage) / 100;
+    
+    // Calculate total with tax
+    const totalWithTax = subtotal + taxAmount;
+    
+    // Update the current purchase with new products and recalculated amounts
     setCurrentPurchase({
-      ...currentPurchase, 
+      ...currentPurchase,
       products: newProducts,
-      totalAmount: totalAmount
+      subtotal: subtotal,
+      taxAmount: taxAmount,
+      totalAmount: totalWithTax
     });
     
-    // Reset selection
+    // Reset selected product and quantity
     setSelectedProduct('');
     setCurrentQuantity(1);
   };
@@ -301,73 +344,79 @@ export default function PurchasesPage(): React.JSX.Element {
   };
 
   const handleAddNewPurchase = () => {
-    if (isLoadingUser) {
-      enqueueSnackbar('Please wait while we load your user information...', { variant: 'info' });
-      return;
-    }
-
-    if (!userInfo?.company_id) {
-      enqueueSnackbar('Unable to determine your company. Please try logging in again.', { variant: 'error' });
-      return;
-    }
-
-    if (stores.length === 0) {
-      enqueueSnackbar('No stores available. Please contact your administrator.', { variant: 'error' });
-      return;
-    }
-
-    if (currencies.length === 0) {
-      enqueueSnackbar('No currencies available. Please contact your administrator.', { variant: 'error' });
-      return;
-    }
-
-    if (paymentModes.length === 0) {
-      enqueueSnackbar('No payment modes available. Please contact your administrator.', { variant: 'error' });
-      return;
-    }
-
-    // Use the current user's company ID
-    const userCompanyId = userInfo.company_id;
-    // Get the first store from the stores array
-    const defaultStoreId = stores[0].id;
-    const defaultCurrencyId = currencies[0].id;
-    const defaultPaymentModeId = paymentModes[0].id;
-    
     setCurrentPurchase({
-      date: new Date().toISOString().split('T')[0],
+      id: null, // New purchase doesn't have an ID yet
+      store_id: currentStore?.id || '',
       supplier: '',
-      status: 'Ordered',
+      currency_id: currencies.length > 0 ? currencies[0].id : '',
+      payment_mode_id: paymentModes.length > 0 ? paymentModes[0].id : '',
+      is_credit: false,
       products: [],
       totalAmount: 0,
-      paidAmount: 0,
-      dueAmount: 0,
-      paymentStatus: 'Unpaid',
-      company_id: userCompanyId,
-      store_id: defaultStoreId,
-      currency_id: defaultCurrencyId,
-      payment_mode_id: defaultPaymentModeId,
-      is_credit: false
+      subtotal: 0,
+      tax: '0',
+      taxAmount: 0,
+      date: new Date().toISOString().split('T')[0] // Current date in YYYY-MM-DD format
     });
     setIsPurchaseModalOpen(true);
   };
 
   const handleEditPurchase = async (id: string) => {
     if (!currentStore) {
-      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
     
-    setIsLoading(true);
     try {
-      // Set purchase to edit
-      const purchaseToEdit = await transactionsApi.getPurchase(currentStore.id, id);
-      setCurrentPurchase(purchaseToEdit);
+      const purchase = purchases.find(p => p.id === id);
+      if (!purchase) {
+        enqueueSnackbar('Purchase not found', { variant: 'error' });
+        return;
+      }
+      
+      // Get purchase items
+      const items = await transactionsApi.getPurchaseItems(currentStore.id, purchase.id);
+      
+      // Map items to products format expected by the form
+      const purchaseProducts = items.map(item => {
+        const product = products.find(p => p.id === item.product.id);
+        return {
+          id: item.product.id,
+          name: item.product.name,
+          quantity: parseFloat(item.quantity),
+          unitPrice: parseFloat(product?.purchase_price || '0')
+        };
+      });
+      
+      // Calculate subtotal
+      const subtotal = purchaseProducts.reduce((sum, product) => {
+        return sum + (product.quantity * product.unitPrice);
+      }, 0);
+      
+      // Get tax percentage (default to 0 if not present)
+      const taxPercentage = purchase.tax ? parseFloat(purchase.tax) : 0;
+      
+      // Calculate tax amount
+      const taxAmount = (subtotal * taxPercentage) / 100;
+      
+      // Prepare purchase data for editing
+      setCurrentPurchase({
+        id: purchase.id,
+        supplier: purchase.supplier.id,
+        currency_id: purchase.currency.id,
+        payment_mode_id: purchase.payment_mode.id,
+        is_credit: purchase.is_credit,
+        products: purchaseProducts,
+        totalAmount: parseFloat(purchase.total_amount),
+        subtotal: subtotal,
+        tax: purchase.tax || '0',
+        taxAmount: taxAmount,
+      });
+      
       setIsPurchaseModalOpen(true);
     } catch (error) {
-      console.error('Error fetching purchase details:', error);
+      console.error('Error loading purchase details:', error);
       enqueueSnackbar('Failed to load purchase details', { variant: 'error' });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -382,12 +431,11 @@ export default function PurchasesPage(): React.JSX.Element {
       return;
     }
     
-    setIsLoading(true);
     try {
-      await transactionsApi.deletePurchase(currentStore.id, purchaseToDelete);
-      
-      // Remove the deleted purchase from the state
-      setPurchases(purchases.filter(purchase => purchase.id !== purchaseToDelete));
+      await deletePurchaseMutation.mutateAsync({ 
+        storeId: currentStore.id, 
+        id: purchaseToDelete 
+      });
       
       enqueueSnackbar('Purchase deleted successfully', { variant: 'success' });
       setIsDeleteModalOpen(false);
@@ -395,8 +443,6 @@ export default function PurchasesPage(): React.JSX.Element {
     } catch (error) {
       console.error('Error deleting purchase:', error);
       enqueueSnackbar('Failed to delete purchase', { variant: 'error' });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -425,67 +471,46 @@ export default function PurchasesPage(): React.JSX.Element {
       enqueueSnackbar('Please select a payment mode', { variant: 'error' });
       return;
     }
-    
-    setIsLoading(true);
-    try {
-      // Calculate the total amount based on products
-      const totalAmount = calculateTotalAmount(purchaseData.products);
 
-      const formattedData = {
+    try {
+      // Prepare purchase data
+      const createOrUpdateData = {
         store_id: currentStore.id,
         supplier_id: purchaseData.supplier,
-        total_amount: totalAmount.toString(),
+        total_amount: purchaseData.totalAmount.toString(),
+        tax: purchaseData.tax || '0',
         currency_id: purchaseData.currency_id,
         payment_mode_id: purchaseData.payment_mode_id,
-        is_credit: purchaseData.is_credit,
+        is_credit: purchaseData.is_credit || false,
         items: purchaseData.products.map((product: any) => ({
           product_id: product.id,
           quantity: product.quantity.toString()
-        }))
+        })),
       };
-      
-      let purchaseId;
-      
+
       if (purchaseData.id) {
         // Update existing purchase
-        await transactionsApi.updatePurchase(currentStore.id, purchaseData.id, formattedData);
-        purchaseId = purchaseData.id;
+        await updatePurchaseMutation.mutateAsync({
+          storeId: currentStore.id,
+          id: purchaseData.id,
+          data: createOrUpdateData
+        });
         enqueueSnackbar('Purchase updated successfully', { variant: 'success' });
       } else {
         // Create new purchase
-        const newPurchase = await transactionsApi.createPurchase(currentStore.id, formattedData);
-        purchaseId = newPurchase.id;
+        await createPurchaseMutation.mutateAsync({
+          storeId: currentStore.id,
+          data: createOrUpdateData
+        });
         enqueueSnackbar('Purchase created successfully', { variant: 'success' });
       }
-      
-      // If this is a credit purchase, create a payable record
-      if (purchaseData.is_credit && purchaseId) {
-        try {
-          // Create payable for credit purchase
-          const payableData = {
-            store_id: currentStore.id,
-            purchase: purchaseId,
-            amount: totalAmount.toString(),
-            currency: purchaseData.currency_id
-          };
-          
-          await financialsApi.createPayable(currentStore.id, payableData);
-          console.log('Payable created successfully for credit purchase:', purchaseId);
-          enqueueSnackbar('Payable record created for credit purchase', { variant: 'info' });
-        } catch (payableError) {
-          console.error('Error creating payable:', payableError);
-          enqueueSnackbar('Purchase saved but failed to create payable record', { variant: 'warning' });
-        }
-      }
-      
+
+      // Close modal and reset state
       setIsPurchaseModalOpen(false);
-      fetchData();
+      
     } catch (error: any) {
       console.error('Error saving purchase:', error);
-      const errorMessage = error?.message || error?.error || 'Failed to save purchase';
-      enqueueSnackbar(errorMessage, { variant: 'error' });
-    } finally {
-      setIsLoading(false);
+      enqueueSnackbar(error.message || 'Failed to save purchase', { variant: 'error' });
     }
   };
 
@@ -495,39 +520,102 @@ export default function PurchasesPage(): React.JSX.Element {
     { label: 'Purchases', url: paths.admin.purchases },
   ];
 
-  const PurchaseModal = ({ open, onClose, onSave, purchase, suppliers, currencies, paymentModes, isLoading }: PurchaseModalProps) => {
-    const [formData, setFormData] = useState<any>(purchase);
-
+  const PurchaseModal = ({ open, onClose, onSave, purchase, suppliers, currencies, paymentModes, isLoading, products, selectedProduct, currentQuantity, setSelectedProduct, setCurrentQuantity }: PurchaseModalProps) => {
+    // Initialize formData with purchase but don't include tax initially to avoid the loop
+    const [formData, setFormData] = useState<any>(() => {
+      const initialData = purchase ? { ...purchase } : {};
+      // Move calculations outside of the dependency cycle
+      if (initialData?.products?.length > 0) {
+        const subtotal = initialData.products.reduce(
+          (sum: number, product: any) => sum + (product.quantity * product.unitPrice), 
+          0
+        );
+        initialData.subtotal = subtotal;
+        
+        // Don't calculate tax amounts here - we'll do it separately
+        initialData.taxAmount = initialData.taxAmount || 0;
+        initialData.totalAmount = initialData.totalAmount || subtotal;
+      }
+      
+      return initialData;
+    });
+    
+    // Keep tax as a separate state to break the infinite loop cycle
+    const [taxValue, setTaxValue] = useState<string>(purchase?.tax || '0');
+    
+    // Update formData when purchase changes (for edit/new purchase)
     useEffect(() => {
-      setFormData(purchase);
+      if (purchase) {
+        const initialData = { ...purchase };
+        setTaxValue(initialData.tax || '0');
+        setFormData(initialData);
+      }
     }, [purchase]);
 
-    const handleChange = (e: any) => {
+    // Calculate totals separately when taxValue changes
+    useEffect(() => {
+      if (formData?.products?.length > 0) {
+        const subtotal = formData.products.reduce(
+          (sum: number, product: any) => sum + (product.quantity * product.unitPrice),
+          0
+        );
+        
+        const taxPercentage = parseFloat(taxValue) || 0;
+        const taxAmount = (subtotal * taxPercentage) / 100;
+        
+        setFormData((prevData: any) => ({
+          ...prevData,
+          subtotal,
+          taxAmount,
+          totalAmount: subtotal + taxAmount,
+          tax: taxValue // Only update tax value here, not in the normal onChange handler
+        }));
+      }
+    }, [taxValue]);
+
+    const handleChange = useCallback((e: any) => {
       const { name, value, type, checked } = e.target;
-      setFormData({
-        ...formData,
-        [name]: type === 'checkbox' ? checked : value,
-      });
-    };
-
-    const handleSubmit = () => {
-      onSave(formData);
-    };
-
-    const removeProductFromOrder = (productId: string) => {
-      const updatedProducts = formData.products.filter((product: any) => product.id !== productId);
+      const newValue = type === 'checkbox' ? checked : value;
       
-      // Recalculate total amount
-      const totalAmount = updatedProducts.reduce((sum: number, product: any) => {
-        return sum + (product.quantity * product.unitPrice);
-      }, 0);
+      // Special handling for tax field to avoid Material-UI's dirty check loops
+      if (name === 'tax') {
+        setTaxValue(value);
+        return; // Don't update formData directly for tax
+      }
       
-      setFormData({
+      // For all other fields, update formData normally
+      setFormData((prev: any) => ({
+        ...prev,
+        [name]: newValue
+      }));
+    }, []);
+
+    const handleSubmit = useCallback(() => {
+      // Ensure tax is included in the final data
+      onSave({
         ...formData,
-        products: updatedProducts,
-        totalAmount
+        tax: taxValue
       });
-    };
+    }, [formData, taxValue, onSave]);
+
+    const removeProductFromOrder = useCallback((productId: string) => {
+      setFormData((prev: any) => {
+        const updatedProducts = prev.products.filter((product: any) => product.id !== productId);
+        
+        // Calculate subtotal
+        const subtotal = updatedProducts.reduce(
+          (sum: number, product: any) => sum + (product.quantity * product.unitPrice),
+          0
+        );
+        
+        // Return updated state (tax calculation will happen in the useEffect)
+        return {
+          ...prev,
+          products: updatedProducts,
+          subtotal
+        };
+      });
+    }, []);
 
     return (
       <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
@@ -667,6 +755,18 @@ export default function PurchasesPage(): React.JSX.Element {
                         </TableRow>
                       ))}
                       <TableRow>
+                        <TableCell colSpan={3} align="right"><strong>Subtotal:</strong></TableCell>
+                        <TableCell align="right" colSpan={2}>
+                          <strong>${formData.subtotal ? formData.subtotal.toFixed(2) : '0.00'}</strong>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell colSpan={3} align="right"><strong>Tax ({formData.tax || 0}%):</strong></TableCell>
+                        <TableCell align="right" colSpan={2}>
+                          <strong>${formData.taxAmount ? formData.taxAmount.toFixed(2) : '0.00'}</strong>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
                         <TableCell colSpan={3} align="right"><strong>Total Amount:</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
                           <strong>${formData.totalAmount ? formData.totalAmount.toFixed(2) : '0.00'}</strong>
@@ -718,7 +818,23 @@ export default function PurchasesPage(): React.JSX.Element {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Tax Percentage"
+                  name="tax"
+                  type="number"
+                  value={taxValue}
+                  onChange={handleChange}
+                  InputProps={{ 
+                    inputProps: { min: 0, step: 0.01 },
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                  }}
+                  disabled={isLoading}
+                  helperText="Tax percentage to apply to the purchase"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -1080,28 +1196,26 @@ export default function PurchasesPage(): React.JSX.Element {
       )}
 
       {/* Modals */}
-      {isPurchaseModalOpen && currentPurchase && (
-        <PurchaseModal
-          open={isPurchaseModalOpen}
-          onClose={() => setIsPurchaseModalOpen(false)}
-          onSave={handleSavePurchase}
-          purchase={currentPurchase}
-          suppliers={suppliers}
-          currencies={currencies}
-          paymentModes={paymentModes}
-          isLoading={isLoading}
-          products={products}
-          selectedProduct={selectedProduct}
-          currentQuantity={currentQuantity}
-          setSelectedProduct={setSelectedProduct}
-          setCurrentQuantity={setCurrentQuantity}
-        />
-      )}
+      <PurchaseModal
+        open={isPurchaseModalOpen}
+        onClose={() => setIsPurchaseModalOpen(false)}
+        onSave={handleSavePurchase}
+        purchase={currentPurchase}
+        suppliers={suppliers}
+        currencies={currencies}
+        paymentModes={paymentModes}
+        isLoading={isLoading}
+        products={products}
+        selectedProduct={selectedProduct}
+        currentQuantity={currentQuantity}
+        setSelectedProduct={setSelectedProduct}
+        setCurrentQuantity={setCurrentQuantity}
+      />
       
-      <DeleteConfirmationModal
-        open={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleConfirmDelete}
+      <DeleteConfirmationModal 
+        open={isDeleteModalOpen} 
+        onClose={() => setIsDeleteModalOpen(false)} 
+        onConfirm={handleConfirmDelete} 
         title="Confirm Delete"
         message={`Are you sure you want to delete this purchase?`}
       />

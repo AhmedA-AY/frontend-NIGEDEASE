@@ -172,27 +172,20 @@ export default function SalesPage(): React.JSX.Element {
   };
 
   const handleAddNewSale = () => {
-    if (!currentStore) {
-      enqueueSnackbar('Please select a store first', { variant: 'warning' });
-      return;
-    }
-    
-    const defaultPaymentModeId = paymentModes.length > 0 ? paymentModes[0].id : '';
-    const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
-    
     setCurrentSale({
       date: new Date().toISOString().split('T')[0],
       customer: '',
-      status: 'Processing',
+      status: 'Ordered',
       products: [],
       totalAmount: 0,
+      tax: '0',
       paidAmount: 0,
       dueAmount: 0,
       paymentStatus: 'Unpaid',
-      store_id: currentStore.id,
-      payment_mode_id: defaultPaymentModeId,
-      currency_id: defaultCurrencyId,
-      is_credit: true
+      store_id: currentStore?.id || '',
+      currency_id: currencies.length > 0 ? currencies[0].id : '',
+      payment_mode_id: paymentModes.length > 0 ? paymentModes[0].id : '',
+      is_credit: false
     });
     setIsSaleModalOpen(true);
   };
@@ -203,58 +196,43 @@ export default function SalesPage(): React.JSX.Element {
       return;
     }
     
-    setEditModalLoading(true);
     try {
-      const saleToEdit = sales.find(sale => sale.id === saleId);
-      if (!saleToEdit) {
-        enqueueSnackbar('Sale not found', { variant: 'error' });
-        return;
-      }
-      
-      // Fetch sale items
+      setEditModalLoading(true);
+      const saleToEdit = await transactionsApi.getSale(currentStore.id, saleId);
       const saleItems = await transactionsApi.getSaleItems(currentStore.id, saleId);
       
-      // Convert to the format expected by the edit modal
-      const products = await Promise.all(saleItems.map(async (item) => {
-        let product;
-        try {
-          product = await inventoryApi.getProduct(currentStore.id, item.product.id);
-        } catch (err) {
-          console.error(`Error fetching product ${item.product.id}:`, err);
-          product = item.product;
-        }
-        
-        return {
-          id: item.product.id,
-          name: product.name,
-          quantity: parseInt(item.quantity),
-          price: product.sale_price ? parseFloat(product.sale_price) : 0,
-          discount: 0, // Not available from API
-          tax: 0, // Not available from API
-          subtotal: parseInt(item.quantity) * (product.sale_price ? parseFloat(product.sale_price) : 0)
-        };
+      // Map items to products format expected by the form
+      const products = saleItems.map(item => ({
+        id: item.product.id,
+        name: item.product.name,
+        quantity: parseInt(item.quantity, 10),
+        unitPrice: item.product.sale_price ? parseFloat(item.product.sale_price) : 0,
+        discount: 0,
+        tax: 0,
+        subtotal: (parseInt(item.quantity, 10) * (item.product.sale_price ? parseFloat(item.product.sale_price) : 0))
       }));
       
       setCurrentSale({
         id: saleToEdit.id,
         date: new Date(saleToEdit.created_at).toISOString().split('T')[0],
         customer: saleToEdit.customer.id,
-        status: saleToEdit.status,
+        status: saleToEdit.status || (saleToEdit.is_credit ? 'Credit' : 'Confirmed'),
         products: products,
         totalAmount: parseFloat(saleToEdit.total_amount),
-        paidAmount: 0, // Not available directly
-        dueAmount: parseFloat(saleToEdit.total_amount), // Assuming full amount is due
-        paymentStatus: saleToEdit.is_credit ? 'Unpaid' : 'Paid',
+        tax: saleToEdit.tax || '0',
+        paidAmount: 0,
+        dueAmount: parseFloat(saleToEdit.total_amount),
+        paymentStatus: 'Unpaid',
         store_id: saleToEdit.store.id,
-        payment_mode_id: saleToEdit.payment_mode.id,
         currency_id: saleToEdit.currency.id,
+        payment_mode_id: saleToEdit.payment_mode.id,
         is_credit: saleToEdit.is_credit
       });
       
       setIsSaleModalOpen(true);
-      handleMenuClose(saleId);
+      
     } catch (error) {
-      console.error('Error fetching sale details:', error);
+      console.error('Error loading sale details:', error);
       enqueueSnackbar('Failed to load sale details', { variant: 'error' });
     } finally {
       setEditModalLoading(false);
@@ -304,6 +282,7 @@ export default function SalesPage(): React.JSX.Element {
         store_id: currentStore.id,
         customer_id: saleData.customer,
         total_amount: saleData.totalAmount.toString(),
+        tax: saleData.tax || '0',
         currency_id: saleData.currency_id,
         payment_mode_id: saleData.payment_mode_id,
         is_credit: saleData.is_credit,

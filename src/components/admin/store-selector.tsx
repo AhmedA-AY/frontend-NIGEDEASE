@@ -23,7 +23,7 @@ export default function StoreSelector() {
     };
     
     loadStores();
-  }, [refreshStores]);
+  }, []);
 
   const handleStoreChange = (event: SelectChangeEvent<string>) => {
     const storeId = event.target.value;

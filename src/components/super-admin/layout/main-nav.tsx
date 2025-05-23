@@ -18,8 +18,16 @@ export function MainNav(): React.JSX.Element {
   const { userInfo } = useAuth();
   const userPopover = usePopover<HTMLDivElement>();
 
-  // Generate user initials from email
+  // Generate user initials from name or email
   const userInitials = React.useMemo(() => {
+    if (userInfo?.first_name && userInfo?.last_name) {
+      return `${userInfo.first_name.charAt(0)}${userInfo.last_name.charAt(0)}`.toUpperCase();
+    }
+    
+    if (userInfo?.first_name) {
+      return userInfo.first_name.charAt(0).toUpperCase();
+    }
+    
     if (!userInfo?.email) return 'U';
     
     const namePart = userInfo.email.split('@')[0];
@@ -31,7 +39,7 @@ export function MainNav(): React.JSX.Element {
       .map((part: string) => part.charAt(0).toUpperCase())
       .join('')
       .slice(0, 2);
-  }, [userInfo?.email]);
+  }, [userInfo?.email, userInfo?.first_name, userInfo?.last_name]);
 
   return (
     <React.Fragment>
@@ -83,7 +91,7 @@ export function MainNav(): React.JSX.Element {
           <Avatar
             onClick={userPopover.handleOpen}
             ref={userPopover.anchorRef}
-            src="/assets/profile.jpeg"
+            src={userInfo?.profile_image || undefined}
             sx={{
               cursor: 'pointer',
               height: 42,

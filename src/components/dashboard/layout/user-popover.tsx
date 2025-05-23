@@ -31,6 +31,10 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
 
   // Generate display name from email if available
   const displayName = React.useMemo(() => {
+    if (userInfo?.first_name || userInfo?.last_name) {
+      return `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim();
+    }
+    
     if (!userInfo?.email) return 'User';
     
     const namePart = userInfo.email.split('@')[0];
@@ -41,7 +45,30 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
       .split(/[._-]/)
       .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
-  }, [userInfo?.email]);
+  }, [userInfo?.email, userInfo?.first_name, userInfo?.last_name]);
+
+  // Generate user initials from name or email
+  const userInitials = React.useMemo(() => {
+    if (userInfo?.first_name && userInfo?.last_name) {
+      return `${userInfo.first_name.charAt(0)}${userInfo.last_name.charAt(0)}`.toUpperCase();
+    }
+    
+    if (userInfo?.first_name) {
+      return userInfo.first_name.charAt(0).toUpperCase();
+    }
+    
+    if (!userInfo?.email) return 'U';
+    
+    const namePart = userInfo.email.split('@')[0];
+    if (!namePart) return 'U';
+    
+    // Format initials from name parts (e.g., john.doe -> JD)
+    return namePart
+      .split(/[._-]/)
+      .map((part: string) => part.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  }, [userInfo?.email, userInfo?.first_name, userInfo?.last_name]);
 
   const handleSignOut = React.useCallback(async (): Promise<void> => {
     try {
@@ -117,12 +144,14 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
           }}
         >
           <Avatar 
-            src="/assets/profile.jpeg" 
+            src={userInfo?.profile_image || undefined} 
             sx={{ 
               width: 56, 
               height: 56,
             }}
-          />
+          >
+            {userInitials}
+          </Avatar>
         </Box>
         {userRole?.includes('admin') && (
           <Box 

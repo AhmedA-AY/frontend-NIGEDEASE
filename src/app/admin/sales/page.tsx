@@ -226,6 +226,7 @@ export default function SalesPage(): React.JSX.Element {
     setCurrentSale({
       customer: '',
       totalAmount: 0,
+      tax: '0',
       is_credit: false,
       company_id: userCompanyId,
       store_id: defaultStoreId,
@@ -265,6 +266,7 @@ export default function SalesPage(): React.JSX.Element {
         status: saleToEdit.status,
         products: products,
         totalAmount: parseFloat(saleToEdit.total_amount),
+        tax: saleToEdit.tax || '0',  // Load tax value from sale data
         paidAmount: 0, // This needs to be fetched from somewhere
         dueAmount: parseFloat(saleToEdit.total_amount), // This needs to be calculated
         paymentStatus: saleToEdit.is_credit ? 'Credit' : 'Paid',
@@ -324,6 +326,7 @@ export default function SalesPage(): React.JSX.Element {
         store_id: currentStore.id,
         customer_id: saleData.customer,
         total_amount: saleData.totalAmount.toString(),
+        tax: saleData.tax || '0',
         currency_id: saleData.currency_id,
         payment_mode_id: saleData.payment_mode_id,
         is_credit: saleData.is_credit,

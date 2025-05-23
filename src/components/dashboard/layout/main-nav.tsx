@@ -13,14 +13,38 @@ import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/di
 import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
 
 import { usePopover } from '@/hooks/use-popover';
+import { useAuth } from '@/providers/auth-provider';
 
 import { MobileNav } from './mobile-nav';
 import { UserPopover } from './user-popover';
 
 export function MainNav(): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
-
+  const { userInfo } = useAuth();
   const userPopover = usePopover<HTMLDivElement>();
+
+  // Generate user initials from name or email
+  const userInitials = React.useMemo(() => {
+    if (userInfo?.first_name && userInfo?.last_name) {
+      return `${userInfo.first_name.charAt(0)}${userInfo.last_name.charAt(0)}`.toUpperCase();
+    }
+    
+    if (userInfo?.first_name) {
+      return userInfo.first_name.charAt(0).toUpperCase();
+    }
+    
+    if (!userInfo?.email) return 'U';
+    
+    const namePart = userInfo.email.split('@')[0];
+    if (!namePart) return 'U';
+    
+    // Format initials from name parts (e.g., john.doe -> JD)
+    return namePart
+      .split(/[._-]/)
+      .map((part: string) => part.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  }, [userInfo?.email, userInfo?.first_name, userInfo?.last_name]);
 
   return (
     <React.Fragment>
@@ -142,7 +166,7 @@ export function MainNav(): React.JSX.Element {
             <Avatar
               onClick={userPopover.handleOpen}
               ref={userPopover.anchorRef}
-              src="/assets/profile.jpeg"
+              src={userInfo?.profile_image || undefined}
               sx={{
                 cursor: 'pointer',
                 height: 42,
@@ -156,7 +180,9 @@ export function MainNav(): React.JSX.Element {
                   border: '2px solid rgba(20, 184, 166, 0.5)',
                 }
               }}
-            />
+            >
+              {userInitials}
+            </Avatar>
           </Stack>
         </Stack>
       </Box>

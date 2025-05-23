@@ -24,9 +24,11 @@ import { PencilSimple as PencilIcon } from '@phosphor-icons/react/dist/ssr/Penci
 
 import { useUpdateCompany, useCompany, useCurrencies, useSubscriptionPlans } from '@/hooks/use-companies';
 import { paths } from '@/paths';
+import ErrorMessage from '@/components/common/error-message';
 import { usersApi, ExtendedUserResponse } from '@/services/api/users';
 import { authApi, CreateUserData } from '@/services/api/auth';
 import { useSnackbar } from 'notistack';
+import { ImageUpload } from '@/components/common/image-upload';
 
 export default function CompanyEditPage({ params }: { params: { id: string } }): React.JSX.Element {
   const router = useRouter();
@@ -56,6 +58,7 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
     password: '',
     first_name: '',
     last_name: '',
+    profile_image: '',
   });
   const [adminFormErrors, setAdminFormErrors] = React.useState<Record<string, string>>({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
@@ -211,6 +214,7 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
       password: '',
       first_name: '',
       last_name: '',
+      profile_image: '',
     });
     setAdminFormErrors({});
     setOpenAddAdminDialog(true);
@@ -294,7 +298,12 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
         flexDirection="column"
         gap={2}
       >
-        <Alert severity="error">Company not found</Alert>
+        <ErrorMessage 
+          error={new Error('Company not found')}
+          title="Failed to load company"
+          onRetry={() => router.refresh()}
+          fullPage
+        />
         <Button
           color="primary"
           variant="contained"
@@ -512,6 +521,23 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <Grid container spacing={2}>
+              <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                <ImageUpload
+                  initialImage={adminFormData.profile_image}
+                  onImageChange={(url) => {
+                    setAdminFormData({
+                      ...adminFormData,
+                      profile_image: url || ''
+                    });
+                  }}
+                  bucket="app-images"
+                  folder={`company-${id}`}
+                  label="Upload Profile Picture"
+                  width={120}
+                  height={120}
+                />
+              </Grid>
+              
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth

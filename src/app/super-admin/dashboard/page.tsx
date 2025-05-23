@@ -161,6 +161,14 @@ export default function SuperAdminDashboard(): React.JSX.Element {
     
     return { active, inactive };
   };
+
+  // Function to get subscription plan name by id
+  const getSubscriptionPlanName = (planId: string | null) => {
+    if (!planId) return 'None';
+    
+    const plan = subscriptionPlans?.find(plan => plan.id === planId);
+    return plan ? plan.name : planId;
+  };
   
   const { active, inactive } = getStatusCounts(companies);
   
@@ -307,7 +315,9 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                           >
                             <TableCell sx={{ py: 2 }}>{company.name}</TableCell>
                             <TableCell sx={{ py: 2 }}>{company.description}</TableCell>
-                            <TableCell sx={{ py: 2 }}>{company.subscription_plan || 'None'}</TableCell>
+                            <TableCell sx={{ py: 2 }}>
+                              {getSubscriptionPlanName(company.subscription_plan)}
+                            </TableCell>
                             <TableCell sx={{ py: 2 }}>
                               <Chip
                                 {...getStatusChipProps(company.is_active)}

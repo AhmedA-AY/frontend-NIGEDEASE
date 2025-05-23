@@ -17,21 +17,27 @@ import { WarningCircle as WarningCircleIcon } from '@phosphor-icons/react/dist/s
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 
-import { useDeleteCompany, useCompany } from '@/hooks/use-companies';
+import { useDeleteCompany, useCompany, useSubscriptionPlan } from '@/hooks/super-admin/use-companies';
+import { extractErrorMessage } from '@/utils/api-error';
 import { paths } from '@/paths';
+import ErrorMessage from '@/components/common/error-message';
 
 export default function CompanyDeletePage({ params }: { params: { id: string } }): React.JSX.Element {
   const router = useRouter();
   const { id } = params;
-  const { data: company, isLoading: isLoadingCompany } = useCompany(id);
+  const { data: company, isLoading: isLoadingCompany, error: companyError } = useCompany(id);
+  const { data: subscriptionPlan, isLoading: isLoadingPlan } = useSubscriptionPlan(company?.subscription_plan || '');
   const deleteCompanyMutation = useDeleteCompany();
   
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   const handleDelete = async () => {
     if (isDeleting) return;
     
     setIsDeleting(true);
+    setDeleteError(null);
+    
     try {
       await deleteCompanyMutation.mutateAsync(id);
       
@@ -39,11 +45,12 @@ export default function CompanyDeletePage({ params }: { params: { id: string } }
       router.push(paths.superAdmin.companies);
     } catch (error) {
       console.error('Error deleting company:', error);
+      setDeleteError(extractErrorMessage(error));
       setIsDeleting(false);
     }
   };
 
-  const isLoading = isLoadingCompany || deleteCompanyMutation.isPending;
+  const isLoading = isLoadingCompany || deleteCompanyMutation.isPending || isLoadingPlan;
 
   // Show loading state while company data is being fetched
   if (isLoadingCompany) {
@@ -59,8 +66,8 @@ export default function CompanyDeletePage({ params }: { params: { id: string } }
     );
   }
 
-  // Show error if company is not found
-  if (!company && !isLoadingCompany) {
+  // Show error if company is not found or there was an error fetching it
+  if ((companyError || !company) && !isLoadingCompany) {
     return (
       <Box
         display="flex"
@@ -70,7 +77,12 @@ export default function CompanyDeletePage({ params }: { params: { id: string } }
         flexDirection="column"
         gap={2}
       >
-        <Alert severity="error">Company not found</Alert>
+        <ErrorMessage 
+          error={companyError || new Error('Company not found')}
+          title="Failed to load company"
+          onRetry={() => router.refresh()}
+          fullPage
+        />
         <Button
           color="primary"
           variant="contained"
@@ -147,9 +159,29 @@ export default function CompanyDeletePage({ params }: { params: { id: string } }
                     Subscription Status:
                   </Typography>
                   <Typography variant="body1">
-                    {company?.is_subscribed ? 'Subscribed' : 'Not Subscribed'}
+                    {(typeof company?.is_subscribed === 'string' ? 
+                      (company.is_subscribed.toLowerCase() === 'true' || 
+                       company.is_subscribed.toLowerCase() === 'yes' || 
+                       company.is_subscribed.toLowerCase() === 'subscribed') :
+                      !!company?.is_subscribed) || 
+                     !!company?.subscription_plan ? 'Subscribed' : 'Not Subscribed'}
                   </Typography>
                 </Box>
+                
+                {company?.subscription_plan && (
+                  <Box display="flex" flexDirection="row">
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ minWidth: 200 }}>
+                      Subscription Plan:
+                    </Typography>
+                    <Typography variant="body1">
+                      {isLoadingPlan ? (
+                        <CircularProgress size={16} sx={{ ml: 1 }} />
+                      ) : (
+                        subscriptionPlan?.name || company.subscription_plan
+                      )}
+                    </Typography>
+                  </Box>
+                )}
                 
                 <Box display="flex" flexDirection="row">
                   <Typography variant="subtitle1" fontWeight="bold" sx={{ minWidth: 200 }}>
@@ -186,10 +218,12 @@ export default function CompanyDeletePage({ params }: { params: { id: string } }
                 </Button>
               </Stack>
               
-              {deleteCompanyMutation.isError && (
-                <Alert severity="error" sx={{ mt: 2 }}>
-                  Error deleting company: {(deleteCompanyMutation.error as Error).message}
-                </Alert>
+              {(deleteCompanyMutation.isError || deleteError) && (
+                <ErrorMessage 
+                  error={deleteError || deleteCompanyMutation.error}
+                  title="Delete Failed"
+                  onRetry={handleDelete}
+                />
               )}
             </CardContent>
           </Card>

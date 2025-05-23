@@ -35,8 +35,6 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import { Customer, CustomerCreateData, transactionsApi } from '@/services/api/transactions';
 import { useStore } from '@/providers/store-provider';
-import { useCurrentUser } from '@/hooks/use-auth';
-import { useCheckCompanySubscription } from '@/hooks/use-companies';
 
 export default function CustomersPage(): React.JSX.Element {
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([]);
@@ -49,12 +47,7 @@ export default function CustomersPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const { currentStore } = useStore();
-  const { userInfo } = useCurrentUser();
   
-  // Add subscription check
-  const { data: subscriptionData, isLoading: isLoadingSubscription } = 
-    useCheckCompanySubscription(userInfo?.company_id);
-
   // Fetch customers
   const fetchCustomers = React.useCallback(async () => {
     if (!currentStore) {
@@ -108,19 +101,6 @@ export default function CustomersPage(): React.JSX.Element {
   };
 
   const handleOpenAddModal = () => {
-    // Check subscription limits for customers
-    if (subscriptionData && !isLoadingSubscription) {
-      const { current_users_count, max_customers } = subscriptionData;
-      
-      if (current_users_count >= max_customers) {
-        enqueueSnackbar(`You've reached the maximum number of customers (${max_customers}) allowed by your subscription plan. Please upgrade your plan to add more customers.`, { 
-          variant: 'error', 
-          autoHideDuration: 6000 
-        });
-        return;
-      }
-    }
-    
     setCurrentCustomer(undefined);
     setIsEditModalOpen(true);
   };

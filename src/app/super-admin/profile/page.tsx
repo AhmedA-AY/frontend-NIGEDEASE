@@ -23,29 +23,41 @@ import { useAuth } from '@/providers/auth-provider';
 import { authApi } from '@/services/api/auth';
 import { paths } from '@/paths';
 import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
-import { UploadSimple as UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 import { ShieldStar as ShieldStarIcon } from '@phosphor-icons/react/dist/ssr/ShieldStar';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { useRouter } from 'next/navigation';
+import { SimpleUpload } from '@/components/common/simple-upload';
 
 export default function ProfilePage() {
-  const { userInfo } = useAuth();
+  const { userInfo, refreshUserInfo } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState(false);
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
     email: '',
     profile_image: '',
   });
+  const [passwordData, setPasswordData] = useState({
+    old_password: '',
+    new_password: '',
+    confirm_password: '',
+  });
   const [errors, setErrors] = useState({
     first_name: '',
     last_name: '',
     email: '',
     profile_image: '',
+  });
+  const [passwordErrors, setPasswordErrors] = useState({
+    old_password: '',
+    new_password: '',
+    confirm_password: '',
   });
 
   const isSuperAdmin = userInfo?.role === 'super_admin';
@@ -84,10 +96,6 @@ export default function ProfilePage() {
       newErrors.email = 'Email is required';
     } else if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(profileData.email)) {
       newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (profileData.profile_image && !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(profileData.profile_image)) {
-      newErrors.profile_image = 'Please enter a valid URL';
     }
 
     // Additional validations
@@ -140,16 +148,91 @@ export default function ProfilePage() {
       enqueueSnackbar('Profile updated successfully', { variant: 'success' });
       setUpdateSuccess(true);
       
-      // Refresh page to show updated user info
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      // Refresh user info in context instead of reloading the page
+      await refreshUserInfo();
     } catch (error: any) {
       console.error('Error updating profile:', error);
       const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update profile';
       enqueueSnackbar(`Error: ${errorMessage}`, { variant: 'error' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const validatePasswordForm = () => {
+    const newErrors = {
+      old_password: '',
+      new_password: '',
+      confirm_password: '',
+    };
+    
+    if (!passwordData.old_password) {
+      newErrors.old_password = 'Current password is required';
+    }
+    
+    if (!passwordData.new_password) {
+      newErrors.new_password = 'New password is required';
+    } else if (passwordData.new_password.length < 8) {
+      newErrors.new_password = 'Password must be at least 8 characters';
+    }
+    
+    if (!passwordData.confirm_password) {
+      newErrors.confirm_password = 'Please confirm your new password';
+    } else if (passwordData.confirm_password !== passwordData.new_password) {
+      newErrors.confirm_password = 'Passwords do not match';
+    }
+    
+    setPasswordErrors(newErrors);
+    return !Object.values(newErrors).some(error => error);
+  };
+
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error when field is edited
+    if (passwordErrors[name as keyof typeof passwordErrors]) {
+      setPasswordErrors({
+        ...passwordErrors,
+        [name]: '',
+      });
+    }
+  };
+
+  const handlePasswordSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!validatePasswordForm()) {
+      return;
+    }
+
+    setIsChangingPassword(true);
+    setPasswordUpdateSuccess(false);
+    
+    try {
+      await authApi.changePassword({
+        old_password: passwordData.old_password,
+        new_password: passwordData.new_password,
+      });
+      
+      enqueueSnackbar('Password updated successfully', { variant: 'success' });
+      setPasswordUpdateSuccess(true);
+      
+      // Reset password fields
+      setPasswordData({
+        old_password: '',
+        new_password: '',
+        confirm_password: '',
+      });
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update password';
+      enqueueSnackbar(`Error: ${errorMessage}`, { variant: 'error' });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -247,6 +330,25 @@ export default function ProfilePage() {
                   )}
                   
                   <Grid container spacing={3}>
+                    <Grid item xs={12} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                      <SimpleUpload
+                        initialImage={profileData.profile_image}
+                        onImageChange={(url) => {
+                          // Just update local state, don't save to backend yet
+                          setProfileData(prev => ({
+                            ...prev,
+                            profile_image: url || ''
+                          }));
+                        }}
+                        bucketName="app-images"
+                        folderPath="profiles"
+                        label="Upload Profile Picture"
+                        width={180}
+                        height={180}
+                        allowRemove={true}
+                      />
+                    </Grid>
+
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
@@ -281,25 +383,6 @@ export default function ProfilePage() {
                         helperText={errors.email}
                       />
                     </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label="Profile Image URL"
-                        name="profile_image"
-                        value={profileData.profile_image}
-                        onChange={handleChange}
-                        placeholder="https://example.com/your-image.jpg"
-                        error={!!errors.profile_image}
-                        helperText={errors.profile_image || "Enter a URL to your profile image"}
-                        InputProps={{
-                          startAdornment: (
-                            <Box sx={{ color: 'text.secondary', mr: 1 }}>
-                              <UploadSimpleIcon />
-                            </Box>
-                          ),
-                        }}
-                      />
-                    </Grid>
                   </Grid>
                 </CardContent>
                 <Divider />
@@ -311,6 +394,74 @@ export default function ProfilePage() {
                     variant="contained"
                   >
                     Save Changes
+                  </LoadingButton>
+                </Box>
+              </Card>
+
+              <Card component="form" onSubmit={handlePasswordSubmit} sx={{ mt: 3 }}>
+                <CardHeader 
+                  title="Change Password" 
+                  subheader="Update your login credentials"
+                />
+                <Divider />
+                <CardContent sx={{ p: 3 }}>
+                  {passwordUpdateSuccess && (
+                    <Alert severity="success" sx={{ mb: 3 }}>
+                      Your password has been updated successfully.
+                    </Alert>
+                  )}
+                  
+                  <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Current Password"
+                        name="old_password"
+                        type="password"
+                        value={passwordData.old_password}
+                        onChange={handlePasswordChange}
+                        required
+                        error={!!passwordErrors.old_password}
+                        helperText={passwordErrors.old_password}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="New Password"
+                        name="new_password"
+                        type="password"
+                        value={passwordData.new_password}
+                        onChange={handlePasswordChange}
+                        required
+                        error={!!passwordErrors.new_password}
+                        helperText={passwordErrors.new_password}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Confirm New Password"
+                        name="confirm_password"
+                        type="password"
+                        value={passwordData.confirm_password}
+                        onChange={handlePasswordChange}
+                        required
+                        error={!!passwordErrors.confirm_password}
+                        helperText={passwordErrors.confirm_password}
+                      />
+                    </Grid>
+                  </Grid>
+                </CardContent>
+                <Divider />
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
+                  <LoadingButton
+                    color="primary"
+                    loading={isChangingPassword}
+                    type="submit"
+                    variant="contained"
+                  >
+                    Update Password
                   </LoadingButton>
                 </Box>
               </Card>

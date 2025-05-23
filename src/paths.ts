@@ -11,7 +11,6 @@ export const paths = {
   admin: {
     dashboard: '/admin/dashboard',
     profile: '/admin/profile',
-    subscription: '/admin/subscription',
     productManager: '/admin/product-manager',
     categories: '/admin/product-manager/categories',
     products: '/admin/product-manager/products',

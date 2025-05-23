@@ -87,6 +87,7 @@ export interface Purchase {
   store: TransactionStore;
   supplier: Supplier;
   total_amount: string;
+  tax: string;
   currency: Currency;
   payment_mode: PaymentMode;
   is_credit: boolean;
@@ -99,6 +100,7 @@ export interface PurchaseCreateData {
   store_id: string;
   supplier_id: string;
   total_amount: string;
+  tax: string;
   currency_id: string;
   payment_mode_id: string;
   is_credit: boolean;
@@ -131,6 +133,7 @@ export interface Sale {
   store: TransactionStore;
   customer: Customer;
   total_amount: string;
+  tax: string;
   currency: Currency;
   payment_mode: PaymentMode;
   is_credit: boolean;
@@ -143,6 +146,7 @@ export interface SaleCreateData {
   store_id: string;
   customer_id: string;
   total_amount: string;
+  tax: string;
   currency_id: string;
   payment_mode_id: string;
   is_credit: boolean;

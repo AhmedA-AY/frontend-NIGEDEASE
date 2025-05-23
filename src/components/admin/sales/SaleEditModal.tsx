@@ -28,6 +28,9 @@ import { inventoryApi, Product, InventoryStore } from '@/services/api/inventory'
 import { companiesApi, Company, Currency } from '@/services/api/companies';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore } from '@/providers/store-provider';
+import { InputAdornment } from '@mui/material';
+import TableContainer from '@mui/material/TableContainer';
+import Paper from '@mui/material/Paper';
 
 interface ProductItem {
   id: string;
@@ -43,6 +46,9 @@ interface SaleData {
   id?: string;
   customer: string;  // customer ID
   totalAmount: number;
+  tax: string;
+  subtotal?: number;
+  taxAmount?: number;
   is_credit?: boolean;
   company_id?: string;
   store_id?: string;
@@ -78,6 +84,9 @@ export default function SaleEditModal({
     status: 'Ordered',
     products: [],
     totalAmount: 0,
+    subtotal: 0,
+    taxAmount: 0,
+    tax: '0',
     paidAmount: 0,
     dueAmount: 0,
     paymentStatus: 'Unpaid',
@@ -94,6 +103,9 @@ export default function SaleEditModal({
     status: 'Ordered',
     products: [],
     totalAmount: 0,
+    subtotal: 0,
+    taxAmount: 0,
+    tax: '0',
     paidAmount: 0,
     dueAmount: 0,
     paymentStatus: 'Unpaid',
@@ -252,15 +264,24 @@ export default function SaleEditModal({
   }, [sale, open, userInfo]);
   
   const calculateTotals = (productItems: ProductItem[]) => {
-    let total = 0;
+    let subtotal = 0;
     
     productItems.forEach(item => {
-      const subtotal = (item.quantity * item.unitPrice) - item.discount + item.tax;
-      total += subtotal;
+      const itemSubtotal = (item.quantity * item.unitPrice) - item.discount;
+      subtotal += itemSubtotal;
     });
+    
+    // Calculate tax amount based on tax percentage
+    const taxPercentage = parseFloat(formData.tax) || 0;
+    const taxAmount = (subtotal * taxPercentage) / 100;
+    
+    // Total amount is subtotal + tax
+    const total = subtotal + taxAmount;
     
     setFormData(prev => ({
       ...prev,
+      subtotal: subtotal,
+      taxAmount: taxAmount,
       totalAmount: total,
       dueAmount: total - (prev.paidAmount || 0),
       paymentStatus: (prev.paidAmount || 0) >= total ? 'Paid' : ((prev.paidAmount || 0) > 0 ? 'Partially Paid' : 'Unpaid')
@@ -281,6 +302,21 @@ export default function SaleEditModal({
         paidAmount,
         dueAmount: prev.totalAmount - paidAmount,
         paymentStatus
+      }));
+    } else if (name === 'tax') {
+      // When tax changes, first update the tax value
+      const newTax = value;
+      const taxPercentage = parseFloat(newTax) || 0;
+      const subtotal = formData.subtotal || 0;
+      const taxAmount = (subtotal * taxPercentage) / 100;
+      const total = subtotal + taxAmount;
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        tax: newTax,
+        taxAmount: taxAmount,
+        totalAmount: total,
+        dueAmount: total - (prev.paidAmount || 0)
       }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -317,7 +353,6 @@ export default function SaleEditModal({
     if (!product) return;
     
     const unitPrice = product.sale_price ? parseFloat(product.sale_price) : 0;
-    const tax = unitPrice * 0.1; // Default 10% tax if not available from the product
     
     const newProduct: ProductItem = {
       id: product.id,
@@ -325,8 +360,8 @@ export default function SaleEditModal({
       quantity: 1,
       unitPrice: unitPrice,
       discount: 0,
-      tax: tax,
-      subtotal: unitPrice + tax
+      tax: 0,
+      subtotal: unitPrice
     };
     
     const updatedProducts = [...(formData.products || []), newProduct];
@@ -348,9 +383,8 @@ export default function SaleEditModal({
       if (product.id === id) {
         const updatedProduct = { ...product, [field]: parseFloat(value) || 0 };
         
-        // Recalculate subtotal
-        updatedProduct.subtotal = (updatedProduct.quantity * updatedProduct.unitPrice) - 
-          updatedProduct.discount + updatedProduct.tax;
+        // Recalculate subtotal for this product (not including tax, which is calculated at the order level)
+        updatedProduct.subtotal = (updatedProduct.quantity * updatedProduct.unitPrice) - updatedProduct.discount;
           
         return updatedProduct;
       }
@@ -563,7 +597,7 @@ export default function SaleEditModal({
                   onChange={handleSelectChange}
                 >
                   {currencies.map(currency => (
-                    <MenuItem key={currency.id} value={currency.id}>{currency.code}</MenuItem>
+                    <MenuItem key={currency.id} value={currency.id}>{currency.name}</MenuItem>
                   ))}
                 </Select>
                 {errors.currency_id && <Typography color="error" variant="caption">{errors.currency_id}</Typography>}
@@ -572,9 +606,9 @@ export default function SaleEditModal({
             
             <Grid item xs={12} md={3}>
               <FormControl fullWidth error={!!errors.payment_mode_id}>
-                <InputLabel id="payment-mode-select-label">Payment Mode</InputLabel>
+                <InputLabel id="payment-mode-label">Payment Mode</InputLabel>
                 <Select
-                  labelId="payment-mode-select-label"
+                  labelId="payment-mode-label"
                   id="payment_mode_id"
                   name="payment_mode_id"
                   value={formData.payment_mode_id}
@@ -587,6 +621,22 @@ export default function SaleEditModal({
                 </Select>
                 {errors.payment_mode_id && <Typography color="error" variant="caption">{errors.payment_mode_id}</Typography>}
               </FormControl>
+            </Grid>
+            
+            <Grid item xs={12} md={3}>
+              <TextField
+                name="tax"
+                label="Tax Percentage"
+                type="number"
+                value={formData.tax || '0'}
+                onChange={handleChange}
+                fullWidth
+                InputProps={{ 
+                  inputProps: { min: 0, step: 0.01 },
+                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                }}
+                helperText="Tax percentage to apply to the sale"
+              />
             </Grid>
             
             <Grid item xs={12}>
@@ -627,102 +677,95 @@ export default function SaleEditModal({
                 </Typography>
               )}
               
-              <Table size="small" sx={{ mb: 3 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Product</TableCell>
-                    <TableCell>Quantity</TableCell>
-                    <TableCell>Unit Price</TableCell>
-                    <TableCell>Discount</TableCell>
-                    <TableCell>Tax</TableCell>
-                    <TableCell>Subtotal</TableCell>
-                    <TableCell>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {(formData.products || []).length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        <Typography variant="body2" color="text.secondary">
-                          No products added yet
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    (formData.products || []).map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell>{product.name}</TableCell>
-                        <TableCell>
-                          <TextField
-                            type="number"
-                            value={product.quantity}
-                            onChange={(e) => handleProductChange(
-                              product.id, 
-                              'quantity', 
-                              e.target.value
-                            )}
-                            inputProps={{ min: 1 }}
-                            size="small"
-                            sx={{ width: 70 }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            type="number"
-                            value={product.unitPrice}
-                            onChange={(e) => handleProductChange(
-                              product.id, 
-                              'unitPrice', 
-                              e.target.value
-                            )}
-                            InputProps={{ startAdornment: '$' }}
-                            size="small"
-                            sx={{ width: 100 }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            type="number"
-                            value={product.discount}
-                            onChange={(e) => handleProductChange(
-                              product.id, 
-                              'discount', 
-                              e.target.value
-                            )}
-                            InputProps={{ startAdornment: '$' }}
-                            size="small"
-                            sx={{ width: 80 }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            type="number"
-                            value={product.tax}
-                            onChange={(e) => handleProductChange(
-                              product.id, 
-                              'tax', 
-                              e.target.value
-                            )}
-                            InputProps={{ startAdornment: '$' }}
-                            size="small"
-                            sx={{ width: 80 }}
-                          />
-                        </TableCell>
-                        <TableCell>${product.subtotal.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRemoveProduct(product.id)}
-                            sx={{ color: '#ef4444' }}
-                          >
-                            <TrashIcon size={16} />
-                          </IconButton>
+              {formData.products && formData.products.length > 0 && (
+                <TableContainer component={Paper} sx={{ mt: 2, mb: 3 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Product</TableCell>
+                        <TableCell align="right">Quantity</TableCell>
+                        <TableCell align="right">Unit Price</TableCell>
+                        <TableCell align="right">Discount</TableCell>
+                        <TableCell align="right">Subtotal</TableCell>
+                        <TableCell align="center">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {formData.products.map(product => (
+                        <TableRow key={product.id}>
+                          <TableCell>{product.name}</TableCell>
+                          <TableCell align="right">
+                            <TextField
+                              type="number"
+                              value={product.quantity}
+                              onChange={(e) => handleProductChange(product.id, 'quantity', e.target.value)}
+                              size="small"
+                              InputProps={{ inputProps: { min: 1, style: { textAlign: 'right' } } }}
+                              sx={{ width: '80px' }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <TextField
+                              type="number"
+                              value={product.unitPrice}
+                              onChange={(e) => handleProductChange(product.id, 'unitPrice', e.target.value)}
+                              size="small"
+                              InputProps={{ inputProps: { min: 0, step: 0.01, style: { textAlign: 'right' } } }}
+                              sx={{ width: '100px' }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <TextField
+                              type="number"
+                              value={product.discount}
+                              onChange={(e) => handleProductChange(product.id, 'discount', e.target.value)}
+                              size="small"
+                              InputProps={{ inputProps: { min: 0, step: 0.01, style: { textAlign: 'right' } } }}
+                              sx={{ width: '100px' }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            ${((product.quantity * product.unitPrice) - product.discount).toFixed(2)}
+                          </TableCell>
+                          <TableCell align="center">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveProduct(product.id)}
+                              color="error"
+                            >
+                              <TrashIcon size={16} />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      
+                      {/* Calculate subtotal, tax, and total */}
+                      <TableRow>
+                        <TableCell colSpan={4} align="right"><strong>Subtotal:</strong></TableCell>
+                        <TableCell align="right" colSpan={2}>
+                          <strong>
+                            ${(formData.subtotal || formData.products.reduce((sum, product) => sum + ((product.quantity * product.unitPrice) - product.discount), 0)).toFixed(2)}
+                          </strong>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                      <TableRow>
+                        <TableCell colSpan={4} align="right"><strong>Tax ({formData.tax || 0}%):</strong></TableCell>
+                        <TableCell align="right" colSpan={2}>
+                          <strong>
+                            ${(formData.taxAmount || ((parseFloat(formData.tax) / 100) * (formData.subtotal || formData.products.reduce((sum, product) => sum + ((product.quantity * product.unitPrice) - product.discount), 0)))).toFixed(2)}
+                          </strong>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell colSpan={4} align="right"><strong>Total:</strong></TableCell>
+                        <TableCell align="right" colSpan={2}>
+                          <strong>${(formData.totalAmount || ((formData.subtotal || 0) + (formData.taxAmount || 0))).toFixed(2)}</strong>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </Grid>
             
             <Grid item xs={12}>

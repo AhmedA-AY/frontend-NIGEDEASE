@@ -263,8 +263,34 @@ export const authApi = {
   
   // Update user profile
   updateProfile: async (data: ProfileUpdateData): Promise<AuthResponse['user']> => {
-    const response = await userManagementApiClient.put<AuthResponse['user']>('/auth/profile/', data);
-    return response.data;
+    // Get the user ID from token
+    const userInfo = tokenStorage.getUserInfo();
+    if (!userInfo || !userInfo.id) {
+      throw new Error('No user ID available in token');
+    }
+    
+    try {
+      // First get the current user data so we have all required fields
+      const currentUserData = await authApi.getProfile();
+      
+      // Now update the user profile with all required fields plus the new data
+      const response = await userManagementApiClient.put<UserResponse>(
+        `/users/${userInfo.id}/`,
+        {
+          company_id: currentUserData.company_id,
+          email: data.email || currentUserData.email,
+          first_name: data.first_name || currentUserData.first_name || '',
+          last_name: data.last_name || currentUserData.last_name || '',
+          role: currentUserData.role,
+          profile_image: data.profile_image || currentUserData.profile_image || ''
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
   },
   
   // Upload and update profile image
@@ -279,18 +305,23 @@ export const authApi = {
       // First get the current user data so we have all required fields
       const currentUserData = await authApi.getProfile();
       
-      // Validate URL format and length
-      if (imageUrl.length > 255) {
-        throw new Error('Image URL must be less than 255 characters');
+      // Only validate URL if it's not empty (empty means remove the image)
+      if (imageUrl) {
+        // Validate URL format and length
+        if (imageUrl.length > 255) {
+          throw new Error('Image URL must be less than 255 characters');
+        }
+        
+        try {
+          new URL(imageUrl); // This will throw if the URL is invalid
+        } catch (e) {
+          throw new Error('Please enter a valid URL');
+        }
       }
       
-      try {
-        new URL(imageUrl); // This will throw if the URL is invalid
-      } catch (e) {
-        throw new Error('Please enter a valid URL');
-      }
+      console.log('Updating profile image with:', imageUrl === '' ? '[EMPTY STRING]' : imageUrl);
       
-      // Now update the user profile with all required fields plus the new image URL
+      // Now update the user profile with all required fields plus the new image URL (or empty string to remove)
       const response = await userManagementApiClient.put<UserResponse>(
         `/users/${userInfo.id}/`,
         {
@@ -299,10 +330,11 @@ export const authApi = {
           first_name: currentUserData.first_name || '',
           last_name: currentUserData.last_name || '',
           role: currentUserData.role,
-          profile_image: imageUrl
+          profile_image: imageUrl // Empty string will remove the image
         }
       );
       
+      console.log('Profile update response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error updating profile image:', error);

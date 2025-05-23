@@ -28,6 +28,7 @@ export interface AuthContextType {
   stores: Store[];
   assignedStore: Store | null;
   saveEmail: (email: string) => void;
+  refreshUserInfo: () => Promise<void>;
 }
 
 // Create the auth context
@@ -61,13 +62,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               setIsAuthenticated(true);
               setUserRole(role);
               
-              // Set user info
-              setUserInfo({
+              // Set basic user info
+              const basicUserInfo = {
                 id: tokenInfo.user_id,
                 email: tokenInfo.email,
                 role: role,
                 company_id: tokenInfo.company_id,
-              });
+              };
+              
+              // Try to get full user profile with profile_image
+              try {
+                const userProfile = await authApi.getProfile();
+                setUserInfo({
+                  ...basicUserInfo,
+                  first_name: userProfile.first_name,
+                  last_name: userProfile.last_name,
+                  profile_image: userProfile.profile_image,
+                });
+              } catch (profileError) {
+                console.error('Error fetching full profile:', profileError);
+                // Fall back to basic user info
+                setUserInfo(basicUserInfo);
+              }
               
               // Load stores from storage
               const storedStores = tokenStorage.getCompanyStores();
@@ -103,9 +119,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (isInitialized) {
       const isAuthRoute = pathname?.includes('/auth');
+      const isPublicRoute = pathname === '/' || pathname === '/features' || pathname === '/contact';
       
-      // Redirect to login if not authenticated and not on auth page
-      if (!isAuthenticated && !isAuthRoute && pathname !== '/') {
+      // Redirect to login if not authenticated and not on public pages
+      if (!isAuthenticated && !isAuthRoute && !isPublicRoute) {
         router.push(paths.auth.signIn);
       }
       
@@ -250,6 +267,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     tokenStorage.saveEmail(email);
   };
 
+  // Function to refresh user info from the API
+  const refreshUserInfo = async () => {
+    try {
+      const userProfile = await authApi.getProfile();
+      const basicUserInfo = {
+        id: userInfo?.id,
+        email: userInfo?.email,
+        role: userRole,
+        company_id: userInfo?.company_id,
+      };
+      
+      setUserInfo({
+        ...basicUserInfo,
+        first_name: userProfile.first_name,
+        last_name: userProfile.last_name,
+        profile_image: userProfile.profile_image,
+      });
+    } catch (error) {
+      console.error('Error refreshing user info:', error);
+    }
+  };
+
   // Context value
   const contextValue = useMemo(
     () => ({
@@ -263,7 +302,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       logout: handleLogout,
       stores,
       assignedStore,
-      saveEmail: handleSaveEmail
+      saveEmail: handleSaveEmail,
+      refreshUserInfo
     }),
     [
       isAuthenticated,
