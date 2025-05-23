@@ -86,8 +86,11 @@ export default function CompanyEditPage({ params }: { params: { id: string } }):
     setIsLoadingAdmins(true);
     try {
       const users = await usersApi.getUsers(companyId);
-      // Filter for admins only
-      const adminUsers = users.filter(user => user.role === 'admin');
+      // Filter for admins only and ensure they belong to this company
+      const adminUsers = users.filter(user => 
+        user.role === 'admin' && 
+        user.company_id === companyId
+      );
       setCompanyAdmins(adminUsers);
     } catch (error) {
       console.error('Error fetching company admins:', error);

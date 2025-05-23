@@ -38,7 +38,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [stores, setStores] = useState<Store[]>([]);
@@ -109,6 +109,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error('Auth initialization error:', error);
       } finally {
         setIsInitialized(true);
+        setIsLoading(false);
       }
     };
 
@@ -117,7 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Check if user should be redirected based on role & path
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && !isLoading) {
       const isAuthRoute = pathname?.includes('/auth');
       const isPublicRoute = pathname === '/' || pathname === '/features' || pathname === '/contact';
       
@@ -142,7 +143,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
     }
-  }, [isAuthenticated, isInitialized, pathname, router, userRole]);
+  }, [isAuthenticated, isInitialized, isLoading, pathname, router, userRole]);
 
   // Login function - Step 1: Email/Password
   const handleLogin = async (email: string, password: string) => {

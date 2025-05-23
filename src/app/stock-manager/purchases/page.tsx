@@ -397,6 +397,7 @@ export default function PurchasesPage(): React.JSX.Element {
         payment_mode_id: purchaseData.payment_mode_id,
         is_credit: purchaseData.is_credit,
         currency_id: currencyId,
+        tax: "0",
         items: purchaseData.products.map((product: any) => ({
           product_id: product.id,
           quantity: product.quantity.toString()
