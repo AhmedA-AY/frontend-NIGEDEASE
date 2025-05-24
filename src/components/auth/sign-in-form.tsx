@@ -31,8 +31,8 @@ export function SignInForm(): React.JSX.Element {
   const { t } = useTranslation('auth');
   
   const schema = zod.object({
-    email: zod.string().min(1, { message: t('email_required') }).email({ message: t('invalid_email') }),
-    password: zod.string().min(1, { message: t('password_required') }),
+    email: zod.string().min(1, { message: 'Email is required' }).email({ message: 'Invalid email address' }),
+    password: zod.string().min(1, { message: 'Password is required' }),
   });
 
   type Values = zod.infer<typeof schema>;
