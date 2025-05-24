@@ -1,0 +1,19 @@
+"overview": {
+  "top_selling_products": "ከፍተኛ ሽያጭ ያላቸው ምርቶች",
+  "recent_sales": "የቅርብ ጊዜ ሽያጮች",
+  "stock_alerts": "የአክሲዮን ማሳወቂያዎች",
+  "top_customers": "ዋና ደንበኞች",
+  "view_all": "ሁሉንም ይመልከቱ",
+  "no_data": "ምንም ውሂብ አልተገኘም",
+  "product": "ምርት",
+  "quantity": "ብዛት",
+  "amount": "መጠን",
+  "customer": "ደንበኛ",
+  "date": "ቀን",
+  "status": "ሁኔታ",
+  "low_stock": "ዝቅተኛ ክምችት",
+  "out_of_stock": "ምርቱ ተጠናቋል",
+  "in_stock": "በአከማቹ ውስጥ",
+  "order": "ትዕዛዝ",
+  "paid": "ተከፍሏል"
+} 
