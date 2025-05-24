@@ -49,9 +49,15 @@ export function MainNav(): React.JSX.Element {
           borderBottom: '1px solid rgba(203, 213, 225, 0.1)',
           background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(8px)',
-          position: 'sticky',
+          position: 'fixed',
           top: 0,
-          zIndex: 'var(--mui-zIndex-appBar)',
+          left: {
+            xs: 0,
+            lg: 'var(--SideNav-width)',
+          },
+          right: 0,
+          height: 'var(--MainNav-height)',
+          zIndex: 'var(--MainNav-zIndex)',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
         }}
       >
@@ -61,17 +67,15 @@ export function MainNav(): React.JSX.Element {
           sx={{ 
             alignItems: 'center', 
             justifyContent: 'space-between', 
-            minHeight: '70px', 
-            px: { xs: 2, md: 3 },
+            height: '100%',
+            px: { xs: 2, sm: 3 },
           }}
         >
-          <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
+          <Box sx={{ alignItems: 'center', display: { lg: 'none', xs: 'flex' } }}>
             <IconButton
-              onClick={(): void => {
-                setOpenNav(true);
-              }}
+              onClick={(): void => setOpenNav(true)}
+              aria-label="Menu"
               sx={{ 
-                display: { lg: 'none' },
                 borderRadius: '10px',
                 width: '40px',
                 height: '40px',
@@ -85,29 +89,36 @@ export function MainNav(): React.JSX.Element {
                 }
               }}
             >
-              <ListIcon />
+              <ListIcon weight="bold" />
             </IconButton>
-          </Stack>
-          <Avatar
-            onClick={userPopover.handleOpen}
-            ref={userPopover.anchorRef}
-            src={userInfo?.profile_image || undefined}
-            sx={{
-              cursor: 'pointer',
-              height: 42,
-              width: 42,
-              border: '2px solid rgba(20, 184, 166, 0.3)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-              transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-              '&:hover': {
-                transform: 'scale(1.05)',
-                boxShadow: '0 4px 12px rgba(20, 184, 166, 0.2)',
-                border: '2px solid rgba(20, 184, 166, 0.5)',
-              }
-            }}
+          </Box>
+          <Stack
+            alignItems="center"
+            direction="row"
+            spacing={{ xs: 1, sm: 2 }}
+            sx={{ alignItems: 'center', flex: '0 0 auto' }}
           >
-            {userInitials}
-          </Avatar>
+            <Avatar
+              onClick={userPopover.handleOpen}
+              ref={userPopover.anchorRef}
+              src={userInfo?.profile_image || undefined}
+              sx={{
+                cursor: 'pointer',
+                height: 42,
+                width: 42,
+                border: '2px solid rgba(20, 184, 166, 0.3)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                  boxShadow: '0 4px 12px rgba(20, 184, 166, 0.2)',
+                  border: '2px solid rgba(20, 184, 166, 0.5)',
+                }
+              }}
+            >
+              {userInitials}
+            </Avatar>
+          </Stack>
         </Stack>
       </Box>
       <UserPopover anchorEl={userPopover.anchorRef.current} onClose={userPopover.handleClose} open={userPopover.open} />

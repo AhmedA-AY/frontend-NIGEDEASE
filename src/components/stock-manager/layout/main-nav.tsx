@@ -47,24 +47,35 @@ export function MainNav(): React.JSX.Element {
           color: 'var(--mui-palette-text-primary)',
           height: 'var(--MainNav-height)',
           left: {
+            xs: 0,
             lg: 'var(--SideNav-width)',
           },
           position: 'fixed',
           right: 0,
           top: 0,
           zIndex: 'var(--MainNav-zIndex)',
+          boxShadow: '0 1px 8px rgba(0, 0, 0, 0.05)',
         }}
       >
-        <Stack direction="row" spacing={2} sx={{ height: '100%', px: 3 }}>
+        <Stack direction="row" spacing={2} sx={{ height: '100%', px: { xs: 2, sm: 3 } }}>
           <Box sx={{ alignItems: 'center', display: { lg: 'none', xs: 'flex' } }}>
-            <IconButton onClick={(): void => setOpenNav(true)}>
-              <ListIcon />
+            <IconButton 
+              onClick={(): void => setOpenNav(true)}
+              aria-label="Menu"
+              sx={{ 
+                color: 'text.primary',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                }
+              }}
+            >
+              <ListIcon weight="bold" />
             </IconButton>
           </Box>
           <Stack
             alignItems="center"
             direction="row"
-            spacing={2}
+            spacing={{ xs: 1, sm: 2 }}
             sx={{ alignItems: 'center', flex: '1 1 auto', justifyContent: 'flex-end' }}
           >
             <Box ref={userPopover.anchorRef}>
@@ -75,7 +86,11 @@ export function MainNav(): React.JSX.Element {
                 sx={{
                   cursor: 'pointer',
                   height: 40,
-                  width: 40
+                  width: 40,
+                  transition: 'transform 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                  }
                 }}
               >
                 {userInitials}

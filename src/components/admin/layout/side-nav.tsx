@@ -41,20 +41,19 @@ export function SideNav(): React.JSX.Element {
         color: 'var(--SideNav-color)',
         display: { xs: 'none', lg: 'flex' },
         flexDirection: 'column',
-        height: '100%',
+        height: '100vh',
         left: 0,
         maxWidth: '100%',
         position: 'fixed',
-        scrollbarWidth: 'none',
         top: 0,
         width: 'var(--SideNav-width)',
         zIndex: 'var(--SideNav-zIndex)',
-        '&::-webkit-scrollbar': { display: 'none' },
         borderRight: '1px solid rgba(255, 255, 255, 0.08)',
         boxShadow: '4px 0 24px rgba(0, 0, 0, 0.15)',
+        overflow: 'hidden',
       }}
     >
-      <Stack spacing={2} sx={{ p: 3 }}>
+      <Stack spacing={2} sx={{ p: 3, flexShrink: 0 }}>
         <Box 
           component={RouterLink} 
           href={paths.admin.dashboard} 
@@ -97,12 +96,35 @@ export function SideNav(): React.JSX.Element {
           <CaretUpDownIcon />
         </Box>
       </Stack>
-      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
-      <Box component="nav" sx={{ flex: '1 1 auto', p: '16px' }}>
+      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', flexShrink: 0 }} />
+      
+      <Box 
+        component="nav" 
+        sx={{ 
+          flex: '1 1 auto',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          p: '16px',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+            backgroundColor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '6px',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            }
+          },
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255, 255, 255, 0.1) transparent',
+        }}
+      >
         {renderNavItems({ pathname, items: adminNavItems })}
       </Box>
-      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
-      <Stack spacing={2} sx={{ p: '16px', mb: 2 }}>
+      
+      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', flexShrink: 0 }} />
+      <Stack spacing={2} sx={{ p: '16px', mb: 2, flexShrink: 0 }}>
         <div>
           <Typography color="var(--mui-palette-neutral-100)" variant="subtitle2" sx={{ fontWeight: 600 }}>
             Need help?

@@ -214,151 +214,165 @@ export default function AdminDashboardPage() {
     topCustomers
   } = dashboardData || {};
 
+  // Format values for display
+  const formattedTotalSales = totalSales ? `$${totalSales.toFixed(2)}` : '$0.00';
+  const formattedTotalExpenses = totalExpenses ? `$${totalExpenses.toFixed(2)}` : '$0.00';
+  const formattedPaymentReceived = paymentReceived ? `$${paymentReceived.toFixed(2)}` : '$0.00';
+  const formattedTotalCustomers = totalCustomers ? totalCustomers.toString() : '0';
+
+  // Calculate growth percentages
+  const salesGrowthFormatted = salesGrowth ? `${salesGrowth >= 0 ? '+' : ''}${salesGrowth.toFixed(1)}%` : '0%';
+  const expensesChangePercentage = totalExpenses && totalSales 
+    ? `${((totalExpenses / (totalSales || 1)) * 100).toFixed(1)}%` 
+    : '0%';
+  const paymentsChangePercentage = paymentReceived && totalSales 
+    ? `${((paymentReceived / (totalSales || 1)) * 100).toFixed(1)}%` 
+    : '0%';
+  const customersChangePercentage = totalCustomers ? '+NEW' : '0%';
+
   return (
-    <Box component="main" sx={{ flexGrow: 1, py: 4 }}>
+    <Box component="main" sx={{ flexGrow: 1, py: { xs: 2, sm: 4 } }}>
       <Container maxWidth="xl">
-        <Box sx={{ mb: 4 }}>
-          <Grid container justifyContent="space-between" spacing={3}>
-            <Grid item>
-              <Typography variant="h4">
+        <Box sx={{ mb: { xs: 2, sm: 4 } }}>
+          <Grid container justifyContent="space-between" spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6}>
+              <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
                 Dashboard
               </Typography>
             </Grid>
-            <Grid item>
-              <Stack direction="row" spacing={1}>
-              <Button 
+            <Grid item xs={12} sm={6}>
+              <Stack 
+                direction={{ xs: 'row', sm: 'row' }} 
+                spacing={1} 
+                sx={{ 
+                  justifyContent: { xs: 'center', sm: 'flex-end' },
+                  mb: { xs: 1, sm: 0 } 
+                }}
+              >
+                <Button 
                   color={selectedPeriod === 'today' ? 'primary' : 'inherit'}
-            onClick={() => handlePeriodChange('today')}
+                  onClick={() => handlePeriodChange('today')}
                   variant={selectedPeriod === 'today' ? 'contained' : 'text'}
-          >
-            Today
-          </Button>
-          <Button 
+                  size="small"
+                  sx={{ minWidth: { xs: '60px', sm: '80px' } }}
+                >
+                  Today
+                </Button>
+                <Button 
                   color={selectedPeriod === 'week' ? 'primary' : 'inherit'}
-            onClick={() => handlePeriodChange('week')}
+                  onClick={() => handlePeriodChange('week')}
                   variant={selectedPeriod === 'week' ? 'contained' : 'text'}
-          >
+                  size="small"
+                  sx={{ minWidth: { xs: '60px', sm: '80px' } }}
+                >
                   Week
-          </Button>
-          <Button 
+                </Button>
+                <Button 
                   color={selectedPeriod === 'month' ? 'primary' : 'inherit'}
-            onClick={() => handlePeriodChange('month')}
+                  onClick={() => handlePeriodChange('month')}
                   variant={selectedPeriod === 'month' ? 'contained' : 'text'}
-          >
+                  size="small"
+                  sx={{ minWidth: { xs: '60px', sm: '80px' } }}
+                >
                   Month
-          </Button>
-          <Button 
+                </Button>
+                <Button 
                   color={selectedPeriod === 'year' ? 'primary' : 'inherit'}
-            onClick={() => handlePeriodChange('year')}
+                  onClick={() => handlePeriodChange('year')}
                   variant={selectedPeriod === 'year' ? 'contained' : 'text'}
+                  size="small"
+                  sx={{ minWidth: { xs: '60px', sm: '80px' } }}
                 >
                   Year
                 </Button>
-                <Button
-                  onClick={handleRetry}
-                  startIcon={<RefreshIcon />}
-                  variant="outlined"
-                >
-                  Refresh
-          </Button>
-        </Stack>
+              </Stack>
             </Grid>
           </Grid>
         </Box>
         
-        {/* Welcome message with store info */}
-        <Box sx={{ mb: 4 }}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Storefront style={{ marginRight: 8 }} />
-              <Typography variant="h5">
-                Welcome back, {userInfo?.first_name || 'Admin'}!
-                    </Typography>
-                  </Box>
-            <Typography variant="body1">
-              You are viewing data for <strong>{currentStore?.name}</strong>. 
-              {dataUpdatedAt && (
-                <span> Last updated: {new Date(dataUpdatedAt).toLocaleTimeString()}</span>
-              )}
-            </Typography>
-          </Paper>
-        </Box>
-        
-        {/* Stat cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Total Sales"
-              value={`$${totalSales?.toFixed(2) ?? '0.00'}`}
-              change={`${(salesGrowth ?? 0) >= 0 ? '+' : ''}${(salesGrowth ?? 0).toFixed(1)}%`}
-              positive={(salesGrowth ?? 0) >= 0}
-              icon={<TrendingUpIcon />}
-            />
+        <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Total Sales"
+                value={formattedTotalSales}
+                change={salesGrowthFormatted}
+                positive={salesGrowth ? salesGrowth >= 0 : false}
+                icon={<TrendingUpIcon />}
+              />
             </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Total Expenses"
-              value={`$${totalExpenses?.toFixed(2) ?? '0.00'}`}
-              change={`${(totalExpenses ?? 0) > 0 ? '+' : ''}${totalExpenses ? ((totalExpenses / (totalSales || 1)) * 100).toFixed(1) : '0.0'}%`}
-              positive={false} // Expenses are generally considered negative
-              icon={<TrendingDownIcon />}
-            />
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Total Expenses"
+                value={formattedTotalExpenses}
+                change={expensesChangePercentage}
+                positive={false}
+                icon={<TrendingDownIcon />}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Payment Received"
+                value={formattedPaymentReceived}
+                change={paymentsChangePercentage}
+                positive={true}
+                icon={<ReceiptIcon />}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Total Customers"
+                value={formattedTotalCustomers}
+                change={customersChangePercentage}
+                positive={true}
+                icon={<PeopleIcon />}
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Payment Received"
-              value={`$${paymentReceived?.toFixed(2) ?? '0.00'}`}
-              change={`${(paymentReceived ?? 0) > 0 ? '+' : ''}${paymentReceived ? ((paymentReceived / (totalSales || 1)) * 100).toFixed(1) : '0.0'}%`}
-              positive={true}
-              icon={<ReceiptIcon />}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Total Customers"
-              value={totalCustomers?.toString() ?? '0'}
-              change={(totalCustomers ?? 0) > 0 ? '+NEW' : 'NO CHANGE'}
-              positive={(totalCustomers ?? 0) > 0}
-              icon={<PeopleIcon />}
-            />
-          </Grid>
-        </Grid>
+        </Box>
 
-        {/* Main chart */}
-        <Box sx={{ mb: 4 }}>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
+          <Grid item xs={12} lg={8}>
             <Card>
-            <CardHeader 
-              title="Sales Overview" 
-              subheader={`Sales and expenses data for the selected period: ${selectedPeriod}`} 
-            />
-            <Box sx={{ p: 2, height: 380 }}>
+              <CardHeader 
+                title="Sales vs Expenses" 
+                sx={{ 
+                  '& .MuiCardHeader-title': {
+                    fontSize: { xs: '1rem', sm: '1.25rem' }
+                  }
+                }}
+              />
+              <Box 
+                sx={{ 
+                  height: { xs: 300, sm: 400 },
+                  p: { xs: 1, sm: 3 },
+                  position: 'relative'
+                }}
+              >
                 <DynamicApexChart
-                options={dailySalesChartOptions}
-                series={dailySalesChartSeries}
-                type="line"
+                  options={dailySalesChartOptions}
+                  series={dailySalesChartSeries}
+                  type="area"
                   height={350}
                 />
               </Box>
             </Card>
-        </Box>
-
-        {/* Additional widgets */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          </Grid>
+          <Grid item xs={12} md={6} lg={4}>
             <TopSellingProducts products={topSellingProducts || []} />
           </Grid>
-          <Grid item xs={12} md={6}>
-            <TopCustomers customers={topCustomers || []} />
-          </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} lg={4}>
             <RecentSales sales={recentSales || []} />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} lg={4}>
             <StockAlerts alerts={stockAlerts || []} />
+          </Grid>
+          <Grid item xs={12} md={6} lg={4}>
+            <TopCustomers customers={topCustomers || []} />
           </Grid>
         </Grid>
       </Container>
-      </Box>
+    </Box>
   );
 }
 
@@ -372,39 +386,94 @@ interface StatCardProps {
 
 function StatCard({ title, value, change, positive, icon }: StatCardProps) {
   return (
-    <Card sx={{ height: '100%' }}>
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography color="text.secondary" variant="overline">
-            {title}
-          </Typography>
-          <Box sx={{ 
-            borderRadius: '50%', 
-            bgcolor: positive ? 'success.light' : 'error.light',
-            color: positive ? 'success.main' : 'error.main',
-            p: 0.75
-          }}>
-            {icon}
-          </Box>
-        </Box>
-        <Typography variant="h4" sx={{ mt: 1 }}>
-          {value}
+    <Card
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        p: { xs: 2, sm: 3 },
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+        borderRadius: 2,
+        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+        },
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography 
+          color="text.secondary" 
+          variant="overline" 
+          sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}
+        >
+          {title}
         </Typography>
-        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-          <Box sx={{ 
-            borderRadius: 1, 
-            bgcolor: positive ? 'success.lightest' : 'error.lightest',
-              color: positive ? 'success.main' : 'error.main',
-            px: 0.5,
-            py: 0.25
-          }}>
-            <Typography variant="caption">
-              {change}
-            </Typography>
-          </Box>
-          <Typography color="text.secondary" sx={{ ml: 1 }} variant="caption">
-            {positive ? 'Increase' : 'Decrease'}
-            </Typography>
+        <Box
+          sx={{
+            backgroundColor: positive ? 'success.lightest' : 'error.lightest',
+            borderRadius: 1,
+            display: 'flex',
+            alignItems: 'center',
+            p: '4px 8px',
+          }}
+        >
+          {positive ? (
+            <TrendingUpIcon
+              fontSize="small"
+              sx={{ color: 'success.main', fontSize: { xs: '0.875rem', sm: '1rem' } }}
+            />
+          ) : (
+            <TrendingDownIcon
+              fontSize="small"
+              sx={{ color: 'error.main', fontSize: { xs: '0.875rem', sm: '1rem' } }}
+            />
+          )}
+          <Typography
+            color={positive ? 'success.main' : 'error.main'}
+            sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+            variant="body2"
+          >
+            {change}
+          </Typography>
+        </Box>
+      </Box>
+      <Typography 
+        variant="h4" 
+        sx={{ 
+          fontWeight: 700,
+          fontSize: { xs: '1.5rem', sm: '2rem' }, 
+          mb: 2,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        {value}
+      </Typography>
+      <Box
+        sx={{
+          alignItems: 'center',
+          borderRadius: 1,
+          display: 'flex',
+          mt: 'auto',
+          width: 'fit-content',
+        }}
+      >
+        <Box
+          sx={{
+            alignItems: 'center',
+            backgroundColor: 'primary.lightest',
+            borderRadius: '50%',
+            display: 'flex',
+            height: { xs: 32, sm: 40 },
+            justifyContent: 'center',
+            width: { xs: 32, sm: 40 },
+          }}
+        >
+          {React.cloneElement(icon as React.ReactElement, {
+            style: { color: 'var(--mui-palette-primary-main)', fontSize: '1.25rem' },
+          })}
         </Box>
       </Box>
     </Card>

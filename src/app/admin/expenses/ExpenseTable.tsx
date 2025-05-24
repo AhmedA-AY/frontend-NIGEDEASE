@@ -13,7 +13,13 @@ import {
   Paper,
   CircularProgress,
   Box,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme,
+  Card,
+  Chip,
+  Divider,
+  Stack
 } from '@mui/material';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { TrashSimple as TrashSimpleIcon } from '@phosphor-icons/react/dist/ssr/TrashSimple';
@@ -47,6 +53,9 @@ export default function ExpenseTable({
   onEdit,
   onDelete
 }: ExpenseTableProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -80,48 +89,38 @@ export default function ExpenseTable({
     return currency ? currency.code : 'Unknown';
   };
 
-  return (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell padding="checkbox">
-              <Checkbox
-                checked={selectedExpenses.length === expenses.length && expenses.length > 0}
-                indeterminate={selectedExpenses.length > 0 && selectedExpenses.length < expenses.length}
-                onChange={onSelectAll}
-              />
-            </TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>Category</TableCell>
-            <TableCell>Description</TableCell>
-            <TableCell>Amount</TableCell>
-            <TableCell>Payment Mode</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {expenses.map((expense) => {
-            const isSelected = selectedExpenses.includes(expense.id);
-            
-            return (
-              <TableRow hover key={expense.id} selected={isSelected}>
-                <TableCell padding="checkbox">
+  // Mobile card view rendering for each expense
+  const renderMobileView = () => {
+    return (
+      <Stack spacing={2}>
+        {expenses.map((expense) => {
+          const isSelected = selectedExpenses.includes(expense.id);
+          
+          return (
+            <Card 
+              key={expense.id} 
+              sx={{ 
+                p: 2, 
+                borderLeft: isSelected ? '4px solid var(--mui-palette-primary-main)' : '4px solid transparent',
+                boxShadow: isSelected ? '0 4px 12px rgba(99, 102, 241, 0.2)' : 'var(--mui-shadows-1)',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.1)',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Checkbox
                     checked={isSelected}
                     onChange={() => onSelectOne(expense.id)}
+                    size="small"
                   />
-                </TableCell>
-                <TableCell>
-                  {format(new Date(expense.created_at), 'MMM dd, yyyy')}
-                </TableCell>
-                <TableCell>{getCategoryName(expense.expense_category)}</TableCell>
-                <TableCell>{expense.description}</TableCell>
-                <TableCell>
-                  {expense.amount} {getCurrencyCode(expense.currency)}
-                </TableCell>
-                <TableCell>{getPaymentModeName(expense.payment_mode)}</TableCell>
-                <TableCell>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    {format(new Date(expense.created_at), 'MMM dd, yyyy')}
+                  </Typography>
+                </Box>
+                <Box>
                   <IconButton
                     onClick={() => onEdit(expense.id)}
                     size="small"
@@ -135,12 +134,135 @@ export default function ExpenseTable({
                   >
                     <TrashSimpleIcon />
                   </IconButton>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 1 }} />
+              
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 1 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Category</Typography>
+                  <Typography variant="body2">{getCategoryName(expense.expense_category)}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Amount</Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {expense.amount} {getCurrencyCode(expense.currency)}
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="caption" color="text.secondary">Description</Typography>
+                <Typography variant="body2">{expense.description}</Typography>
+              </Box>
+              
+              <Box>
+                <Typography variant="caption" color="text.secondary">Payment Mode</Typography>
+                <Chip 
+                  label={getPaymentModeName(expense.payment_mode)} 
+                  size="small" 
+                  sx={{ 
+                    fontSize: '0.75rem',
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider' 
+                  }} 
+                />
+              </Box>
+            </Card>
+          );
+        })}
+      </Stack>
+    );
+  };
+
+  // Desktop table view
+  const renderTableView = () => {
+    return (
+      <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={selectedExpenses.length === expenses.length && expenses.length > 0}
+                  indeterminate={selectedExpenses.length > 0 && selectedExpenses.length < expenses.length}
+                  onChange={onSelectAll}
+                />
+              </TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Amount</TableCell>
+              <TableCell>Payment Mode</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {expenses.map((expense) => {
+              const isSelected = selectedExpenses.includes(expense.id);
+              
+              return (
+                <TableRow 
+                  hover 
+                  key={expense.id} 
+                  selected={isSelected}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: 'rgba(99, 102, 241, 0.08)'
+                    },
+                    '&.Mui-selected:hover': {
+                      backgroundColor: 'rgba(99, 102, 241, 0.12)'
+                    }
+                  }}
+                >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={() => onSelectOne(expense.id)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(expense.created_at), 'MMM dd, yyyy')}
+                  </TableCell>
+                  <TableCell>{getCategoryName(expense.expense_category)}</TableCell>
+                  <TableCell>{expense.description}</TableCell>
+                  <TableCell>
+                    <Typography fontWeight="medium">
+                      {expense.amount} {getCurrencyCode(expense.currency)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={getPaymentModeName(expense.payment_mode)} 
+                      size="small" 
+                      sx={{ fontSize: '0.75rem' }} 
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <IconButton
+                      onClick={() => onEdit(expense.id)}
+                      size="small"
+                      sx={{ mr: 1 }}
+                    >
+                      <PencilSimpleIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => onDelete(expense.id)}
+                      size="small"
+                    >
+                      <TrashSimpleIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
+
+  return isMobile ? renderMobileView() : renderTableView();
 } 

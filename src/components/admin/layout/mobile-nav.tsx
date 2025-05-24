@@ -49,11 +49,20 @@ export function MobileNav({ onClose, open = false, items = adminNavItems }: Mobi
           background: 'var(--SideNav-background)',
           color: 'var(--SideNav-color)',
           width: 'var(--MobileNav-width)',
+          maxWidth: 'var(--MobileNav-max-width)',
           zIndex: 'var(--MobileNav-zIndex)',
           boxShadow: '4px 0 24px rgba(0, 0, 0, 0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          overflowY: 'hidden',
         },
       }}
       variant="temporary"
+      SlideProps={{ 
+        easing: { enter: 'cubic-bezier(0.4, 0, 0.2, 1)', exit: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+        timeout: { enter: 300, exit: 200 }
+      }}
     >
       <Stack spacing={2} sx={{ p: 3 }}>
         <Box 
@@ -99,7 +108,29 @@ export function MobileNav({ onClose, open = false, items = adminNavItems }: Mobi
         </Box>
       </Stack>
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
-      <Box component="nav" sx={{ flex: '1 1 auto', p: '16px' }}>
+      <Box 
+        component="nav" 
+        sx={{ 
+          flex: '1 1 auto', 
+          p: '16px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          maxHeight: 'calc(100vh - 200px)', // Ensure it doesn't overflow viewport
+          '&::-webkit-scrollbar': {
+            width: '4px',
+            backgroundColor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '4px',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            }
+          },
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255, 255, 255, 0.1) transparent',
+        }}
+      >
         {items.reduce((acc: React.ReactNode[], item: NavItemConfig): React.ReactNode[] => {
           const { key, ...others } = item;
 

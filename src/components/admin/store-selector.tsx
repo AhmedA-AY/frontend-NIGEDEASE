@@ -91,7 +91,10 @@ export default function StoreSelector() {
   // Always show dropdown for switching between stores, even if user has a currentStore
   return (
     <div className="flex items-center gap-2">
-      <FormControl variant="outlined" size="small" sx={{ minWidth: 180 }}>
+      <FormControl variant="outlined" size="small" sx={{ 
+        minWidth: { xs: 120, sm: 180 },
+        maxWidth: { xs: '35vw', sm: 'none' }
+      }}>
         <Select
           value={currentStore?.id || ''}
           onChange={handleStoreChange}
@@ -102,6 +105,12 @@ export default function StoreSelector() {
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: 'var(--secondary-200)',
             },
+            // Truncate long store names on small screens
+            '& .MuiSelect-select': {
+              textOverflow: 'ellipsis',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+            }
           }}
         >
           <MenuItem value="" disabled>
@@ -114,13 +123,15 @@ export default function StoreSelector() {
           ))}
         </Select>
       </FormControl>
-      <IconButton 
-        onClick={handleRefresh} 
-        className={`transition-all duration-300 ${refreshing ? 'animate-spin' : ''}`}
-        size="small"
-      >
-        <ArrowsClockwise size={18} />
-      </IconButton>
+      <Tooltip title="Refresh stores">
+        <IconButton 
+          onClick={handleRefresh} 
+          className={`transition-all duration-300 ${refreshing ? 'animate-spin' : ''}`}
+          size="small"
+        >
+          <ArrowsClockwise size={18} />
+        </IconButton>
+      </Tooltip>
     </div>
   );
 } 

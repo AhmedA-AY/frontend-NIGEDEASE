@@ -27,13 +27,49 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
       <StockManagerGuard>
         <GlobalStyles
           styles={{
+            'html, body': {
+              height: '100%',
+            },
             body: {
               '--MainNav-height': '70px',
               '--MainNav-zIndex': 1000,
               '--SideNav-width': '280px',
               '--SideNav-zIndex': 1100,
-              '--MobileNav-width': '320px',
-              '--MobileNav-zIndex': 1100,
+              '--MobileNav-width': '90vw',
+              '--MobileNav-max-width': '320px',
+              '--MobileNav-zIndex': 1200,
+              margin: 0,
+              padding: 0,
+              overflow: 'hidden',
+              WebkitTapHighlightColor: 'transparent',
+            },
+            '#__next, main': {
+              height: '100%',
+            },
+            // Global responsive font sizes
+            'h1, .MuiTypography-h1': {
+              fontSize: 'clamp(2rem, 4vw, 2.5rem) !important',
+              lineHeight: '1.2 !important',
+            },
+            'h2, .MuiTypography-h2': {
+              fontSize: 'clamp(1.75rem, 3vw, 2rem) !important',
+              lineHeight: '1.2 !important',
+            },
+            'h3, .MuiTypography-h3': {
+              fontSize: 'clamp(1.5rem, 2.5vw, 1.75rem) !important',
+              lineHeight: '1.3 !important',
+            },
+            'h4, .MuiTypography-h4': {
+              fontSize: 'clamp(1.25rem, 2vw, 1.5rem) !important',
+              lineHeight: '1.4 !important',
+            },
+            'h5, .MuiTypography-h5': {
+              fontSize: 'clamp(1.1rem, 1.5vw, 1.25rem) !important',
+              lineHeight: '1.4 !important',
+            },
+            'h6, .MuiTypography-h6': {
+              fontSize: 'clamp(1rem, 1.25vw, 1.125rem) !important',
+              lineHeight: '1.5 !important',
             },
           }}
         />
@@ -43,8 +79,9 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
-            minHeight: '100%',
+            height: '100vh',
             background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            overflow: 'hidden',
           }}
         >
           <SideNav />
@@ -54,28 +91,51 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
               flex: '1 1 auto', 
               flexDirection: 'column', 
               pl: { lg: 'var(--SideNav-width)' },
+              pt: { xs: 'var(--MainNav-height)', lg: 'var(--MainNav-height)' },
               transition: 'padding-left 0.3s ease-in-out',
+              height: '100%',
+              overflow: 'hidden',
             }}
           >
             <MainNav />
-            <main>
+            <Box 
+              component="main"
+              sx={{
+                flex: '1 1 auto',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                  backgroundColor: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                  borderRadius: '8px',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                  }
+                },
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(0, 0, 0, 0.1) transparent',
+              }}
+            >
               <Container 
                 maxWidth="xl" 
                 sx={{ 
-                  py: { xs: '24px', md: '40px' },
-                  px: { xs: '16px', md: '24px' },
+                  py: { xs: '16px', sm: '24px', md: '40px' },
+                  px: { xs: '12px', sm: '16px', md: '24px' },
                 }}
               >
                 <Box
                   sx={{
-                    borderRadius: '24px',
+                    borderRadius: { xs: '16px', sm: '24px' },
                     overflow: 'hidden',
                     boxShadow: '0 4px 30px rgba(0, 0, 0, 0.03)',
                     background: 'rgba(255, 255, 255, 0.9)',
                     backdropFilter: 'blur(10px)',
                     border: '1px solid rgba(255, 255, 255, 0.8)',
                     position: 'relative',
-                    padding: { xs: '16px', md: '24px' },
+                    padding: { xs: '12px', sm: '16px', md: '24px' },
                     '&::before': {
                       content: '""',
                       position: 'absolute',
@@ -90,7 +150,7 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
                   {children}
                 </Box>
               </Container>
-            </main>
+            </Box>
           </Box>
         </Box>
       </StockManagerGuard>

@@ -91,7 +91,11 @@ export function SignInForm(): React.JSX.Element {
         '@keyframes fadeIn': {
           from: { opacity: 0, transform: 'translateY(10px)' },
           to: { opacity: 1, transform: 'translateY(0)' }
-        }
+        },
+        width: '100%',
+        maxWidth: { xs: '100%', sm: '450px' },
+        mx: 'auto',
+        px: { xs: 2, sm: 0 }
       }}
     >
       <Stack spacing={1} alignItems="center">
@@ -100,9 +104,9 @@ export function SignInForm(): React.JSX.Element {
           src="/assets/Neged.png"
           alt="NIGED-EASE Logo"
           sx={{
-            mb: 2,
-            width: 80,
-            height: 80,
+            mb: { xs: 1, sm: 2 },
+            width: { xs: 70, sm: 80 },
+            height: { xs: 70, sm: 80 },
             borderRadius: '20%',
             objectFit: 'cover',
             boxShadow: '0 10px 20px rgba(0, 0, 0, 0.1)',
@@ -121,6 +125,7 @@ export function SignInForm(): React.JSX.Element {
           sx={{ 
             fontWeight: 700, 
             textAlign: 'center',
+            fontSize: { xs: '1.75rem', sm: '2.25rem' },
             background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
@@ -138,7 +143,8 @@ export function SignInForm(): React.JSX.Element {
             maxWidth: '85%',
             mx: 'auto',
             opacity: 0.8,
-            animation: 'fadeIn 0.5s ease-out 0.3s both'
+            animation: 'fadeIn 0.5s ease-out 0.3s both',
+            fontSize: { xs: '0.875rem', sm: '1rem' }
           }}
         >
           Sign in to access your account and manage your business
@@ -190,7 +196,7 @@ export function SignInForm(): React.JSX.Element {
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: 'primary.main'
                     },
-                    height: 56,
+                    height: { xs: 52, sm: 56 },
                     animation: 'fadeInUp 0.6s ease-out both',
                     '@keyframes fadeInUp': {
                       from: { opacity: 0, transform: 'translateY(10px)' },
@@ -249,7 +255,6 @@ export function SignInForm(): React.JSX.Element {
                         onClick={(): void => {
                           setShowPassword(false);
                         }}
-                        style={{ color: 'var(--mui-palette-primary-main)' }}
                       />
                     ) : (
                       <EyeSlashIcon
@@ -259,7 +264,6 @@ export function SignInForm(): React.JSX.Element {
                         onClick={(): void => {
                           setShowPassword(true);
                         }}
-                        style={{ color: 'var(--mui-palette-text-secondary)' }}
                       />
                     )
                   }
@@ -282,14 +286,24 @@ export function SignInForm(): React.JSX.Element {
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: 'primary.main'
                     },
-                    height: 56,
-                    animation: 'fadeInUp 0.6s ease-out 0.1s both',
+                    height: { xs: 52, sm: 56 },
+                    animation: 'fadeInUp 0.6s ease-out 0.2s both',
+                    '@keyframes fadeInUp': {
+                      from: { opacity: 0, transform: 'translateY(10px)' },
+                      to: { opacity: 1, transform: 'translateY(0)' }
+                    }
                   }}
                 />
                 {errors.password ? 
                   <FormHelperText 
                     sx={{ 
                       animation: 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
+                      '@keyframes shake': {
+                        '10%, 90%': { transform: 'translateX(-1px)' },
+                        '20%, 80%': { transform: 'translateX(2px)' },
+                        '30%, 50%, 70%': { transform: 'translateX(-4px)' },
+                        '40%, 60%': { transform: 'translateX(4px)' }
+                      }
                     }}
                   >
                     {errors.password.message}
@@ -298,76 +312,66 @@ export function SignInForm(): React.JSX.Element {
               </FormControl>
             )}
           />
-          <Box 
-            display="flex" 
-            justifyContent="flex-end"
+          <Link
+            component={RouterLink}
+            href={paths.auth.resetPassword}
             sx={{ 
-              animation: 'fadeInUp 0.6s ease-out 0.2s both',
+              alignSelf: 'flex-end',
+              color: 'primary.main',
+              fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+              fontWeight: 500,
+              textDecoration: 'none',
+              transition: 'color 0.2s ease',
+              '&:hover': {
+                color: 'primary.dark',
+                textDecoration: 'underline'
+              },
+              animation: 'fadeInUp 0.6s ease-out 0.4s both',
+              '@keyframes fadeInUp': {
+                from: { opacity: 0, transform: 'translateY(10px)' },
+                to: { opacity: 1, transform: 'translateY(0)' }
+              }
             }}
+            underline="none"
+            variant="subtitle2"
           >
-            <Link 
-              component={RouterLink} 
-              href={paths.auth.resetPassword} 
-              variant="body2" 
-              sx={{
-                color: 'primary.main',
-                fontWeight: 500,
-                textDecoration: 'none',
-                position: 'relative',
-                '&:hover': {
-                  textDecoration: 'none',
-                },
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  width: '100%',
-                  transform: 'scaleX(0)',
-                  height: '2px',
-                  bottom: -1,
-                  left: 0,
-                  backgroundColor: 'primary.main',
-                  transformOrigin: 'bottom right',
-                  transition: 'transform 0.3s ease-out'
-                },
-                '&:hover::after': {
-                  transform: 'scaleX(1)',
-                  transformOrigin: 'bottom left'
-                }
-              }}
-            >
-              Forgot password?
-            </Link>
-          </Box>
-          {errors.root ? 
+            Forgot password?
+          </Link>
+          {errors.root ? (
             <Alert 
-              color="error" 
-              severity="error" 
+              severity="error"
               variant="filled"
               sx={{ 
                 borderRadius: 2,
                 animation: 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
+                '@keyframes shake': {
+                  '10%, 90%': { transform: 'translateX(-1px)' },
+                  '20%, 80%': { transform: 'translateX(2px)' },
+                  '30%, 50%, 70%': { transform: 'translateX(-4px)' },
+                  '40%, 60%': { transform: 'translateX(4px)' }
+                }
               }}
             >
               {errors.root.message}
-            </Alert> 
-          : null}
-          <Button 
-            disabled={loginMutation.isPending} 
-            type="submit" 
-            variant="contained" 
-            fullWidth
+            </Alert>
+          ) : null}
+          <Button
+            disabled={loginMutation.isPending}
+            type="submit"
             size="large"
+            variant="contained"
             sx={{ 
-              borderRadius: 2.5, 
-              py: 1.5,
+              height: { xs: '50px', sm: '56px' },
+              borderRadius: 2.5,
+              position: 'relative',
+              overflow: 'hidden',
               fontWeight: 600,
+              textTransform: 'none',
+              fontSize: { xs: '0.9375rem', sm: '1rem' },
               background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
               boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)',
               transition: 'all 0.3s ease',
-              animation: 'fadeInUp 0.6s ease-out 0.3s both',
-              position: 'relative',
-              overflow: 'hidden',
-              mt: 1,
+              animation: 'fadeInUp 0.6s ease-out 0.6s both',
               '&::before': {
                 content: '""',
                 position: 'absolute',
@@ -387,15 +391,48 @@ export function SignInForm(): React.JSX.Element {
               },
               '&:active': {
                 transform: 'translateY(0)',
-                boxShadow: '0 5px 10px rgba(99, 102, 241, 0.2)',
+              },
+              '@keyframes fadeInUp': {
+                from: { opacity: 0, transform: 'translateY(10px)' },
+                to: { opacity: 1, transform: 'translateY(0)' }
               }
             }}
           >
-            {loginMutation.isPending ? 
-              <CircularProgress size={24} color="inherit" /> : 
-              'Sign in'
-            }
+            {loginMutation.isPending ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              'Sign In'
+            )}
           </Button>
+          <Typography
+            color="text.secondary"
+            sx={{ 
+              textAlign: 'center',
+              mt: { xs: 2, sm: 3 },
+              fontSize: { xs: '0.8125rem', sm: '0.875rem' }
+            }}
+            variant="body2"
+          >
+            Don&apos;t have an account?{' '}
+            <Link
+              component={RouterLink}
+              href={paths.auth.signUp}
+              sx={{ 
+                color: 'primary.main',
+                fontWeight: 500,
+                textDecoration: 'none',
+                transition: 'color 0.2s ease',
+                '&:hover': {
+                  color: 'primary.dark',
+                  textDecoration: 'underline'
+                }
+              }}
+              underline="none"
+              variant="subtitle2"
+            >
+              Sign Up
+            </Link>
+          </Typography>
         </Stack>
       </form>
     </Stack>
