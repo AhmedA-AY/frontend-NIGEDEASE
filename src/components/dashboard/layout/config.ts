@@ -70,6 +70,7 @@ export const adminNavItems = [
   { key: 'admin-parties', title: 'Parties', href: paths.admin.parties, icon: 'users' },
   { key: 'admin-stores', title: 'Stores', href: paths.admin.stores, icon: 'storefront' },
   { key: 'admin-users', title: 'Users', href: paths.admin.users, icon: 'user-gear' },
+  { key: 'admin-reports', title: 'Reports', href: paths.admin.reports, icon: 'chart-line' },
   { key: 'admin-invoice-verification', title: 'Invoice Verification', href: paths.admin.invoiceVerification, icon: 'file-text' },
 ] satisfies NavItemConfig[];
 
