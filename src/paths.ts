@@ -33,6 +33,7 @@ export const paths = {
     users: '/admin/users',
     companies: '/admin/companies',
     stores: '/admin/stores',
+    reports: '/admin/reports',
     invoiceVerification: '/admin/invoice-verification',
   },
   stockManager: {
