@@ -72,6 +72,7 @@ export const adminNavItems = [
   { key: 'admin-users', title: 'Users', href: paths.admin.users, icon: 'user-gear' },
   { key: 'admin-reports', title: 'Reports', href: paths.admin.reports, icon: 'chart-line' },
   { key: 'admin-invoice-verification', title: 'Invoice Verification', href: paths.admin.invoiceVerification, icon: 'file-text' },
+  { key: 'admin-inventory-search', title: 'Inventory Search', href: paths.admin.inventorySearch, icon: 'magnifying-glass' },
 ] satisfies NavItemConfig[];
 
 export const stockManagerNavItems = [
@@ -81,6 +82,7 @@ export const stockManagerNavItems = [
   { key: 'stock-manager-expenses', title: 'Expenses', href: paths.stockManager.expenses, icon: 'bank' },
   { key: 'stock-manager-payments', title: 'Payments', href: paths.stockManager.payments, icon: 'credit-card' },
   { key: 'stock-manager-invoice-verification', title: 'Invoice Verification', href: paths.stockManager.invoiceVerification, icon: 'file-text' },
+  { key: 'stock-manager-inventory-search', title: 'Inventory Search', href: paths.stockManager.inventorySearch, icon: 'magnifying-glass' },
 ] satisfies NavItemConfig[];
 
 export const superAdminNavItems = [
@@ -97,4 +99,5 @@ export const salesNavItems = [
   { key: 'sales-payments', title: 'Payment In', href: paths.salesman.paymentIn, icon: 'credit-card' },
   { key: 'sales-expenses', title: 'Expenses', href: paths.salesman.expenses, icon: 'bank' },
   { key: 'sales-invoice-verification', title: 'Invoice Verification', href: paths.salesman.invoiceVerification, icon: 'file-text' },
+  { key: 'sales-inventory-search', title: 'Inventory Search', href: paths.salesman.inventorySearch, icon: 'magnifying-glass' },
 ] satisfies NavItemConfig[];
