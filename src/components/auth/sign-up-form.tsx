@@ -24,7 +24,7 @@ import { z as zod } from 'zod';
 import { paths } from '@/paths';
 import { useRegister } from '@/hooks/use-auth-queries';
 import { useAuth } from '@/providers/auth-provider';
-import { OtpVerificationForm } from './otp-verification-form';
+import OtpVerificationForm from './otp-verification-form';
 
 const schema = zod.object({
   firstName: zod.string().min(1, { message: 'First name is required' }),
