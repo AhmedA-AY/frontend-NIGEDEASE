@@ -25,6 +25,7 @@ import {
   Unstable_Grid2 as Grid,
   CircularProgress
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 
 import { CompaniesList } from '@/components/companies/companies-list';
@@ -33,6 +34,7 @@ import { useCompanies } from '@/hooks/super-admin/use-companies';
 import ErrorMessage from '@/components/common/error-message';
 
 const Page = () => {
+  const { t } = useTranslation('super-admin');
   const [tabValue, setTabValue] = useState(0);
   const { data: companies = [], isLoading, error, refetch } = useCompanies();
   
@@ -50,7 +52,7 @@ const Page = () => {
           <Stack direction="row" justifyContent="space-between" spacing={4}>
             <Stack spacing={1}>
               <Typography variant="h4">
-                Companies
+                {t('companies.title')}
               </Typography>
               <Stack alignItems="center" direction="row" spacing={1}>
                 <Button
@@ -59,7 +61,7 @@ const Page = () => {
                   href={paths.superAdmin.dashboard}
                   size="small"
                 >
-                  Dashboard
+                  {t('dashboard.title')}
                 </Button>
                 <Box
                   sx={{
@@ -70,7 +72,7 @@ const Page = () => {
                   }}
                 />
                 <Typography color="text.secondary" variant="body2">
-                  Companies
+                  {t('companies.title')}
                 </Typography>
               </Stack>
             </Stack>
@@ -84,7 +86,7 @@ const Page = () => {
               }
               variant="contained"
             >
-              Add
+              {t('companies.add')}
             </Button>
           </Stack>
           
@@ -94,9 +96,9 @@ const Page = () => {
               onChange={handleTabChange}
               sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
             >
-              <Tab label="All" />
-              <Tab label="Active" />
-              <Tab label="Inactive" />
+              <Tab label={t('companies.all')} />
+              <Tab label={t('companies.active')} />
+              <Tab label={t('companies.inactive')} />
             </Tabs>
             
             {isLoading ? (
@@ -107,7 +109,7 @@ const Page = () => {
               <Box sx={{ p: 3 }}>
                 <ErrorMessage 
                   error={error} 
-                  title="Failed to load companies" 
+                  title={t('companies.failed_to_load')} 
                   onRetry={refetch} 
                 />
               </Box>

@@ -1,17 +1,29 @@
+'use client';
+
 import * as React from 'react';
 import RouterLink from 'next/link';
+import dynamic from 'next/dynamic';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { Building, ChartBar, ShieldCheck } from '@phosphor-icons/react/dist/ssr';
+import { useTranslation } from 'react-i18next';
 
 import { paths } from '@/paths';
+
+// Dynamically import the LanguageSwitcher with SSR disabled to prevent hydration errors
+const LanguageSwitcher = dynamic(
+  () => import('@/components/core/language-switcher').then(mod => mod.LanguageSwitcher),
+  { ssr: false }
+);
 
 export interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps): React.JSX.Element {
+  const { t } = useTranslation('auth');
+  
   return (
     <Box
       sx={{
@@ -67,6 +79,7 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
             p: { xs: 2, sm: 4 }, 
             display: 'flex', 
             alignItems: 'center',
+            justifyContent: 'space-between',
             animation: 'fadeInDown 0.6s ease-out',
             '@keyframes fadeInDown': {
               from: {
@@ -124,9 +137,11 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              NIGED-EASE
+              {t('app_name')}
             </Typography>
           </Box>
+          
+          <LanguageSwitcher />
         </Box>
 
         {/* Form Container with Animation */}
@@ -293,7 +308,7 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
                   }
                 }}
               />
-              Manage Your Business with{' '}
+              {t('business_management')}{' '}
               <Box component="span" sx={{ 
                 background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
                 backgroundClip: 'text',
@@ -301,7 +316,7 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
                 WebkitTextFillColor: 'transparent',
                 textShadow: '0 10px 30px rgba(99, 102, 241, 0.3)',
               }}>
-                NIGED-EASE
+                {t('app_name')}
               </Box>
             </Typography>
             <Typography 
@@ -316,7 +331,7 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
                 animation: 'fadeIn 1s ease-out 0.6s both',
               }}
             >
-              The ultimate business management solution built for Ethiopian businesses
+              {t('business_subtitle')}
             </Typography>
           </Stack>
 
@@ -324,18 +339,18 @@ export function Layout({ children }: LayoutProps): React.JSX.Element {
             {[
               {
                 icon: <Building size={36} weight="fill" />,
-                title: 'Business-Focused',
-                description: 'Tailored specifically for the Ethiopian business environment and its unique challenges.'
+                title: t('feature_business_title'),
+                description: t('feature_business_desc')
               },
               {
                 icon: <ShieldCheck size={36} weight="fill" />,
-                title: 'Secure & Reliable',
-                description: 'Enterprise-level security with 99.9% uptime to keep your business running smoothly.'
+                title: t('feature_secure_title'),
+                description: t('feature_secure_desc')
               },
               {
                 icon: <ChartBar size={36} weight="fill" />,
-                title: 'Comprehensive Analytics',
-                description: 'Make data-driven decisions with powerful reporting and visualization tools.'
+                title: t('feature_analytics_title'),
+                description: t('feature_analytics_desc')
               }
             ].map((feature, index) => (
               <Box 

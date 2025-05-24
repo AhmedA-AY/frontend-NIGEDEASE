@@ -20,22 +20,25 @@ import { EyeSlash as EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlas
 import { Envelope, Key } from '@phosphor-icons/react/dist/ssr';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
+import { useTranslation } from 'react-i18next';
 
 import { paths } from '@/paths';
 import { useLogin } from '@/hooks/use-auth-queries';
 import { useAuth } from '@/providers/auth-provider';
-import { OtpVerificationForm } from './otp-verification-form';
-
-const schema = zod.object({
-  email: zod.string().min(1, { message: 'Email is required' }).email(),
-  password: zod.string().min(1, { message: 'Password is required' }),
-});
-
-type Values = zod.infer<typeof schema>;
-
-const defaultValues = { email: '', password: '' } satisfies Values;
+import OtpVerificationForm from './otp-verification-form';
 
 export function SignInForm(): React.JSX.Element {
+  const { t } = useTranslation('auth');
+  
+  const schema = zod.object({
+    email: zod.string().min(1, { message: t('email_required') }).email({ message: t('invalid_email') }),
+    password: zod.string().min(1, { message: t('password_required') }),
+  });
+
+  type Values = zod.infer<typeof schema>;
+
+  const defaultValues = { email: '', password: '' } satisfies Values;
+
   const router = useRouter();
   const { saveEmail } = useAuth();
   const loginMutation = useLogin();
@@ -66,11 +69,11 @@ export function SignInForm(): React.JSX.Element {
         // Show OTP verification form
         setShowOtpForm(true);
       } catch (error: any) {
-        const errorMessage = error?.error || 'Invalid credentials. Please try again.';
+        const errorMessage = error?.error || t('invalid_credentials');
         setError('root', { type: 'server', message: errorMessage });
       }
     },
-    [loginMutation, saveEmail, setError]
+    [loginMutation, saveEmail, setError, t]
   );
 
   // Function to go back to login form from OTP verification
@@ -133,7 +136,7 @@ export function SignInForm(): React.JSX.Element {
             mb: 1
           }}
         >
-          Welcome Back
+          {t('welcome_back')}
         </Typography>
         <Typography 
           color="text.secondary" 
@@ -147,7 +150,7 @@ export function SignInForm(): React.JSX.Element {
             fontSize: { xs: '0.875rem', sm: '1rem' }
           }}
         >
-          Sign in to access your account and manage your business
+          {t('sign_in_subtitle')}
         </Typography>
       </Stack>
 
@@ -165,11 +168,11 @@ export function SignInForm(): React.JSX.Element {
                     } 
                   }}
                 >
-                  Email Address
+                  {t('email_address')}
                 </InputLabel>
                 <OutlinedInput 
                   {...field} 
-                  label="Email Address" 
+                  label={t('email_address')} 
                   type="email" 
                   startAdornment={
                     <Envelope 
@@ -234,7 +237,7 @@ export function SignInForm(): React.JSX.Element {
                     } 
                   }}
                 >
-                  Password
+                  {t('password')}
                 </InputLabel>
                 <OutlinedInput
                   {...field}
@@ -267,7 +270,7 @@ export function SignInForm(): React.JSX.Element {
                       />
                     )
                   }
-                  label="Password"
+                  label={t('password')}
                   type={showPassword ? 'text' : 'password'}
                   sx={{ 
                     borderRadius: 2.5,
@@ -335,7 +338,7 @@ export function SignInForm(): React.JSX.Element {
             underline="none"
             variant="subtitle2"
           >
-            Forgot password?
+            {t('forgot_password')}
           </Link>
           {errors.root ? (
             <Alert 
@@ -401,7 +404,7 @@ export function SignInForm(): React.JSX.Element {
             {loginMutation.isPending ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              'Sign In'
+              t('sign_in')
             )}
           </Button>
           <Typography
@@ -413,7 +416,7 @@ export function SignInForm(): React.JSX.Element {
             }}
             variant="body2"
           >
-            Don&apos;t have an account?{' '}
+            {t('dont_have_account')}{' '}
             <Link
               component={RouterLink}
               href={paths.auth.signUp}
@@ -430,7 +433,7 @@ export function SignInForm(): React.JSX.Element {
               underline="none"
               variant="subtitle2"
             >
-              Sign Up
+              {t('sign_up')}
             </Link>
           </Typography>
         </Stack>

@@ -15,6 +15,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { Pencil as PencilIcon } from '@phosphor-icons/react/dist/ssr/Pencil';
@@ -29,6 +30,7 @@ interface CompaniesListProps {
 }
 
 export const CompaniesList = ({ companies }: CompaniesListProps) => {
+  const { t } = useTranslation('super-admin');
   const router = useRouter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -62,12 +64,12 @@ export const CompaniesList = ({ companies }: CompaniesListProps) => {
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Description</TableCell>
-            <TableCell>Subscription Plan</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Created</TableCell>
-            <TableCell align="right">Actions</TableCell>
+            <TableCell>{t('companies.company_name')}</TableCell>
+            <TableCell>{t('companies.description')}</TableCell>
+            <TableCell>{t('companies.subscription')}</TableCell>
+            <TableCell>{t('companies.status')}</TableCell>
+            <TableCell>{t('companies.date_created')}</TableCell>
+            <TableCell align="right">{t('common.actions')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -89,13 +91,13 @@ export const CompaniesList = ({ companies }: CompaniesListProps) => {
                     />
                   ) : (
                     <Typography variant="body2" color="text.secondary">
-                      No plan
+                      {t('companies.no_plan')}
                     </Typography>
                   )}
                 </TableCell>
                 <TableCell>
                   <Chip 
-                    label={company.is_active ? 'Active' : 'Inactive'} 
+                    label={company.is_active ? t('companies.active') : t('companies.inactive')} 
                     color={company.is_active ? 'success' : 'default'} 
                     size="small"
                   />
@@ -105,7 +107,7 @@ export const CompaniesList = ({ companies }: CompaniesListProps) => {
                 </TableCell>
                 <TableCell align="right">
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <Tooltip title="Edit company">
+                    <Tooltip title={t('companies.edit_tooltip')}>
                       <IconButton 
                         onClick={() => router.push(`${paths.superAdmin.companies}/${company.id}/edit`)}
                         size="small"
@@ -113,7 +115,7 @@ export const CompaniesList = ({ companies }: CompaniesListProps) => {
                         <PencilIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete company">
+                    <Tooltip title={t('companies.delete_tooltip')}>
                       <IconButton 
                         onClick={() => router.push(`${paths.superAdmin.companies}/${company.id}/delete`)}
                         size="small" 
@@ -132,14 +134,14 @@ export const CompaniesList = ({ companies }: CompaniesListProps) => {
             <TableRow>
               <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                 <Typography variant="subtitle1" color="text.secondary">
-                  No companies found
+                  {t('companies.no_companies')}
                 </Typography>
                 <Button
                   onClick={() => router.push(`${paths.superAdmin.companies}/create`)}
                   startIcon={<PlusIcon />}
                   sx={{ mt: 2 }}
                 >
-                  Add Company
+                  {t('companies.add')}
                 </Button>
               </TableCell>
             </TableRow>
@@ -155,6 +157,10 @@ export const CompaniesList = ({ companies }: CompaniesListProps) => {
         page={page}
         rowsPerPage={rowsPerPage}
         rowsPerPageOptions={[5, 10, 25]}
+        labelRowsPerPage={t('common.rows_per_page')}
+        labelDisplayedRows={({ from, to, count }) => 
+          t('common.displayed_rows', { from, to, count })
+        }
       />
     </Box>
   );

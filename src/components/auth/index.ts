@@ -1,7 +1,7 @@
 export { AdminGuard } from './admin-guard';
 export { AuthGuard } from './auth-guard';
 export { GuestGuard } from './guest-guard';
-export { OtpVerificationForm } from './otp-verification-form';
+export { default as OtpVerificationForm } from './otp-verification-form';
 export { RoleGuard } from './role-guard';
 export { SalesmanGuard } from './salesman-guard';
 export { SignInForm } from './sign-in-form';

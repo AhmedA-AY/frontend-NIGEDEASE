@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -12,6 +13,12 @@ import { usePopover } from '@/hooks/use-popover';
 import { UserPopover } from '@/components/dashboard/layout/user-popover';
 import { MobileNav } from './mobile-nav';
 import { useAuth } from '@/providers/auth-provider';
+
+// Dynamically import the LanguageSwitcher with SSR disabled to prevent hydration errors
+const LanguageSwitcher = dynamic(
+  () => import('@/components/core/language-switcher').then(mod => mod.LanguageSwitcher),
+  { ssr: false }
+);
 
 export function MainNav(): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
@@ -92,12 +99,14 @@ export function MainNav(): React.JSX.Element {
               <ListIcon weight="bold" />
             </IconButton>
           </Box>
+          <Box sx={{ flex: 1 }}></Box>
           <Stack
             alignItems="center"
             direction="row"
             spacing={{ xs: 1, sm: 2 }}
             sx={{ alignItems: 'center', flex: '0 0 auto' }}
           >
+            <LanguageSwitcher />
             <Avatar
               onClick={userPopover.handleOpen}
               ref={userPopover.anchorRef}

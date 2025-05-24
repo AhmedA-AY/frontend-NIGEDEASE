@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -21,10 +22,18 @@ import {
   SnapchatLogo,
   List as ListIcon
 } from '@phosphor-icons/react/dist/ssr';
+import { useTranslation } from 'react-i18next';
 
 import { paths } from '@/paths';
 
+// Dynamically import the LanguageSwitcher with SSR disabled to prevent hydration errors
+const LanguageSwitcher = dynamic(
+  () => import('@/components/core/language-switcher').then(mod => mod.LanguageSwitcher),
+  { ssr: false }
+);
+
 export default function LandingPage(): React.JSX.Element {
+  const { t } = useTranslation('common');
   const [mobileMenuAnchor, setMobileMenuAnchor] = React.useState<null | HTMLElement>(null);
   const isMobileMenuOpen = Boolean(mobileMenuAnchor);
   
@@ -125,7 +134,7 @@ export default function LandingPage(): React.JSX.Element {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  NIGED-EASE
+                  {t('app_name')}
                 </Typography>
               </Link>
               <Box sx={{ 
@@ -153,14 +162,14 @@ export default function LandingPage(): React.JSX.Element {
                         backgroundColor: 'primary.main',
                       }
                     }}
-              >
-                Home
-              </Typography>
-            </Link>
-            <Link href="/features" style={{ textDecoration: 'none' }}>
-              <Typography 
-                component="span" 
-                variant="body1" 
+                  >
+                    {t('home')}
+                  </Typography>
+                </Link>
+                <Link href="/features" style={{ textDecoration: 'none' }}>
+                  <Typography 
+                    component="span" 
+                    variant="body1" 
                     sx={{ 
                       cursor: 'pointer', 
                       color: 'text.primary',
@@ -184,14 +193,14 @@ export default function LandingPage(): React.JSX.Element {
                         width: '100%'
                       }
                     }}
-              >
-                Features
-              </Typography>
-            </Link>
-            <Link href="/contact" style={{ textDecoration: 'none' }}>
-              <Typography 
-                component="span" 
-                variant="body1" 
+                  >
+                    {t('features')}
+                  </Typography>
+                </Link>
+                <Link href="/contact" style={{ textDecoration: 'none' }}>
+                  <Typography 
+                    component="span" 
+                    variant="body1" 
                     sx={{ 
                       cursor: 'pointer', 
                       color: 'text.primary',
@@ -215,18 +224,19 @@ export default function LandingPage(): React.JSX.Element {
                         width: '100%'
                       }
                     }}
-              >
-                Contact
-              </Typography>
-            </Link>
-          </Box>
+                  >
+                    {t('contact')}
+                  </Typography>
+                </Link>
+              </Box>
             </Box>
             
             {/* Desktop Navigation */}
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-            <Button 
-              variant="contained" 
-              color="primary" 
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
+              <LanguageSwitcher />
+              <Button 
+                variant="contained" 
+                color="primary" 
                 sx={{ 
                   borderRadius: 2, 
                   px: 3,
@@ -254,12 +264,12 @@ export default function LandingPage(): React.JSX.Element {
                     }
                   }
                 }}
-              component={Link}
-              href={paths.auth.signIn}
-            >
-              Login
-            </Button>
-          </Box>
+                component={Link}
+                href={paths.auth.signIn}
+              >
+                {t('login')}
+              </Button>
+            </Box>
             
             {/* Mobile Menu Button */}
             <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
@@ -296,17 +306,17 @@ export default function LandingPage(): React.JSX.Element {
                     fontWeight: 600,
                     color: 'primary.main',
                   }}>
-                    Home
+                    {t('home')}
                   </Typography>
                 </MenuItem>
                 <MenuItem onClick={handleMobileMenuClose} component={Link} href="/features">
                   <Typography sx={{ fontWeight: 500 }}>
-                    Features
+                    {t('features')}
                   </Typography>
                 </MenuItem>
                 <MenuItem onClick={handleMobileMenuClose} component={Link} href="/contact">
                   <Typography sx={{ fontWeight: 500 }}>
-                    Contact
+                    {t('contact')}
                   </Typography>
                 </MenuItem>
                 <MenuItem 
@@ -323,7 +333,7 @@ export default function LandingPage(): React.JSX.Element {
                     }
                   }}
                 >
-                  Login
+                  {t('login')}
                 </MenuItem>
               </Menu>
           </Box>
@@ -403,7 +413,7 @@ export default function LandingPage(): React.JSX.Element {
                 textShadow: '0 10px 30px rgba(99, 102, 241, 0.1)',
               }}
             >
-              Modern Solutions for Ethiopian Businesses
+              {t('hero_title')}
                 </Typography>
                 <Typography 
                   variant="body1" 
@@ -417,7 +427,7 @@ export default function LandingPage(): React.JSX.Element {
                 opacity: 0.9,
                   }}
                 >
-              Our comprehensive business management platform offers everything Ethiopian businesses need to streamline operations, improve efficiency, and drive growth.
+              {t('hero_subtitle')}
                 </Typography>
                 <Button
                   variant="contained"
@@ -453,7 +463,7 @@ export default function LandingPage(): React.JSX.Element {
               component={Link}
               href={paths.auth.signIn}
             >
-              Get Started Now
+              {t('get_started')}
                 </Button>
               </Box>
         </Container>
@@ -513,7 +523,7 @@ export default function LandingPage(): React.JSX.Element {
                     WebkitTextFillColor: 'transparent',
                 }}
               >
-                This past year achievement
+                {t('stats_title')}
               </Typography>
               <Typography 
                 variant="body1" 
@@ -524,7 +534,7 @@ export default function LandingPage(): React.JSX.Element {
                     lineHeight: 1.6,
                 }}
               >
-                With our super powers we have reached this
+                {t('stats_subtitle')}
               </Typography>
               </Box>
             </Grid>
@@ -533,23 +543,23 @@ export default function LandingPage(): React.JSX.Element {
               <Grid container spacing={{ xs: 3, md: 4 }}>
                 {[
                   {
-                    value: "3,000+",
-                    label: "Visitors per day",
+                    value: t('stats_visitors'),
+                    label: t('stats_visitors_label'),
                     color: "linear-gradient(180deg, #0694A2 0%, #047481 100%)"
                   },
                   {
-                    value: "20,000+",
-                    label: "Users",
+                    value: t('stats_users'),
+                    label: t('stats_users_label'),
                     color: "linear-gradient(180deg, #8B5CF6 0%, #6D28D9 100%)"
                   },
                   {
-                    value: "500+",
-                    label: "Clients",
+                    value: t('stats_clients'),
+                    label: t('stats_clients_label'),
                     color: "linear-gradient(180deg, #16BDCA 0%, #0694A2 100%)"
                   },
                   {
-                    value: "6",
-                    label: "Countries",
+                    value: t('stats_countries'),
+                    label: t('stats_countries_label'),
                     color: "linear-gradient(180deg, #A78BFA 0%, #8B5CF6 100%)"
                   }
                 ].map((stat, index) => (
@@ -648,14 +658,14 @@ export default function LandingPage(): React.JSX.Element {
                     textAlign: { xs: 'center', md: 'left' }
                   }}
                 >
-                  Real Stories from Real Customers
+                  {t('testimonials_title')}
                 </Typography>
                 <Typography 
                   variant="body1" 
                   color="text.secondary"
                   sx={{ textAlign: { xs: 'center', md: 'left' } }}
                 >
-                  Get inspired by these stories.
+                  {t('testimonials_subtitle')}
                 </Typography>
               </Box>
               
@@ -692,16 +702,16 @@ export default function LandingPage(): React.JSX.Element {
                   </Box>
                   <Box ml={2}>
                     <Typography variant="subtitle1" fontWeight={600}>
-                  John Doe
+                  {t('testimonial1_name')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  CEO, FekaStore
+                  {t('testimonial1_position')}
                     </Typography>
                   </Box>
                 </Box>
                 
                 <Typography variant="body1" sx={{ mb: 3 }}>
-                  "NegedEase has made our business management so much easier. The system helps us avoid overstocking and stockouts. We've cut hours of manual work, which lets us focus on the big ways."
+                  {t('testimonial1_text')}
                 </Typography>
               </Box>
             </Grid>
@@ -751,7 +761,7 @@ export default function LandingPage(): React.JSX.Element {
                   
                   <Box>
                     <Typography variant="body1" sx={{ mb: 3 }}>
-                      "NegedEase has transformed our Business process. It's user-friendly, scalable, and integrates smoothly with our other software. We've reduced errors and gained much better control over stock levels."
+                      {t('testimonial2_text')}
                     </Typography>
                     
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -775,10 +785,10 @@ export default function LandingPage(): React.JSX.Element {
                       </Box>
                       <Box>
                     <Typography variant="subtitle2" fontWeight={600}>
-                      Abebe Kebede
+                      {t('testimonial2_name')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      CEO, LogoIpsum
+                      {t('testimonial2_position')}
                     </Typography>
                       </Box>
                     </Box>
@@ -828,7 +838,7 @@ export default function LandingPage(): React.JSX.Element {
                   
                   <Box>
                     <Typography variant="body1" sx={{ mb: 3 }}>
-                      "NegedEase has improved our stock accuracy and order fulfillment, and the support team is always helpful. I feel confident managing our inventory now."
+                      {t('testimonial3_text')}
                     </Typography>
                     
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -852,10 +862,10 @@ export default function LandingPage(): React.JSX.Element {
                       </Box>
                       <Box>
                     <Typography variant="subtitle2" fontWeight={600}>
-                      Jane Doe
+                      {t('testimonial3_name')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Co-Founder, Loho
+                      {t('testimonial3_position')}
                     </Typography>
                       </Box>
                     </Box>
@@ -883,7 +893,7 @@ export default function LandingPage(): React.JSX.Element {
               px: { xs: 2, sm: 0 }
             }}
           >
-            Tailor-made features
+            {t('features_section_title')}
           </Typography>
           
           <Typography 
@@ -897,40 +907,40 @@ export default function LandingPage(): React.JSX.Element {
               px: { xs: 2, sm: 4, md: 0 }
             }}
           >
-            NegedEase enables your business to run many different features in just one place, some of the features we have are:
+            {t('features_section_subtitle')}
           </Typography>
           
           <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
             {[
               {
                 icon: "inventory_management",
-                title: "Inventory Management",
-                description: "Track stock levels, manage suppliers, and automate reordering for optimal inventory control."
+                title: t('feature1_title'),
+                description: t('feature1_description')
               },
               {
                 icon: "reporting",
-                title: "Reporting",
-                description: "Generate insightful reports with customizable metrics to make data-driven business decisions."
+                title: t('feature2_title'),
+                description: t('feature2_description')
               },
               {
                 icon: "chatbot",
-                title: "ChatBot",
-                description: "AI-powered assistant to handle customer inquiries and provide real-time support."
+                title: t('feature3_title'),
+                description: t('feature3_description')
               },
               {
                 icon: "accounting",
-                title: "Accounting",
-                description: "Streamline financial processes with automated invoicing, expense tracking, and tax calculations."
+                title: t('feature4_title'),
+                description: t('feature4_description')
               },
               {
                 icon: "prediction",
-                title: "Prediction",
-                description: "Leverage AI to forecast sales trends, optimize pricing, and anticipate market changes."
+                title: t('feature5_title'),
+                description: t('feature5_description')
               },
               {
                 icon: "financing",
-                title: "Financing",
-                description: "Access capital solutions and manage cash flow with integrated financing options."
+                title: t('feature6_title'),
+                description: t('feature6_description')
               }
             ].map((feature, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
@@ -1046,10 +1056,10 @@ export default function LandingPage(): React.JSX.Element {
                     fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' }
                 }}
               >
-                Sneak peak of our amazing system
+                {t('screenshot_title')}
               </Typography>
               <Typography variant="body1" sx={{ mb: 4, opacity: 0.9 }}>
-                Manage all business in one place.
+                {t('screenshot_subtitle')}
               </Typography>
               <Button
                 variant="contained"
@@ -1072,7 +1082,7 @@ export default function LandingPage(): React.JSX.Element {
                   component={Link}
                   href={paths.auth.signIn}
               >
-                Get Started
+                {t('get_started')}
               </Button>
               </Box>
             </Grid>
@@ -1131,7 +1141,7 @@ export default function LandingPage(): React.JSX.Element {
                 textAlign: { xs: 'center', sm: 'left' }
               }}>
                 <Typography variant="h6" fontWeight={600} sx={{ mb: 1, color: '#0694A2' }}>
-                  Quick Links
+                  {t('quick_links')}
                 </Typography>
                 <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
                   <Typography 
@@ -1146,7 +1156,7 @@ export default function LandingPage(): React.JSX.Element {
                       display: 'inline-block'
                     }}
                   >
-                    Home
+                    {t('home')}
                   </Typography>
                 </Link>
                 <Link href="/features" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -1162,7 +1172,7 @@ export default function LandingPage(): React.JSX.Element {
                       display: 'inline-block'
                     }}
                   >
-                    Features
+                    {t('features')}
                   </Typography>
                 </Link>
                 <Link href="/contact" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -1178,7 +1188,7 @@ export default function LandingPage(): React.JSX.Element {
                       display: 'inline-block'
                     }}
                   >
-                    Contact
+                    {t('contact')}
                   </Typography>
                 </Link>
               </Box>
@@ -1187,13 +1197,13 @@ export default function LandingPage(): React.JSX.Element {
             {/* Contact Information - Right */}
             <Grid item xs={12} sm={6} md={4} sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#0694A2' }}>
-                Contact Us
+                {t('contact_us')}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                Email: Contact@nigedease.com
+                {t('contact_email')}
               </Typography>
               <Typography variant="body1" sx={{ mb: 3 }}>
-                Phone: +251933778687
+                {t('contact_phone')}
               </Typography>
               
               {/* Social Icons */}
@@ -1295,7 +1305,7 @@ export default function LandingPage(): React.JSX.Element {
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              © {new Date().getFullYear()} NIGED-EASE. All rights reserved.
+              {t('copyright')}
             </Typography>
           </Box>
         </Container>

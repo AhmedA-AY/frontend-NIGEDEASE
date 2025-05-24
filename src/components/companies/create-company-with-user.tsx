@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Card,
@@ -20,7 +21,12 @@ import {
   StepLabel,
   Typography,
   Paper,
-  Avatar
+  Avatar,
+  FormControl,
+  FormHelperText,
+  InputLabel,
+  Select,
+  SelectChangeEvent
 } from '@mui/material';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { useMutation } from '@tanstack/react-query';
@@ -62,6 +68,7 @@ interface UserFormData {
 }
 
 export const CreateCompanyWithUser: React.FC = () => {
+  const { t } = useTranslation(['super-admin', 'common']);
   const router = useRouter();
   const { data: currencies, isLoading: isLoadingCurrencies } = useCurrencies();
   const { data: subscriptionPlans, isLoading: isLoadingSubscriptionPlans } = useSubscriptionPlans();
@@ -123,7 +130,7 @@ export const CreateCompanyWithUser: React.FC = () => {
 
   const createUserMutation = useCreateUser();
 
-  const handleCompanyFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleCompanyFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent<string>) => {
     const { name, value } = e.target;
     if (name) {
       setCompanyFormData({
@@ -141,7 +148,7 @@ export const CreateCompanyWithUser: React.FC = () => {
     }
   };
 
-  const handleStoreFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleStoreFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent<string>) => {
     const { name, value } = e.target;
     if (name) {
       setStoreFormData({
@@ -179,33 +186,33 @@ export const CreateCompanyWithUser: React.FC = () => {
     const errors: Record<string, string> = {};
     
     if (!companyFormData.name.trim()) {
-      errors.name = 'Company name is required';
+      errors.name = t('companies.name_required');
     } else if (companyFormData.name.length > 100) {
-      errors.name = 'Company name must be 100 characters or less';
+      errors.name = t('companies.name_too_long');
     }
     
     if (!companyFormData.short_name.trim()) {
-      errors.short_name = 'Short name is required';
+      errors.short_name = t('companies.short_name_required');
     } else if (companyFormData.short_name.length > 20) {
-      errors.short_name = 'Short name must be 20 characters or less';
+      errors.short_name = t('companies.short_name_too_long');
     }
     
     if (!companyFormData.address.trim()) {
-      errors.address = 'Address is required';
+      errors.address = t('common.address_required');
     } else if (companyFormData.address.length > 200) {
-      errors.address = 'Address must be 200 characters or less';
+      errors.address = t('common.address_too_long');
     }
     
     if (!companyFormData.subscription_plan_id) {
-      errors.subscription_plan_id = 'Subscription plan is required';
+      errors.subscription_plan_id = t('companies.subscription_plan_required');
     }
     
     if (!companyFormData.currency_id) {
-      errors.currency_id = 'Currency is required';
+      errors.currency_id = t('companies.currency_required');
     }
     
     if (companyFormData.description && companyFormData.description.length > 500) {
-      errors.description = 'Description must be 500 characters or less';
+      errors.description = t('common.description_too_long');
     }
     
     setFormErrors(errors);
@@ -216,33 +223,33 @@ export const CreateCompanyWithUser: React.FC = () => {
     const errors: Record<string, string> = {};
     
     if (!storeFormData.name.trim()) {
-      errors.name = 'Store name is required';
+      errors.name = t('companies.store_name_required');
     } else if (storeFormData.name.length > 100) {
-      errors.name = 'Store name must be 100 characters or less';
+      errors.name = t('companies.store_name_too_long');
     }
     
     if (!storeFormData.address.trim()) {
-      errors.address = 'Address is required';
+      errors.address = t('common.address_required');
     } else if (storeFormData.address.length > 200) {
-      errors.address = 'Address must be 200 characters or less';
+      errors.address = t('common.address_too_long');
     }
     
     if (!storeFormData.phone_number.trim()) {
-      errors.phone_number = 'Phone number is required';
+      errors.phone_number = t('common.phone_required');
     } else if (!/^\+?[\d\s-]{7,15}$/.test(storeFormData.phone_number)) {
-      errors.phone_number = 'Enter a valid phone number';
+      errors.phone_number = t('common.invalid_phone');
     }
     
     if (!storeFormData.email.trim()) {
-      errors.email = 'Email is required';
+      errors.email = t('common.email_required');
     } else if (!/\S+@\S+\.\S+/.test(storeFormData.email)) {
-      errors.email = 'Enter a valid email address';
+      errors.email = t('common.invalid_email');
     }
     
     if (!storeFormData.location.trim()) {
-      errors.location = 'Location is required';
+      errors.location = t('common.location_required');
     } else if (storeFormData.location.length > 100) {
-      errors.location = 'Location must be 100 characters or less';
+      errors.location = t('common.location_too_long');
     }
     
     setFormErrors(errors);
@@ -253,29 +260,29 @@ export const CreateCompanyWithUser: React.FC = () => {
     const errors: Record<string, string> = {};
     
     if (!userFormData.first_name.trim()) {
-      errors.first_name = 'First name is required';
+      errors.first_name = t('common.first_name_required');
     }
     
     if (!userFormData.last_name.trim()) {
-      errors.last_name = 'Last name is required';
+      errors.last_name = t('common.last_name_required');
     }
     
     if (!userFormData.email.trim()) {
-      errors.email = 'Email is required';
+      errors.email = t('common.email_required');
     } else if (!/\S+@\S+\.\S+/.test(userFormData.email)) {
-      errors.email = 'Invalid email format';
+      errors.email = t('common.invalid_email');
     }
     
     if (!userFormData.password) {
-      errors.password = 'Password is required';
+      errors.password = t('common.password_required');
     } else if (userFormData.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters long';
+      errors.password = t('common.password_too_short');
     }
     
     if (!userFormData.confirm_password) {
-      errors.confirm_password = 'Please confirm your password';
+      errors.confirm_password = t('common.confirm_password_required');
     } else if (userFormData.password !== userFormData.confirm_password) {
-      errors.confirm_password = 'Passwords do not match';
+      errors.confirm_password = t('common.passwords_dont_match');
     }
     
     setFormErrors(errors);
@@ -351,6 +358,12 @@ export const CreateCompanyWithUser: React.FC = () => {
 
   const isLoading = isLoadingCurrencies || isLoadingSubscriptionPlans || isSubmitting;
 
+  const steps = [
+    t('companies.create_company'),
+    t('companies.create_store'),
+    t('companies.create_admin')
+  ];
+
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 8 }}>
       <Container maxWidth="lg">
@@ -361,41 +374,37 @@ export const CreateCompanyWithUser: React.FC = () => {
               startIcon={<ArrowLeftIcon />}
               onClick={() => router.push(paths.superAdmin.companies)}
             >
-              Back to Companies
+              {t('common.back_to_companies')}
             </Button>
-            <Typography variant="h4">Create Company</Typography>
+            <Typography variant="h4">{t('companies.create_company')}</Typography>
           </Stack>
           
           <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-            <Step>
-              <StepLabel>Company Information</StepLabel>
-            </Step>
-            <Step>
-              <StepLabel>Create Store</StepLabel>
-            </Step>
-            <Step>
-              <StepLabel>Create Admin User</StepLabel>
-            </Step>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
           </Stepper>
           
           {/* Global error message */}
           {formErrors.submit && (
             <ErrorMessage 
               error={new Error(formErrors.submit)}
-              title="Creation Failed"
+              title={t('companies.creation_failed')}
               onRetry={() => setFormErrors({...formErrors, submit: ''})}
             />
           )}
           
           {activeStep === 0 ? (
             <Card>
-              <CardHeader title="Company Information" />
+              <CardHeader title={t('companies.company_details')} />
               <CardContent>
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
-                      label="Company Name"
+                      label={t('companies.company_name')}
                       name="name"
                       onChange={handleCompanyFormChange}
                       required
@@ -409,7 +418,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
-                      label="Short Name"
+                      label={t('companies.short_name')}
                       name="short_name"
                       onChange={handleCompanyFormChange}
                       required
@@ -423,78 +432,86 @@ export const CreateCompanyWithUser: React.FC = () => {
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Address"
+                      label={t('common.address')}
                       name="address"
                       onChange={handleCompanyFormChange}
                       required
                       value={companyFormData.address}
                       error={!!formErrors.address}
                       helperText={formErrors.address}
-                      disabled={isLoading}
+                      multiline
+                      rows={2}
                     />
                   </Grid>
                   
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Description"
+                      label={t('common.description')}
                       name="description"
                       onChange={handleCompanyFormChange}
                       value={companyFormData.description}
                       error={!!formErrors.description}
                       helperText={formErrors.description}
-                      disabled={isLoading}
+                      multiline
+                      rows={3}
                     />
                   </Grid>
                   
                   <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Subscription Plan"
-                      name="subscription_plan_id"
-                      onChange={handleCompanyFormChange}
-                      required
-                      select
-                      value={companyFormData.subscription_plan_id}
-                      error={!!formErrors.subscription_plan_id}
-                      helperText={formErrors.subscription_plan_id || 'Select a subscription plan'}
-                      disabled={isLoading || isLoadingSubscriptionPlans}
-                    >
-                      {isLoadingSubscriptionPlans ? (
-                        <MenuItem disabled>Loading subscription plans...</MenuItem>
-                      ) : (
-                        subscriptionPlans?.map((plan) => (
-                          <MenuItem key={plan.id} value={plan.id}>
-                            {plan.name} - {plan.billing_cycle} ({plan.price})
+                    <FormControl fullWidth required error={!!formErrors.subscription_plan_id}>
+                      <InputLabel id="subscription-plan-label">{t('subscription_plans.title')}</InputLabel>
+                      <Select
+                        labelId="subscription-plan-label"
+                        name="subscription_plan_id"
+                        value={companyFormData.subscription_plan_id}
+                        onChange={handleCompanyFormChange as (event: SelectChangeEvent<string>) => void}
+                        label={t('subscription_plans.title')}
+                      >
+                        {isLoadingSubscriptionPlans ? (
+                          <MenuItem value="" disabled>
+                            <CircularProgress size={20} />
                           </MenuItem>
-                        ))
+                        ) : (
+                          subscriptionPlans?.map((plan) => (
+                            <MenuItem key={plan.id} value={plan.id}>
+                              {plan.name} - {plan.billing_cycle} ({plan.price})
+                            </MenuItem>
+                          ))
+                        )}
+                      </Select>
+                      {formErrors.subscription_plan_id && (
+                        <FormHelperText>{formErrors.subscription_plan_id}</FormHelperText>
                       )}
-                    </TextField>
+                    </FormControl>
                   </Grid>
                   
                   <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Currency"
-                      name="currency_id"
-                      onChange={handleCompanyFormChange}
-                      required
-                      select
-                      value={companyFormData.currency_id}
-                      error={!!formErrors.currency_id}
-                      helperText={formErrors.currency_id || 'Select a currency'}
-                      disabled={isLoading || isLoadingCurrencies}
-                    >
-                      {isLoadingCurrencies ? (
-                        <MenuItem disabled>Loading currencies...</MenuItem>
-                      ) : (
-                        currencies?.map((currency) => (
-                          <MenuItem key={currency.id} value={currency.id}>
-                            {currency.name} ({currency.code})
+                    <FormControl fullWidth required error={!!formErrors.currency_id}>
+                      <InputLabel id="currency-label">{t('currencies.title')}</InputLabel>
+                      <Select
+                        labelId="currency-label"
+                        name="currency_id"
+                        value={companyFormData.currency_id}
+                        onChange={handleCompanyFormChange as (event: SelectChangeEvent<string>) => void}
+                        label={t('currencies.title')}
+                      >
+                        {isLoadingCurrencies ? (
+                          <MenuItem value="" disabled>
+                            <CircularProgress size={20} />
                           </MenuItem>
-                        ))
+                        ) : (
+                          currencies?.map((currency) => (
+                            <MenuItem key={currency.id} value={currency.id}>
+                              {currency.name} ({currency.code})
+                            </MenuItem>
+                          ))
+                        )}
+                      </Select>
+                      {formErrors.currency_id && (
+                        <FormHelperText>{formErrors.currency_id}</FormHelperText>
                       )}
-                    </TextField>
+                    </FormControl>
                   </Grid>
                   
                   <Grid item xs={12}>
@@ -504,7 +521,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                       onClick={handleNextStep}
                       disabled={isLoading}
                     >
-                      Next Step
+                      {t('common.next_step')}
                     </Button>
                   </Grid>
                 </Grid>
@@ -512,13 +529,13 @@ export const CreateCompanyWithUser: React.FC = () => {
             </Card>
           ) : activeStep === 1 ? (
             <Card>
-              <CardHeader title="Create Store" />
+              <CardHeader title={t('companies.create_store')} />
               <CardContent>
                 <Grid container spacing={3}>
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Store Name"
+                      label={t('companies.store_name')}
                       name="name"
                       onChange={handleStoreFormChange}
                       required
@@ -531,7 +548,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Address"
+                      label={t('common.address')}
                       name="address"
                       onChange={handleStoreFormChange}
                       required
@@ -546,21 +563,21 @@ export const CreateCompanyWithUser: React.FC = () => {
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Location"
+                      label={t('common.location')}
                       name="location"
                       onChange={handleStoreFormChange}
                       required
                       value={storeFormData.location}
                       error={!!formErrors.location}
                       helperText={formErrors.location}
-                      placeholder="City, State, Country"
+                      placeholder={t('common.location_placeholder')}
                     />
                   </Grid>
                   
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
-                      label="Phone Number"
+                      label={t('common.phone')}
                       name="phone_number"
                       onChange={handleStoreFormChange}
                       required
@@ -573,7 +590,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
-                      label="Email"
+                      label={t('common.email')}
                       name="email"
                       type="email"
                       onChange={handleStoreFormChange}
@@ -590,14 +607,14 @@ export const CreateCompanyWithUser: React.FC = () => {
                         color="inherit"
                         onClick={() => setActiveStep(0)}
                       >
-                        Back
+                        {t('common.back')}
                       </Button>
                       <Button
                         size="large"
                         variant="contained"
                         onClick={handleNextStep}
                       >
-                        Next Step
+                        {t('common.next_step')}
                       </Button>
                     </Box>
                   </Grid>
@@ -607,7 +624,7 @@ export const CreateCompanyWithUser: React.FC = () => {
           ) : (
             <form onSubmit={handleSubmit}>
               <Card>
-                <CardHeader title="Create Admin User" />
+                <CardHeader title={t('companies.create_admin')} />
                 <CardContent>
                   <Grid container spacing={3}>
                     <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
@@ -621,7 +638,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                         }}
                         bucket="app-images"
                         folder={`company-${companyFormData.short_name.toLowerCase().replace(/\s+/g, '-')}`}
-                        label="Upload Profile Picture"
+                        label={t('common.upload_profile_picture')}
                         width={150}
                         height={150}
                       />
@@ -630,7 +647,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="First Name"
+                        label={t('common.first_name')}
                         name="first_name"
                         onChange={handleUserFormChange}
                         required
@@ -644,7 +661,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Last Name"
+                        label={t('common.last_name')}
                         name="last_name"
                         onChange={handleUserFormChange}
                         required
@@ -658,7 +675,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Email"
+                        label={t('common.email')}
                         name="email"
                         type="email"
                         onChange={handleUserFormChange}
@@ -673,7 +690,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Password"
+                        label={t('common.password')}
                         name="password"
                         type="password"
                         onChange={handleUserFormChange}
@@ -688,7 +705,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Confirm Password"
+                        label={t('common.confirm_password')}
                         name="confirm_password"
                         type="password"
                         onChange={handleUserFormChange}
@@ -707,7 +724,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                           onClick={() => setActiveStep(1)}
                           disabled={isSubmitting}
                         >
-                          Back
+                          {t('common.back')}
                         </Button>
                         <Button
                           size="large"
@@ -716,7 +733,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                           disabled={isSubmitting}
                           startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
                         >
-                          {isSubmitting ? 'Creating Company...' : 'Complete Setup'}
+                          {isSubmitting ? t('companies.creating_company') : t('companies.complete_setup')}
                         </Button>
                       </Box>
                     </Grid>
@@ -724,7 +741,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                     {createUserMutation.isSuccess && (
                       <Grid item xs={12}>
                         <Alert severity="success">
-                          Company, store, and admin user created successfully!
+                          {t('companies.creation_success')}
                         </Alert>
                       </Grid>
                     )}

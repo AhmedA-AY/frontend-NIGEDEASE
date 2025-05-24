@@ -10,6 +10,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { ArrowSquareUpRight as ArrowSquareUpRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowSquareUpRight';
 import { CaretUpDown as CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/CaretUpDown';
+import { useTranslation } from 'react-i18next';
 
 import type { NavItemConfig } from '@/types/nav';
 import { paths } from '@/paths';
@@ -21,6 +22,7 @@ import { navIcons } from '@/components/dashboard/layout/nav-icons';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
+  const { t } = useTranslation('super-admin');
 
   return (
     <Box
@@ -86,10 +88,10 @@ export function SideNav(): React.JSX.Element {
         >
           <Box sx={{ flex: '1 1 auto' }}>
             <Typography color="var(--mui-palette-neutral-400)" variant="body2" sx={{ fontWeight: 500 }}>
-              Role
+              {t('common.role')}
             </Typography>
             <Typography color="inherit" variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Super Admin
+              {t('common.super_admin')}
             </Typography>
           </Box>
           <CaretUpDownIcon />
@@ -97,16 +99,16 @@ export function SideNav(): React.JSX.Element {
       </Stack>
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
       <Box component="nav" sx={{ flex: '1 1 auto', p: '16px' }}>
-        {renderNavItems({ pathname, items: superAdminNavItems })}
+        {renderNavItems({ pathname, items: superAdminNavItems, t })}
       </Box>
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
       <Stack spacing={2} sx={{ p: '16px', mb: 2 }}>
         <div>
           <Typography color="var(--mui-palette-neutral-100)" variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Need help?
+            {t('common.need_help')}
           </Typography>
           <Typography color="var(--mui-palette-neutral-400)" variant="body2">
-            Contact our support team.
+            {t('common.contact_support')}
           </Typography>
         </div>
         <Button
@@ -143,18 +145,18 @@ export function SideNav(): React.JSX.Element {
           }}
           variant="contained"
         >
-          Contact Support
+          {t('common.contact_support_button')}
         </Button>
       </Stack>
     </Box>
   );
 }
 
-function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pathname: string }): React.JSX.Element {
+function renderNavItems({ items = [], pathname, t }: { items?: NavItemConfig[]; pathname: string; t: any }): React.JSX.Element {
   const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
-    const { key, ...item } = curr;
+    const { key, title, ...item } = curr;
 
-    acc.push(<NavItem key={key} pathname={pathname} {...item} />);
+    acc.push(<NavItem key={key} title={title} pathname={pathname} t={t} {...item} />);
 
     return acc;
   }, []);
@@ -168,11 +170,26 @@ function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pat
 
 interface NavItemProps extends Omit<NavItemConfig, 'items'> {
   pathname: string;
+  t: any;
 }
 
-function NavItem({ disabled, external, href, icon, matcher, pathname, title }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, matcher, pathname, title, t }: NavItemProps): React.JSX.Element {
   const active = isNavItemActive({ disabled, external, href, matcher, pathname });
   const Icon = icon ? navIcons[icon] : null;
+
+  // Translate the menu title
+  let translatedTitle = title;
+  if (title === 'Dashboard') {
+    translatedTitle = t('common.dashboard');
+  } else if (title === 'Companies') {
+    translatedTitle = t('companies.title');
+  } else if (title === 'Subscription Plans') {
+    translatedTitle = t('subscription_plans.title');
+  } else if (title === 'Currencies') {
+    translatedTitle = t('currencies.title');
+  } else if (title === 'My Profile') {
+    translatedTitle = t('common.my_profile');
+  }
 
   return (
     <li>
@@ -248,7 +265,7 @@ function NavItem({ disabled, external, href, icon, matcher, pathname, title }: N
               letterSpacing: '0.01em',
             }}
           >
-            {title}
+            {translatedTitle}
           </Typography>
         </Box>
       </Box>

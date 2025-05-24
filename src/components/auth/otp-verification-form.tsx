@@ -15,28 +15,18 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { ShieldCheck, ArrowLeft, EnvelopeSimple } from '@phosphor-icons/react/dist/ssr';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
-
-import { useVerifyOtp, useResendOtp } from '@/hooks/use-auth-queries';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/providers/auth-provider';
+import { useVerifyOtp, useResendOtp } from '@/hooks/use-auth-queries';
 import tokenStorage from '@/utils/token-storage';
-
-const schema = zod.object({
-  otp: zod.string()
-    .min(6, { message: 'OTP must be 6 digits' })
-    .max(6, { message: 'OTP must be 6 digits' })
-    .regex(/^\d{6}$/, { message: 'OTP must contain only digits' }),
-});
-
-type Values = zod.infer<typeof schema>;
-
-const defaultValues = { otp: '' } satisfies Values;
 
 interface OtpVerificationFormProps {
   email: string;
   onBack: () => void;
 }
 
-export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps): React.JSX.Element {
+export default function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps): React.JSX.Element {
+  const { t } = useTranslation('auth');
   const { verifyOtp } = useAuth();
   const verifyOtpMutation = useVerifyOtp();
   const resendOtpMutation = useResendOtp();
@@ -57,12 +47,26 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
     };
   }, [countdown]);
 
+  // Update schema to use translations
+  const schema = React.useMemo(() => zod.object({
+    otp: zod.string()
+      .min(6, { message: t('otp_validation') })
+      .max(6, { message: t('otp_validation') })
+      .regex(/^\d{6}$/, { message: t('otp_digits_only') }),
+  }), [t]);
+
+  type Values = zod.infer<typeof schema>;
+  const defaultValues = { otp: '' } satisfies Values;
+
   const {
     control,
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<Values>({ defaultValues, resolver: zodResolver(schema) });
+  } = useForm<Values>({ 
+    defaultValues, 
+    resolver: zodResolver(schema)
+  });
 
   const onSubmit = React.useCallback(
     async (values: Values): Promise<void> => {
@@ -121,11 +125,11 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
         // Complete the verification process
         verifyOtp(email, values.otp, storesArray, response.assigned_store);
       } catch (error: any) {
-        const errorMessage = error?.error || 'Invalid OTP. Please try again.';
+        const errorMessage = error?.error || t('invalid_otp');
         setError('root', { type: 'server', message: errorMessage });
       }
     },
-    [email, verifyOtp, setError, verifyOtpMutation]
+    [email, verifyOtp, setError, verifyOtpMutation, t]
   );
 
   const handleResendOtp = React.useCallback(async () => {
@@ -138,12 +142,12 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
       // Reset countdown
       setCountdown(60);
     } catch (error: any) {
-      const errorMessage = error?.error || 'Failed to resend OTP. Please try again.';
+      const errorMessage = error?.error || t('failed_resend');
       setError('root', { type: 'server', message: errorMessage });
     } finally {
       setIsResending(false);
     }
-  }, [countdown, email, isResending, resendOtpMutation, setError]);
+  }, [countdown, email, isResending, resendOtpMutation, setError, t]);
 
   return (
     <Stack 
@@ -202,7 +206,7 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
             WebkitTextFillColor: 'transparent',
           }}
         >
-          Verify Your Account
+          {t('verify_account')}
         </Typography>
         <Box 
           sx={{ 
@@ -243,8 +247,7 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
             mx: 'auto'
           }}
         >
-          We've sent a 6-digit verification code to your email.
-          Please enter it below to verify your account.
+          {t('verification_sent')}
         </Typography>
       </Stack>
 
@@ -346,113 +349,93 @@ export function OtpVerificationForm({ email, onBack }: OtpVerificationFormProps)
             </Alert> 
           : null}
           
-          <Button 
-            disabled={verifyOtpMutation.isPending} 
-            type="submit" 
-            variant="contained" 
+          <Button
+            type="submit"
             fullWidth
             size="large"
-            sx={{ 
-              borderRadius: 2.5, 
+            variant="contained"
+            disabled={verifyOtpMutation.isPending}
+            sx={{
+              mt: 2,
               py: 1.5,
+              fontSize: '1rem',
               fontWeight: 600,
-              background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
-              boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)',
-              transition: 'all 0.3s ease',
-              animation: 'fadeInUp 0.6s ease-out 0.2s both',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: '-100%',
-                width: '100%',
-                height: '100%',
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                transition: 'all 0.6s ease',
-              },
-              '&:hover': {
-                boxShadow: '0 10px 20px rgba(99, 102, 241, 0.3)',
-                transform: 'translateY(-2px)',
-                '&::before': {
-                  left: '100%',
-                }
-              },
-              '&:active': {
-                transform: 'translateY(0)',
-                boxShadow: '0 5px 10px rgba(99, 102, 241, 0.2)',
-              }
+              boxShadow: '0 8px 16px rgba(99, 102, 241, 0.1)',
             }}
           >
             {verifyOtpMutation.isPending ? 
               <CircularProgress size={24} color="inherit" /> : 
-              'Verify & Continue'
+              t('verify_continue')
             }
           </Button>
           
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              animation: 'fadeIn 0.8s ease-out 0.3s both',
-            }}
-          >
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+          <Stack spacing={2} alignItems="center" sx={{ mt: 3, mb: 1 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                animation: 'fadeIn 0.5s ease-out 0.5s both',
+                textAlign: 'center',
+              }}
+            >
               {countdown > 0 ? (
-                <>Didn't receive the code? You can resend in <b>{countdown}s</b></>
+                <>
+                  {t('didnt_receive_code')} <b>{countdown}s</b>
+                </>
               ) : (
-                "Didn't receive the code? Try resending it"
+                t('didnt_receive_code_try')
               )}
             </Typography>
             
-            <Button 
-              onClick={handleResendOtp}
-              disabled={countdown > 0 || isResending}
-              variant="outlined" 
-              color="primary"
-              startIcon={isResending && <CircularProgress size={16} color="inherit" />}
-              sx={{ 
+            <Box sx={{ width: '100%', animation: 'fadeIn 0.5s ease-out 0.6s both' }}>
+              <Button
+                fullWidth
+                variant="outlined"
+                color="primary"
+                onClick={handleResendOtp}
+                disabled={countdown > 0 || isResending}
+                sx={{
+                  py: 1.5,
+                  borderRadius: 1,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    boxShadow: '0 4px 8px rgba(99, 102, 241, 0.1)',
+                  },
+                }}
+              >
+                {t('resend_code')}
+              </Button>
+            </Box>
+          </Stack>
+
+          <Stack direction="row" alignItems="center" sx={{ animation: 'fadeIn 0.5s ease-out 0.7s both' }}>
+            <Button
+              startIcon={<ArrowLeft weight="bold" />}
+              onClick={onBack}
+              sx={{
+                fontSize: '0.9rem',
                 fontWeight: 600,
-                borderRadius: 2,
-                px: 3,
-                borderColor: countdown > 0 ? 'rgba(0, 0, 0, 0.1)' : 'primary.main',
-                color: countdown > 0 ? 'text.disabled' : 'primary.main',
-                transition: 'all 0.3s ease',
-                '&:enabled:hover': {
-                  transform: 'translateY(-2px)',
-                  backgroundColor: 'rgba(99, 102, 241, 0.05)',
-                  borderColor: 'primary.main',
-                  boxShadow: '0 4px 8px rgba(99, 102, 241, 0.2)'
-                }
+                color: 'text.secondary',
+                textTransform: 'none',
+                '&:hover': {
+                  backgroundColor: 'transparent',
+                  color: 'primary.main',
+                },
               }}
             >
-              Resend Verification Code
+              {t('back_to_login')}
             </Button>
-          </Box>
-          
-          <Button 
-            onClick={onBack}
-            variant="text" 
-            color="inherit"
-            startIcon={<ArrowLeft weight="bold" />}
-            sx={{ 
-              fontWeight: 500,
-              mt: 2,
-              alignSelf: 'center',
-              transition: 'all 0.3s ease',
-              animation: 'fadeIn 0.8s ease-out 0.4s both',
-              '&:hover': {
-                backgroundColor: 'rgba(0, 0, 0, 0.03)',
-                transform: 'translateX(-3px)'
-              }
-            }}
-          >
-            Back to Login
-          </Button>
+          </Stack>
         </Stack>
       </form>
+
+      {resendOtpMutation.error && (
+        <Alert severity="error" sx={{ mt: 3 }}>
+          {t('failed_resend')}
+        </Alert>
+      )}
     </Stack>
   );
 } 

@@ -41,6 +41,7 @@ import { PencilSimple, Plus, Trash, MagnifyingGlass } from '@phosphor-icons/reac
 import { z as zod } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 
 import { 
   useSubscriptionPlans, 
@@ -69,6 +70,7 @@ const subscriptionPlanSchema = zod.object({
 type SubscriptionPlanFormValues = zod.infer<typeof subscriptionPlanSchema>;
 
 export default function SubscriptionPlansPage(): React.JSX.Element {
+  const { t } = useTranslation('super-admin');
   const { data: subscriptionPlans, isLoading: isLoadingPlans, error: plansError } = useSubscriptionPlans();
   const createPlanMutation = useCreateSubscriptionPlan();
   const updatePlanMutation = useUpdateSubscriptionPlan();
@@ -329,10 +331,10 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
           >
             <Stack spacing={1}>
               <Typography variant="h4">
-          Subscription Plans
+                {t('subscription_plans.title')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Manage system subscription plans
+                {t('subscription_plans.description')}
               </Typography>
             </Stack>
             <Button
@@ -340,14 +342,14 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
               variant="contained"
               onClick={handleCreateDialogOpen}
             >
-              Add Plan
+              {t('subscription_plans.add')}
             </Button>
           </Stack>
           
           {/* Search field */}
           <TextField
             fullWidth
-            placeholder="Search plans by name, description or price..."
+            placeholder={t('subscription_plans.search_placeholder')}
             value={searchQuery}
             onChange={handleSearchChange}
             InputProps={{
@@ -361,23 +363,23 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
           />
           
           {plansError && (
-            <Alert severity="error">{(plansError as any)?.message || 'Failed to load subscription plans'}</Alert>
+            <Alert severity="error">{(plansError as any)?.message || t('subscription_plans.error.load')}</Alert>
           )}
           
           {createPlanMutation.isError && (
-            <Alert severity="error">{(createPlanMutation.error as any)?.message || 'Failed to create subscription plan'}</Alert>
+            <Alert severity="error">{(createPlanMutation.error as any)?.message || t('subscription_plans.error.create')}</Alert>
           )}
           
           {updatePlanMutation.isError && (
-            <Alert severity="error">{(updatePlanMutation.error as any)?.message || 'Failed to update subscription plan'}</Alert>
+            <Alert severity="error">{(updatePlanMutation.error as any)?.message || t('subscription_plans.error.update')}</Alert>
           )}
           
           {deletePlanMutation.isError && (
-            <Alert severity="error">{(deletePlanMutation.error as any)?.message || 'Failed to delete subscription plan'}</Alert>
+            <Alert severity="error">{(deletePlanMutation.error as any)?.message || t('subscription_plans.error.delete')}</Alert>
           )}
           
           {patchPlanMutation.isError && (
-            <Alert severity="error">{(patchPlanMutation.error as any)?.message || 'Failed to update subscription plan status'}</Alert>
+            <Alert severity="error">{(patchPlanMutation.error as any)?.message || t('subscription_plans.error.patch')}</Alert>
           )}
           
           <Card>
@@ -391,15 +393,15 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Price</TableCell>
-                        <TableCell>Billing Cycle</TableCell>
-                        <TableCell>Storage (GB)</TableCell>
-                        <TableCell>Max Products</TableCell>
-                        <TableCell>Max Stores</TableCell>
-                        <TableCell>Max Customers</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell align="right">Actions</TableCell>
+                        <TableCell>{t('subscription_plans.columns.name')}</TableCell>
+                        <TableCell>{t('subscription_plans.columns.price')}</TableCell>
+                        <TableCell>{t('subscription_plans.columns.billing_cycle')}</TableCell>
+                        <TableCell>{t('subscription_plans.columns.storage')}</TableCell>
+                        <TableCell>{t('subscription_plans.columns.max_products')}</TableCell>
+                        <TableCell>{t('subscription_plans.columns.max_stores')}</TableCell>
+                        <TableCell>{t('subscription_plans.columns.max_customers')}</TableCell>
+                        <TableCell>{t('subscription_plans.columns.status')}</TableCell>
+                        <TableCell align="right">{t('common.actions')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -408,7 +410,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                           <TableCell>{plan.name}</TableCell>
                           <TableCell>{plan.price}</TableCell>
                           <TableCell>
-                            {plan.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly'}
+                            {plan.billing_cycle === 'monthly' ? t('subscription_plans.monthly') : t('subscription_plans.yearly')}
                           </TableCell>
                           <TableCell>{plan.storage_limit_gb || 0}</TableCell>
                           <TableCell>{plan.max_products || 0}</TableCell>
@@ -426,7 +428,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                                   py: 0.5
                                 }}
                               >
-                                {plan.is_active ? 'Active' : 'Inactive'}
+                                {plan.is_active ? t('common.active') : t('common.inactive')}
                               </Box>
                             </Stack>
                           </TableCell>
@@ -460,8 +462,8 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                         <TableRow>
                           <TableCell colSpan={9} align="center">
                             {searchQuery 
-                              ? 'No subscription plans found matching your search' 
-                              : 'No subscription plans found'}
+                              ? t('subscription_plans.no_results') 
+                              : t('subscription_plans.no_plans')}
                           </TableCell>
                         </TableRow>
                       )}
@@ -475,6 +477,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                     page={page}
                     rowsPerPage={rowsPerPage}
                     rowsPerPageOptions={[5, 10, 25]}
+                    labelRowsPerPage={t('common.rows_per_page')}
                   />
                 </TableContainer>
               )}
@@ -491,7 +494,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
             >
               <form onSubmit={handleSubmit(createDialogOpen ? handleCreateSubmit : handleEditSubmit)}>
                 <DialogTitle>
-                  {createDialogOpen ? 'Create Subscription Plan' : 'Edit Subscription Plan'}
+                  {createDialogOpen ? t('subscription_plans.create_title') : t('subscription_plans.edit_title')}
                 </DialogTitle>
                 <Divider />
                 <DialogContent sx={{ pt: 2 }}>
@@ -500,14 +503,14 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       name="name"
                       control={control}
                       render={({ field }) => (
-              <TextField
+                        <TextField
                           {...field}
-                          label="Plan Name"
+                          label={t('subscription_plans.form.name')}
                           error={!!errors.name}
                           helperText={errors.name?.message}
-                fullWidth
-                required
-              />
+                          fullWidth
+                          required
+                        />
                       )}
                     />
                     
@@ -515,16 +518,16 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       name="description"
                       control={control}
                       render={({ field }) => (
-              <TextField
+                        <TextField
                           {...field}
-                          label="Description"
+                          label={t('subscription_plans.form.description')}
                           error={!!errors.description}
                           helperText={errors.description?.message}
-                fullWidth
+                          fullWidth
                           multiline
                           rows={3}
-                required
-              />
+                          required
+                        />
                       )}
                     />
                     
@@ -533,14 +536,14 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                         name="price"
                         control={control}
                         render={({ field }) => (
-              <TextField
+                          <TextField
                             {...field}
-                            label="Price"
+                            label={t('subscription_plans.form.price')}
                             error={!!errors.price}
                             helperText={errors.price?.message}
-                fullWidth
+                            fullWidth
                             required
-                InputProps={{
+                            InputProps={{
                               startAdornment: <InputAdornment position="start">$</InputAdornment>,
                             }}
                           />
@@ -553,11 +556,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                         render={({ field }) => (
                           <FormControl fullWidth error={!!errors.billing_cycle}>
                             <Typography variant="body2" gutterBottom>
-                              Billing Cycle
+                              {t('subscription_plans.form.billing_cycle')}
                             </Typography>
                             <Select {...field}>
-                              <MenuItem value="monthly">Monthly</MenuItem>
-                              <MenuItem value="yearly">Yearly</MenuItem>
+                              <MenuItem value="monthly">{t('subscription_plans.monthly')}</MenuItem>
+                              <MenuItem value="yearly">{t('subscription_plans.yearly')}</MenuItem>
                             </Select>
                             {errors.billing_cycle && (
                               <FormHelperText error>{errors.billing_cycle.message}</FormHelperText>
@@ -571,16 +574,16 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       name="features"
                       control={control}
                       render={({ field }) => (
-              <TextField
+                        <TextField
                           {...field}
-                          label="Features (comma separated)"
+                          label={t('subscription_plans.form.features')}
                           error={!!errors.features}
-                          helperText={errors.features?.message || "Enter features separated by commas (e.g. 'Feature 1, Feature 2')"}
-                fullWidth
+                          helperText={errors.features?.message || t('subscription_plans.form.features_helper')}
+                          fullWidth
                           multiline
                           rows={3}
-                required
-              />
+                          required
+                        />
                       )}
                     />
                     
@@ -593,7 +596,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                             {...rest}
                             value={value}
                             onChange={(e) => onChange(Number(e.target.value))}
-                            label="Storage Limit (GB)"
+                            label={t('subscription_plans.form.storage_limit')}
                             type="number"
                             error={!!errors.storage_limit_gb}
                             helperText={errors.storage_limit_gb?.message}
@@ -611,7 +614,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                             {...rest}
                             value={value}
                             onChange={(e) => onChange(Number(e.target.value))}
-                            label="Duration (months)"
+                            label={t('subscription_plans.form.duration')}
                             type="number"
                             error={!!errors.duration_in_months}
                             helperText={errors.duration_in_months?.message}
@@ -630,7 +633,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                             {...rest}
                             value={value}
                             onChange={(e) => onChange(Number(e.target.value))}
-                            label="Max Products"
+                            label={t('subscription_plans.form.max_products')}
                             type="number"
                             error={!!errors.max_products}
                             helperText={errors.max_products?.message}
@@ -647,7 +650,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                             {...rest}
                             value={value}
                             onChange={(e) => onChange(Number(e.target.value))}
-                            label="Max Stores"
+                            label={t('subscription_plans.form.max_stores')}
                             type="number"
                             error={!!errors.max_stores}
                             helperText={errors.max_stores?.message}
@@ -664,7 +667,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                             {...rest}
                             value={value}
                             onChange={(e) => onChange(Number(e.target.value))}
-                            label="Max Customers"
+                            label={t('subscription_plans.form.max_customers')}
                             type="number"
                             error={!!errors.max_customers}
                             helperText={errors.max_customers?.message}
@@ -680,7 +683,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       render={({ field: { value, onChange, ...field } }) => (
                         <FormControl fullWidth>
                           <Typography variant="body2" gutterBottom>
-                            Status
+                            {t('subscription_plans.form.status')}
                           </Typography>
                           <Box
                             sx={{
@@ -693,10 +696,10 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                               mt: 1
                             }}
                           >
-                            {value ? 'Active' : 'Inactive'}
+                            {value ? t('common.active') : t('common.inactive')}
                           </Box>
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                            Status cannot be changed once a plan is created
+                            {t('subscription_plans.form.status_helper')}
                           </Typography>
                         </FormControl>
                       )}
@@ -707,41 +710,40 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                   <Button
                     onClick={() => createDialogOpen ? setCreateDialogOpen(false) : setEditDialogOpen(false)}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button 
                     type="submit" 
                     variant="contained"
                     disabled={isLoading}
                   >
-                    {isLoading ? <CircularProgress size={24} /> : (createDialogOpen ? 'Create' : 'Update')}
-          </Button>
-        </DialogActions>
+                    {isLoading ? <CircularProgress size={24} /> : (createDialogOpen ? t('common.create') : t('common.update'))}
+                  </Button>
+                </DialogActions>
               </form>
-      </Dialog>
+            </Dialog>
           )}
 
           {/* Delete Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Subscription Plan</DialogTitle>
+          <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+            <DialogTitle>{t('subscription_plans.delete_title')}</DialogTitle>
             <Divider />
-        <DialogContent>
-          <DialogContentText>
-                Are you sure you want to delete the subscription plan "{control._formValues.name}"?
-                This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <DialogContent>
+              <DialogContentText>
+                {t('subscription_plans.delete_confirmation', { name: control._formValues.name })}
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDeleteDialogOpen(false)}>{t('common.cancel')}</Button>
               <Button 
                 onClick={handleDeleteSubmit} 
                 color="error"
                 disabled={isLoading}
               >
-                {isLoading ? <CircularProgress size={24} /> : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                {isLoading ? <CircularProgress size={24} /> : t('common.delete')}
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           {/* Success Message */}
           <Snackbar
@@ -751,187 +753,146 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
             anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
           >
             <Alert onClose={() => setSuccessMessage('')} severity="success">
-          {successMessage}
-        </Alert>
-      </Snackbar>
+              {successMessage}
+            </Alert>
+          </Snackbar>
 
-      {/* Details Dialog */}
-      <Dialog 
-        open={detailsDialogOpen} 
-        onClose={() => setDetailsDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        {selectedPlan && (
-          <>
-            <DialogTitle>
-              Subscription Plan Details
-            </DialogTitle>
-            <Divider />
-            <DialogContent sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    {selectedPlan.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    {selectedPlan.description}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Divider />
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Price
-                  </Typography>
-                  <Typography variant="body1">
-                    ${selectedPlan.price}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Billing Cycle
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Duration
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.duration_in_months} month{selectedPlan.duration_in_months !== 1 ? 's' : ''}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Storage Limit
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.storage_limit_gb} GB
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Max Products
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.max_products}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Max Stores
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.max_stores}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Max Customers
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.max_customers}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Status
-                  </Typography>
-                  <Box
-                    sx={{
-                      backgroundColor: selectedPlan.is_active ? 'success.light' : 'error.light',
-                      borderRadius: 1,
-                      color: 'white',
-                      display: 'inline-block',
-                      px: 1.5,
-                      py: 0.5,
-                      mt: 0.5
+          {/* Details Dialog */}
+          <Dialog 
+            open={detailsDialogOpen} 
+            onClose={() => setDetailsDialogOpen(false)}
+            maxWidth="md"
+            fullWidth
+          >
+            {selectedPlan && (
+              <>
+                <DialogTitle>
+                  {t('subscription_plans.details_title')}
+                </DialogTitle>
+                <Divider />
+                <DialogContent sx={{ pt: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Typography variant="h6" gutterBottom>
+                        {selectedPlan.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" paragraph>
+                        {selectedPlan.description}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Divider />
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {t('subscription_plans.columns.price')}
+                      </Typography>
+                      <Typography variant="body1">
+                        ${selectedPlan.price}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {t('subscription_plans.columns.billing_cycle')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.billing_cycle === 'monthly' ? t('subscription_plans.monthly') : t('subscription_plans.yearly')}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {t('subscription_plans.columns.storage')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.storage_limit_gb} GB
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {t('subscription_plans.columns.max_products')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.max_products}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {t('subscription_plans.columns.max_stores')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.max_stores}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {t('subscription_plans.columns.max_customers')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.max_customers}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {t('subscription_plans.columns.status')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.is_active ? t('common.active') : t('common.inactive')}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Divider />
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {t('subscription_plans.columns.features')}
+                      </Typography>
+                      {typeof selectedPlan.features === 'string' && selectedPlan.features.split(',').map((feature: string, index: number) => (
+                        <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              backgroundColor: 'primary.main',
+                              display: 'inline-block',
+                              mr: 1.5
+                            }}
+                          />
+                          {feature.trim()}
+                        </Typography>
+                      ))}
+                    </Grid>
+                  </Grid>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={() => setDetailsDialogOpen(false)}>
+                    {t('common.close')}
+                  </Button>
+                  <Button 
+                    color="primary"
+                    variant="contained"
+                    onClick={() => {
+                      setDetailsDialogOpen(false);
+                      handleEditDialogOpen(selectedPlan);
                     }}
                   >
-                    {selectedPlan.is_active ? 'Active' : 'Inactive'}
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Divider />
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Features
-                  </Typography>
-                  {typeof selectedPlan.features === 'string' && selectedPlan.features.split(',').map((feature: string, index: number) => (
-                    <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                      <Box
-                        component="span"
-                        sx={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: '50%',
-                          backgroundColor: 'primary.main',
-                          display: 'inline-block',
-                          mr: 1.5
-                        }}
-                      />
-                      {feature.trim()}
-                    </Typography>
-                  ))}
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Divider />
-                </Grid>
-                
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Created At
-                  </Typography>
-                  <Typography variant="body2">
-                    {new Date(selectedPlan.created_at).toLocaleString()}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Last Updated
-                  </Typography>
-                  <Typography variant="body2">
-                    {new Date(selectedPlan.updated_at).toLocaleString()}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDetailsDialogOpen(false)}>
-                Close
-              </Button>
-              <Button 
-                color="primary"
-                variant="contained"
-                onClick={() => {
-                  setDetailsDialogOpen(false);
-                  handleEditDialogOpen(selectedPlan);
-                }}
-              >
-                Edit Plan
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+                    {t('subscription_plans.edit_plan')}
+                  </Button>
+                </DialogActions>
+              </>
+            )}
+          </Dialog>
         </Stack>
       </Container>
     </Box>
