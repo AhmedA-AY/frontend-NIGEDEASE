@@ -154,10 +154,8 @@ function useChartOptions(): ApexOptions {
         colors: theme.palette.text.secondary
       },
       markers: {
-        width: 12,
-        height: 12,
+        size: 12,
         strokeWidth: 0,
-        radius: 12,
         offsetX: 0,
         offsetY: 0
       },
