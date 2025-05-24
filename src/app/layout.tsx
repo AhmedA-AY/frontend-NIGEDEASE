@@ -12,6 +12,7 @@ import { ThemeProvider } from '@/components/core/theme-provider/theme-provider';
 import { AuthProvider } from '@/providers/auth-provider';
 import { StoreProvider } from '@/providers/store-provider';
 import { QueryProvider } from '@/providers/query-provider';
+import { I18nProvider } from '@/providers/i18n-provider';
 
 export const viewport = { width: 'device-width', initialScale: 1 } satisfies Viewport;
 
@@ -27,21 +28,23 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
         <meta name="description" content="Modern business management solution for Ethiopian businesses" />
       </head>
       <body>
-        <LocalizationProvider>
-          <AuthProvider>
-            <QueryProvider>
-              <StoreProvider>
-                <UserProvider>
-                  <ThemeProvider>
-                    <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
-                      {children}
-                    </SnackbarProvider>
-                  </ThemeProvider>
-                </UserProvider>
-              </StoreProvider>
-            </QueryProvider>
-          </AuthProvider>
-        </LocalizationProvider>
+        <I18nProvider>
+          <LocalizationProvider>
+            <AuthProvider>
+              <QueryProvider>
+                <StoreProvider>
+                  <UserProvider>
+                    <ThemeProvider>
+                      <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
+                        {children}
+                      </SnackbarProvider>
+                    </ThemeProvider>
+                  </UserProvider>
+                </StoreProvider>
+              </QueryProvider>
+            </AuthProvider>
+          </LocalizationProvider>
+        </I18nProvider>
       </body>
     </html>
   );

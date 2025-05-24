@@ -249,47 +249,47 @@ export default function AdminDashboardPage() {
                   mb: { xs: 1, sm: 0 } 
                 }}
               >
-                <Button 
+          <Button 
                   color={selectedPeriod === 'today' ? 'primary' : 'inherit'}
-                  onClick={() => handlePeriodChange('today')}
+            onClick={() => handlePeriodChange('today')}
                   variant={selectedPeriod === 'today' ? 'contained' : 'text'}
                   size="small"
                   sx={{ minWidth: { xs: '60px', sm: '80px' } }}
-                >
-                  Today
-                </Button>
-                <Button 
+          >
+            Today
+          </Button>
+          <Button 
                   color={selectedPeriod === 'week' ? 'primary' : 'inherit'}
-                  onClick={() => handlePeriodChange('week')}
+            onClick={() => handlePeriodChange('week')}
                   variant={selectedPeriod === 'week' ? 'contained' : 'text'}
                   size="small"
                   sx={{ minWidth: { xs: '60px', sm: '80px' } }}
-                >
+          >
                   Week
-                </Button>
-                <Button 
+          </Button>
+          <Button 
                   color={selectedPeriod === 'month' ? 'primary' : 'inherit'}
-                  onClick={() => handlePeriodChange('month')}
+            onClick={() => handlePeriodChange('month')}
                   variant={selectedPeriod === 'month' ? 'contained' : 'text'}
                   size="small"
                   sx={{ minWidth: { xs: '60px', sm: '80px' } }}
-                >
+          >
                   Month
-                </Button>
-                <Button 
+          </Button>
+          <Button 
                   color={selectedPeriod === 'year' ? 'primary' : 'inherit'}
-                  onClick={() => handlePeriodChange('year')}
+            onClick={() => handlePeriodChange('year')}
                   variant={selectedPeriod === 'year' ? 'contained' : 'text'}
                   size="small"
                   sx={{ minWidth: { xs: '60px', sm: '80px' } }}
-                >
+          >
                   Year
-                </Button>
-              </Stack>
+          </Button>
+        </Stack>
             </Grid>
           </Grid>
         </Box>
-        
+
         <Box sx={{ mb: { xs: 3, sm: 4 } }}>
           <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12} sm={6} md={3}>
@@ -301,7 +301,7 @@ export default function AdminDashboardPage() {
                 icon={<TrendingUpIcon />}
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Total Expenses"
                 value={formattedTotalExpenses}
@@ -309,8 +309,8 @@ export default function AdminDashboardPage() {
                 positive={false}
                 icon={<TrendingDownIcon />}
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Payment Received"
                 value={formattedPaymentReceived}
@@ -318,8 +318,8 @@ export default function AdminDashboardPage() {
                 positive={true}
                 icon={<ReceiptIcon />}
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Total Customers"
                 value={formattedTotalCustomers}
@@ -372,7 +372,7 @@ export default function AdminDashboardPage() {
           </Grid>
         </Grid>
       </Container>
-    </Box>
+      </Box>
   );
 }
 
@@ -402,7 +402,7 @@ function StatCard({ title, value, change, positive, icon }: StatCardProps) {
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography 
+            <Typography 
           color="text.secondary" 
           variant="overline" 
           sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}
@@ -410,10 +410,10 @@ function StatCard({ title, value, change, positive, icon }: StatCardProps) {
           {title}
         </Typography>
         <Box
-          sx={{
+            sx={{ 
             backgroundColor: positive ? 'success.lightest' : 'error.lightest',
             borderRadius: 1,
-            display: 'flex',
+              display: 'flex',
             alignItems: 'center',
             p: '4px 8px',
           }}
@@ -433,9 +433,9 @@ function StatCard({ title, value, change, positive, icon }: StatCardProps) {
             color={positive ? 'success.main' : 'error.main'}
             sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
             variant="body2"
-          >
-            {change}
-          </Typography>
+            >
+              {change}
+            </Typography>
         </Box>
       </Box>
       <Typography 

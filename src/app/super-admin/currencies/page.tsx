@@ -32,6 +32,7 @@ import { PencilSimple, Plus, Trash } from '@phosphor-icons/react/dist/ssr';
 import { z as zod } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 
 import { useCurrencies, useCreateCurrency, useUpdateCurrency, useDeleteCurrency, usePatchCurrency } from '@/hooks/use-companies';
 
@@ -44,6 +45,7 @@ const currencySchema = zod.object({
 type CurrencyFormValues = zod.infer<typeof currencySchema>;
 
 export default function CurrenciesPage(): React.JSX.Element {
+  const { t } = useTranslation('super-admin');
   const { data: currencies, isLoading: isLoadingCurrencies, error: currenciesError } = useCurrencies();
   const createCurrencyMutation = useCreateCurrency();
   const updateCurrencyMutation = useUpdateCurrency();
@@ -167,10 +169,10 @@ export default function CurrenciesPage(): React.JSX.Element {
           >
             <Stack spacing={1}>
               <Typography variant="h4">
-                Currencies
+                {t('currencies.title')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Manage system currencies
+                {t('currencies.description')}
               </Typography>
             </Stack>
             <Button
@@ -178,28 +180,28 @@ export default function CurrenciesPage(): React.JSX.Element {
               variant="contained"
               onClick={handleCreateDialogOpen}
             >
-              Add Currency
+              {t('currencies.add')}
             </Button>
           </Stack>
           
           {currenciesError && (
-            <Alert severity="error">{(currenciesError as any)?.message || 'Failed to load currencies'}</Alert>
+            <Alert severity="error">{(currenciesError as any)?.message || t('currencies.error.load')}</Alert>
           )}
           
           {createCurrencyMutation.isError && (
-            <Alert severity="error">{(createCurrencyMutation.error as any)?.message || 'Failed to create currency'}</Alert>
+            <Alert severity="error">{(createCurrencyMutation.error as any)?.message || t('currencies.error.create')}</Alert>
           )}
           
           {updateCurrencyMutation.isError && (
-            <Alert severity="error">{(updateCurrencyMutation.error as any)?.message || 'Failed to update currency'}</Alert>
+            <Alert severity="error">{(updateCurrencyMutation.error as any)?.message || t('currencies.error.update')}</Alert>
           )}
           
           {deleteCurrencyMutation.isError && (
-            <Alert severity="error">{(deleteCurrencyMutation.error as any)?.message || 'Failed to delete currency'}</Alert>
+            <Alert severity="error">{(deleteCurrencyMutation.error as any)?.message || t('currencies.error.delete')}</Alert>
           )}
           
           {patchCurrencyMutation.isError && (
-            <Alert severity="error">{(patchCurrencyMutation.error as any)?.message || 'Failed to update currency'}</Alert>
+            <Alert severity="error">{(patchCurrencyMutation.error as any)?.message || t('currencies.error.update')}</Alert>
           )}
           
           <Card>
@@ -226,10 +228,10 @@ export default function CurrenciesPage(): React.JSX.Element {
                   <Stack alignItems="center" spacing={2}>
                     <CircularProgress />
                     <Typography variant="body2" color="text.secondary">
-                      {createCurrencyMutation.isPending ? 'Creating currency...' :
-                        updateCurrencyMutation.isPending ? 'Updating currency...' :
-                        deleteCurrencyMutation.isPending ? 'Deleting currency...' :
-                        'Updating currency code...'}
+                      {createCurrencyMutation.isPending ? t('currencies.loading.creating') :
+                        updateCurrencyMutation.isPending ? t('currencies.loading.updating') :
+                        deleteCurrencyMutation.isPending ? t('currencies.loading.deleting') :
+                        t('currencies.loading.updating_code')}
                     </Typography>
                   </Stack>
                 </Box>
@@ -243,34 +245,16 @@ export default function CurrenciesPage(): React.JSX.Element {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Currency Name</TableCell>
-                        <TableCell>Code</TableCell>
-                        <TableCell align="right">Actions</TableCell>
+                        <TableCell>{t('currencies.columns.name')}</TableCell>
+                        <TableCell>{t('currencies.columns.code')}</TableCell>
+                        <TableCell align="right">{t('common.actions')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {currencies?.map((currency) => (
                         <TableRow key={currency.id}>
                           <TableCell>{currency.name}</TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <TextField
-                                size="small"
-                                defaultValue={currency.code}
-                                inputProps={{
-                                  maxLength: 3,
-                                  style: { textTransform: 'uppercase' }
-                                }}
-                                onBlur={(e) => {
-                                  const newCode = e.target.value.toUpperCase();
-                                  if (newCode !== currency.code) {
-                                    handleQuickCodeUpdate(currency.id, newCode);
-                                  }
-                                }}
-                                sx={{ maxWidth: 80 }}
-                              />
-                            </Box>
-                          </TableCell>
+                          <TableCell>{currency.code}</TableCell>
                           <TableCell align="right">
                             <IconButton
                               color="primary"
@@ -290,7 +274,7 @@ export default function CurrenciesPage(): React.JSX.Element {
                       {currencies?.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={3} align="center">
-                            No currencies found
+                            {t('currencies.no_currencies')}
                           </TableCell>
                         </TableRow>
                       )}
@@ -303,22 +287,20 @@ export default function CurrenciesPage(): React.JSX.Element {
           
           {/* Create Dialog */}
           <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)}>
+            <DialogTitle>{t('currencies.create_title')}</DialogTitle>
             <form onSubmit={handleSubmit(handleCreateSubmit)}>
-              <DialogTitle>Add Currency</DialogTitle>
-              <Divider />
-              <DialogContent sx={{ pt: 2 }}>
-                <Stack spacing={3} sx={{ minWidth: 400 }}>
+              <DialogContent>
+                <Stack spacing={3} sx={{ mt: 1 }}>
                   <Controller
                     name="name"
                     control={control}
                     render={({ field }) => (
                       <TextField
                         {...field}
-                        label="Currency Name"
+                        label={t('currencies.form.name')}
                         error={!!errors.name}
                         helperText={errors.name?.message}
                         fullWidth
-                        required
                       />
                     )}
                   />
@@ -328,24 +310,21 @@ export default function CurrenciesPage(): React.JSX.Element {
                     render={({ field }) => (
                       <TextField
                         {...field}
-                        label="Currency Code"
+                        label={t('currencies.form.code')}
                         error={!!errors.code}
                         helperText={errors.code?.message}
                         fullWidth
-                        required
                       />
                     )}
                   />
                 </Stack>
               </DialogContent>
               <DialogActions>
-                <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-                <Button 
-                  type="submit" 
-                  variant="contained"
-                  disabled={isLoading}
-                >
-                  {isLoading ? <CircularProgress size={24} /> : 'Create'}
+                <Button onClick={() => setCreateDialogOpen(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button type="submit" variant="contained" disabled={isLoading}>
+                  {isLoading ? <CircularProgress size={24} /> : t('common.create')}
                 </Button>
               </DialogActions>
             </form>
@@ -353,22 +332,20 @@ export default function CurrenciesPage(): React.JSX.Element {
           
           {/* Edit Dialog */}
           <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
+            <DialogTitle>{t('currencies.edit_title')}</DialogTitle>
             <form onSubmit={handleSubmit(handleEditSubmit)}>
-              <DialogTitle>Edit Currency</DialogTitle>
-              <Divider />
-              <DialogContent sx={{ pt: 2 }}>
-                <Stack spacing={3} sx={{ minWidth: 400 }}>
+              <DialogContent>
+                <Stack spacing={3} sx={{ mt: 1 }}>
                   <Controller
                     name="name"
                     control={control}
                     render={({ field }) => (
                       <TextField
                         {...field}
-                        label="Currency Name"
+                        label={t('currencies.form.name')}
                         error={!!errors.name}
                         helperText={errors.name?.message}
                         fullWidth
-                        required
                       />
                     )}
                   />
@@ -378,24 +355,21 @@ export default function CurrenciesPage(): React.JSX.Element {
                     render={({ field }) => (
                       <TextField
                         {...field}
-                        label="Currency Code"
+                        label={t('currencies.form.code')}
                         error={!!errors.code}
                         helperText={errors.code?.message}
                         fullWidth
-                        required
                       />
                     )}
                   />
                 </Stack>
               </DialogContent>
               <DialogActions>
-                <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-                <Button 
-                  type="submit" 
-                  variant="contained"
-                  disabled={isLoading}
-                >
-                  {isLoading ? <CircularProgress size={24} /> : 'Update'}
+                <Button onClick={() => setEditDialogOpen(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button type="submit" variant="contained" disabled={isLoading}>
+                  {isLoading ? <CircularProgress size={24} /> : t('common.update')}
                 </Button>
               </DialogActions>
             </form>
@@ -403,22 +377,20 @@ export default function CurrenciesPage(): React.JSX.Element {
           
           {/* Delete Dialog */}
           <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-            <DialogTitle>Delete Currency</DialogTitle>
-            <Divider />
+            <DialogTitle>{t('currencies.delete_title')}</DialogTitle>
             <DialogContent>
               <DialogContentText>
-                Are you sure you want to delete the currency "{control._formValues.name}"?
-                This action cannot be undone.
+                {t('currencies.delete_confirmation', { name: control._formValues.name })}
               </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+              <Button onClick={() => setDeleteDialogOpen(false)}>{t('common.cancel')}</Button>
               <Button 
                 onClick={handleDeleteSubmit} 
                 color="error"
                 disabled={isLoading}
               >
-                {isLoading ? <CircularProgress size={24} /> : 'Delete'}
+                {isLoading ? <CircularProgress size={24} /> : t('common.delete')}
               </Button>
             </DialogActions>
           </Dialog>
@@ -428,7 +400,6 @@ export default function CurrenciesPage(): React.JSX.Element {
             open={!!successMessage}
             autoHideDuration={6000}
             onClose={() => setSuccessMessage('')}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
           >
             <Alert onClose={() => setSuccessMessage('')} severity="success">
               {successMessage}

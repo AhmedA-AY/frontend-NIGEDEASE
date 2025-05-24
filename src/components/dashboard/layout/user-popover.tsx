@@ -13,6 +13,7 @@ import { GearSix as GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { SignOut as SignOutIcon } from '@phosphor-icons/react/dist/ssr/SignOut';
 import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { Crown as CrownIcon } from '@phosphor-icons/react/dist/ssr/Crown';
+import { useTranslation } from 'react-i18next';
 
 import { paths } from '@/paths';
 import { authClient } from '@/lib/auth/client';
@@ -28,6 +29,7 @@ export interface UserPopoverProps {
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
   const { userInfo, userRole, logout } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation('super-admin');
 
   // Generate display name from email if available
   const displayName = React.useMemo(() => {
@@ -170,7 +172,9 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
           >
             <CrownIcon weight="fill" color="#14B8A6" fontSize="var(--icon-fontSize-sm)" />
             <Typography variant="caption" sx={{ fontWeight: 600, color: '#14B8A6' }}>
-              {userRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              {userRole === 'super_admin' 
+                ? t('common.super_admin')
+                : userRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </Typography>
           </Box>
         )}
@@ -213,7 +217,7 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
           <ListItemIcon>
             <UserIcon fontSize="var(--icon-fontSize-md)" />
           </ListItemIcon>
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>My Profile</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.my_profile')}</Typography>
         </MenuItem>
         <MenuItem 
           onClick={handleSignOut}
@@ -228,7 +232,7 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
           <ListItemIcon>
             <SignOutIcon fontSize="var(--icon-fontSize-md)" />
           </ListItemIcon>
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Sign out</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.sign_out')}</Typography>
         </MenuItem>
       </MenuList>
     </Popover>

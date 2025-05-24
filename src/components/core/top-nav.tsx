@@ -45,9 +45,28 @@ export function TopNav({ onNavOpen }: TopNavProps): React.JSX.Element {
           >
             <ListIcon />
           </IconButton>
+          <Box
+            sx={{
+              display: {
+                xs: 'none',
+                lg: 'block',
+              },
+            }}
+          >
+            <StoreSelector />
+          </Box>
         </Stack>
         <Stack alignItems="center" direction="row" spacing={2}>
-          <StoreSelector />
+          <Box
+            sx={{
+              display: {
+                xs: 'block',
+                lg: 'none',
+              },
+            }}
+          >
+            <StoreSelector />
+          </Box>
           <IconButton>
             <BellIcon />
           </IconButton>

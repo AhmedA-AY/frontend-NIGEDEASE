@@ -1,10 +1,14 @@
+'use client';
+
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
 import Link from 'next/link';
 import { 
   ArrowRight, 
@@ -25,15 +29,19 @@ import {
   TwitterLogo,
   SnapchatLogo
 } from '@phosphor-icons/react/dist/ssr';
+import { useTranslation } from 'react-i18next';
 
 import { paths } from '@/paths';
 
-export const metadata = {
-  title: 'NIGED-EASE | Features',
-  description: 'Explore the powerful features of our Ethiopian business management solution',
-};
+// Dynamically import the LanguageSwitcher with SSR disabled to prevent hydration errors
+const LanguageSwitcher = dynamic(
+  () => import('@/components/core/language-switcher').then(mod => mod.LanguageSwitcher),
+  { ssr: false }
+);
 
 export default function FeaturesPage(): React.JSX.Element {
+  const { t } = useTranslation('features');
+  
   return (
     <Box sx={{ 
       bgcolor: 'background.default', 
@@ -123,7 +131,7 @@ export default function FeaturesPage(): React.JSX.Element {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  NIGED-EASE
+                  {t('app_name')}
                 </Typography>
               </Link>
               <Box sx={{ 
@@ -160,7 +168,7 @@ export default function FeaturesPage(): React.JSX.Element {
                       }
                     }}
               >
-                Home
+                {t('home')}
               </Typography>
             </Link>
             <Link href="/features" style={{ textDecoration: 'none' }}>
@@ -183,7 +191,7 @@ export default function FeaturesPage(): React.JSX.Element {
                       }
                     }}
               >
-                Features
+                {t('features')}
               </Typography>
             </Link>
             <Link href="/contact" style={{ textDecoration: 'none' }}>
@@ -214,48 +222,49 @@ export default function FeaturesPage(): React.JSX.Element {
                       }
                     }}
               >
-                Contact
+                {t('contact')}
               </Typography>
             </Link>
           </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Button 
-              variant="contained" 
-              color="primary" 
-                sx={{ 
-                  borderRadius: 2, 
-                  px: 3,
-                  py: 1,
-                  background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
-                  boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
-                  transition: 'all 0.3s ease',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: '-100%',
-                    width: '100%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                    transition: 'all 0.6s ease',
-                  },
-                  '&:hover': {
-                    boxShadow: '0 6px 20px rgba(99, 102, 241, 0.6)',
-                    transform: 'translateY(-2px)',
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <LanguageSwitcher />
+              <Button 
+                variant="contained" 
+                color="primary" 
+                  sx={{ 
+                    borderRadius: 2, 
+                    px: 3,
+                    py: 1,
+                    background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                    boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
                     '&::before': {
-                      left: '100%',
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: '-100%',
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                      transition: 'all 0.6s ease',
+                    },
+                    '&:hover': {
+                      boxShadow: '0 6px 20px rgba(99, 102, 241, 0.6)',
+                      transform: 'translateY(-2px)',
+                      '&::before': {
+                        left: '100%',
+                      }
                     }
-                  }
-                }}
-              component={Link}
-              href={paths.auth.signIn}
-            >
-              Login
-            </Button>
-          </Box>
+                  }}
+                component={Link}
+                href={paths.auth.signIn}
+              >
+                {t('login')}
+              </Button>
+            </Box>
         </Box>
       </Container>
       </Box>
@@ -332,7 +341,7 @@ export default function FeaturesPage(): React.JSX.Element {
                 textShadow: '0 10px 30px rgba(99, 102, 241, 0.1)',
               }}
             >
-              Powerful Features for Ethiopian Businesses
+              {t('hero_title')}
             </Typography>
             <Typography 
               variant="body1" 
@@ -346,7 +355,7 @@ export default function FeaturesPage(): React.JSX.Element {
                 opacity: 0.9,
               }}
             >
-              Our comprehensive business management platform offers everything Ethiopian businesses need to streamline operations, improve efficiency, and drive growth.
+              {t('hero_subtitle')}
             </Typography>
             <Button
               variant="contained"
@@ -382,7 +391,7 @@ export default function FeaturesPage(): React.JSX.Element {
               component={Link}
               href={paths.auth.signIn}
             >
-              Get Started Now
+              {t('get_started')}
             </Button>
           </Box>
         </Container>
@@ -409,7 +418,7 @@ export default function FeaturesPage(): React.JSX.Element {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Core Business Solutions
+            {t('core_features_title')}
           </Typography>
           <Typography 
             variant="body1" 
@@ -422,50 +431,50 @@ export default function FeaturesPage(): React.JSX.Element {
               fontSize: '1.1rem'
             }}
           >
-            Discover the comprehensive set of tools designed specifically for Ethiopian businesses to streamline operations and boost productivity.
+            {t('core_features_subtitle')}
           </Typography>
           
           <Grid container spacing={{ xs: 3, md: 4 }} sx={{ mt: 2 }}>
             {[
               {
                 icon: <ShoppingCart size={44} weight="duotone" />,
-                title: "Sales Management",
-                description: "Track all sales activities, manage customer orders, generate invoices, and analyze sales performance with our intuitive sales management tools.",
+                title: t('feature1_title'),
+                description: t('feature1_description'),
                 gradient: "linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(56, 189, 248, 0.1) 100%)",
                 iconColor: "#14B8A6"
               },
               {
                 icon: <Package size={44} weight="duotone" />,
-                title: "Inventory Control",
-                description: "Keep track of your stock levels in real-time, set automatic reorder points, manage multiple warehouses, and optimize your inventory.",
+                title: t('feature2_title'),
+                description: t('feature2_description'),
                 gradient: "linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)",
                 iconColor: "#6366F1"
               },
               {
                 icon: <ChartBar size={44} weight="duotone" />,
-                title: "Financial Reporting",
-                description: "Generate comprehensive financial reports including profit & loss statements, balance sheets, and cash flow statements to make informed decisions.",
+                title: t('feature3_title'),
+                description: t('feature3_description'),
                 gradient: "linear-gradient(135deg, rgba(244, 63, 94, 0.1) 0%, rgba(251, 113, 133, 0.1) 100%)",
                 iconColor: "#F43F5E"
               },
               {
                 icon: <Users size={44} weight="duotone" />,
-                title: "Customer Management",
-                description: "Build stronger relationships with your customers through our CRM tools that help you track interactions, preferences, and purchase history.",
+                title: t('feature4_title'),
+                description: t('feature4_description'),
                 gradient: "linear-gradient(135deg, rgba(234, 179, 8, 0.1) 0%, rgba(253, 186, 116, 0.1) 100%)",
                 iconColor: "#EAB308"
               },
               {
                 icon: <Receipt size={44} weight="duotone" />,
-                title: "Invoicing & Billing",
-                description: "Create professional invoices, set up recurring billing, and manage payment collection with our versatile invoicing features.",
+                title: t('feature5_title'),
+                description: t('feature5_description'),
                 gradient: "linear-gradient(135deg, rgba(8, 145, 178, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)",
                 iconColor: "#0891B2"
               },
               {
                 icon: <Briefcase size={44} weight="duotone" />,
-                title: "Expense Tracking",
-                description: "Monitor all business expenses, categorize spending, attach receipts, and generate expense reports for better financial control.",
+                title: t('feature6_title'),
+                description: t('feature6_description'),
                 gradient: "linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)",
                 iconColor: "#10B981"
               }
@@ -506,85 +515,60 @@ export default function FeaturesPage(): React.JSX.Element {
                       width: '100%',
                       height: '100%',
                       background: feature.gradient,
-                      opacity: 0,
-                      transition: 'opacity 0.4s ease',
+                      opacity: 0.7,
                       zIndex: 0,
-                    },
-                    '&:hover::before': {
-                      opacity: 1,
+                      transition: 'opacity 0.3s ease',
                     }
                   }}
                 >
-                  <Box sx={{ 
-                    mb: 3, 
-                    color: feature.iconColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 84,
-                    height: 84,
-                    borderRadius: '16px',
-                    background: feature.gradient,
-                    position: 'relative',
-                    zIndex: 1,
-                    transition: 'all 0.4s ease',
-                    transform: 'rotate(0deg)',
-                    '&:hover': {
-                      transform: 'rotate(5deg) scale(1.1)',
-                    }
-                  }}>
-                    {feature.icon}
-                  </Box>
-                  <Typography 
-                    variant="h5" 
-                    component="h3" 
-                    sx={{ 
-                      fontWeight: 700,
-                      mb: 2,
-                      position: 'relative',
-                      zIndex: 1,
-                    }}
-                  >
-                    {feature.title}
-                  </Typography>
-                  <Typography 
-                    variant="body1" 
-                    color="text.secondary"
-                    sx={{ position: 'relative', zIndex: 1 }}
-                  >
-                    {feature.description}
-                  </Typography>
-                  
                   <Box 
                     sx={{ 
-                      mt: 3, 
-                      display: 'flex', 
-                      alignItems: 'center',
                       position: 'relative',
                       zIndex: 1,
-                      color: feature.iconColor,
-                      fontWeight: 600,
-                      opacity: 0,
-                      transform: 'translateY(10px)',
-                      transition: 'all 0.4s ease',
-                      '.MuiBox-root:hover &': {
-                        opacity: 1,
-                        transform: 'translateY(0)',
-                      }
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%'
                     }}
                   >
-                    <Typography 
-                      component="span" 
+                    <Box 
                       sx={{ 
-                        color: 'inherit', 
-                        mr: 1, 
-                        fontSize: '0.95rem', 
-                        fontWeight: 'inherit' 
+                        mb: 3,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        width: 80,
+                        height: 80,
+                        borderRadius: '24px',
+                        background: 'white',
+                        boxShadow: `0 10px 20px rgba(0,0,0,0.06)`,
+                        color: feature.iconColor,
+                        mx: 'auto'
                       }}
                     >
-                      Learn more
+                      {feature.icon}
+                    </Box>
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        mb: 2, 
+                        textAlign: 'center',
+                        fontWeight: 600,
+                        color: 'text.primary'
+                      }}
+                    >
+                      {feature.title}
                     </Typography>
-                    <ArrowRight size={18} weight="bold" />
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        flex: 1,
+                        color: 'text.secondary',
+                        textAlign: 'center',
+                        lineHeight: 1.6
+                      }}
+                    >
+                      {feature.description}
+                    </Typography>
                   </Box>
                 </Box>
               </Grid>
@@ -592,220 +576,317 @@ export default function FeaturesPage(): React.JSX.Element {
           </Grid>
         </Box>
       </Container>
-
-      {/* Additional Features Section */}
-      <Box sx={{ bgcolor: '#f8fafc', py: { xs: 6, md: 10 } }}>
+      
+      {/* Business Types Section */}
+      <Box
+        sx={{
+          position: 'relative',
+          py: { xs: 8, md: 12 },
+          background: 'linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 50%, #f0fdf4 100%)',
+          overflow: 'hidden',
+          zIndex: 1,
+        }}
+      >
         <Container maxWidth="lg">
           <Typography 
             variant="h2" 
             sx={{ 
               fontWeight: 700, 
-              mb: 6,
+              mb: 2,
               textAlign: 'center',
-              fontSize: { xs: '1.75rem', md: '2.25rem' }
+              fontSize: { xs: '1.75rem', md: '2.5rem' },
+              background: 'linear-gradient(90deg, #14B8A6 0%, #10B981 100%)',
+              backgroundClip: 'text',
+              textFillColor: 'transparent',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
             }}
           >
-            Additional Business Tools
+            {t('business_types_title')}
+          </Typography>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              textAlign: 'center',
+              maxWidth: 700,
+              mx: 'auto',
+              mb: 8,
+              color: 'text.secondary',
+              fontSize: '1.1rem'
+            }}
+          >
+            {t('business_types_subtitle')}
           </Typography>
           
-          <Grid container spacing={6}>
+          <Grid container spacing={{ xs: 3, md: 4 }} sx={{ mb: 6 }}>
             {[
               {
-                icon: <Gear size={32} />,
-                title: "Customizable Workflow",
-                description: "Tailor the system to match your specific business processes with customizable workflows, forms, and approval chains."
+                icon: <ShoppingCart size={38} weight="duotone" />,
+                title: t('retail_title'),
+                description: t('retail_description'),
+                color: "#14B8A6"
               },
               {
-                icon: <UsersThree size={32} />,
-                title: "Multi-user Access",
-                description: "Set different permission levels for team members, allowing secure access to the information they need to perform their roles."
+                icon: <Package size={38} weight="duotone" />,
+                title: t('wholesale_title'),
+                description: t('wholesale_description'),
+                color: "#6366F1"
               },
               {
-                icon: <Calculator size={32} />,
-                title: "Tax Management",
-                description: "Automatically calculate VAT and other taxes, generate tax reports, and prepare for Ethiopian tax regulations compliance."
+                icon: <Briefcase size={38} weight="duotone" />,
+                title: t('service_title'),
+                description: t('service_description'),
+                color: "#F43F5E"
               },
               {
-                icon: <CloudArrowUp size={32} />,
-                title: "Cloud-based Solution",
-                description: "Access your business data securely from anywhere with our cloud-based platform, with automatic backups and updates."
+                icon: <Gear size={38} weight="duotone" />,
+                title: t('manufacturing_title'),
+                description: t('manufacturing_description'),
+                color: "#EAB308"
               }
-            ].map((tool, index) => (
-              <Grid item xs={12} md={6} key={index}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                  <Box sx={{ 
-                    mr: 3,
-                    p: 2,
-                    bgcolor: 'primary.lighter',
-                    borderRadius: 2,
-                    color: 'primary.main'
-                  }}>
-                    {tool.icon}
+            ].map((business, index) => (
+              <Grid item xs={12} sm={6} key={index}>
+                <Box 
+                  sx={{ 
+                    p: 4,
+                    display: 'flex',
+                    bgcolor: 'background.paper',
+                    borderRadius: 4,
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
+                    transition: 'all 0.3s ease',
+                    height: '100%',
+                    '&:hover': {
+                      transform: 'translateY(-5px)',
+                      boxShadow: '0 15px 35px rgba(0,0,0,0.08)',
+                    }
+                  }}
+                >
+                  <Box 
+                    sx={{ 
+                      mr: 3,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      width: 60,
+                      height: 60,
+                      borderRadius: '16px',
+                      background: 'white',
+                      boxShadow: `0 8px 16px rgba(0,0,0,0.06)`,
+                      color: business.color,
+                      flexShrink: 0
+                    }}
+                  >
+                    {business.icon}
                   </Box>
                   <Box>
-                    <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
-                      {tool.title}
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        mb: 1, 
+                        fontWeight: 600,
+                        color: 'text.primary'
+                      }}
+                    >
+                      {business.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {tool.description}
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'text.secondary',
+                        lineHeight: 1.6
+                      }}
+                    >
+                      {business.description}
                     </Typography>
                   </Box>
                 </Box>
               </Grid>
             ))}
           </Grid>
-        </Container>
-      </Box>
-
-      {/* CTA Section */}
-      <Box sx={{ py: { xs: 8, md: 12 } }}>
-        <Container maxWidth="md">
+          
           <Box 
             sx={{ 
               textAlign: 'center',
-              p: 5,
-              borderRadius: 4,
-              bgcolor: 'primary.lighter',
+              mt: 8
             }}
           >
             <Typography 
-              variant="h3" 
+              variant="h6" 
               sx={{ 
-                fontWeight: 700,
-                mb: 3,
-                fontSize: { xs: '1.75rem', md: '2.25rem' }
+                mb: 4,
+                maxWidth: 800,
+                mx: 'auto',
+                color: 'text.primary',
+                fontWeight: 500
               }}
             >
-              Ready to Transform Your Business?
+              {t('join_businesses')}
             </Typography>
-            <Typography variant="body1" sx={{ mb: 4, maxWidth: 700, mx: 'auto' }}>
-              Join hundreds of Ethiopian businesses that are streamlining their operations and growing with NIGED-EASE.
-            </Typography>
-            <Stack 
-              direction={{ xs: 'column', sm: 'row' }} 
-              spacing={2} 
-              justifyContent="center"
+            <Button
+              variant="contained"
+              size="large"
+              sx={{
+                borderRadius: 2.5, 
+                px: 4,
+                py: 1.5,
+                fontWeight: 600,
+                background: 'linear-gradient(90deg, #14B8A6 0%, #10B981 100%)',
+                boxShadow: '0 8px 16px rgba(20, 184, 166, 0.25)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  boxShadow: '0 10px 20px rgba(20, 184, 166, 0.35)',
+                  transform: 'translateY(-2px)',
+                }
+              }}
+              component={Link}
+              href={paths.auth.signIn}
             >
-              <Button
-                variant="contained"
-                color="primary"
-                size="large"
-                sx={{ 
-                  px: 4, 
-                  py: 1.5,
-                  borderRadius: 1,
-                  fontWeight: 600
-                }}
-                component={Link}
-                href={paths.auth.signIn}
-              >
-                Start Free Trial
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                size="large"
-                sx={{ 
-                  px: 4, 
-                  py: 1.5,
-                  borderRadius: 1,
-                  fontWeight: 600
-                }}
-                component={Link}
-                href="/contact"
-              >
-                Contact Sales
-              </Button>
-            </Stack>
+              {t('try_free_button')}
+            </Button>
           </Box>
         </Container>
       </Box>
-
+      
       {/* Footer */}
-      <Box sx={{ 
-        bgcolor: '#f8fafc', 
-        borderTop: '3px solid #06b6d4',
-        py: 6 
-      }}>
+      <Box 
+        component="footer" 
+        sx={{ 
+          bgcolor: '#f8fafc',
+          py: 8,
+          borderTop: '1px solid',
+          borderColor: 'rgba(203, 213, 225, 0.5)',
+        }}
+      >
         <Container maxWidth="lg">
-          <Grid container spacing={6}>
-            {/* Logo Section - Left */}
-            <Grid item xs={12} md={4}>
-              <Box 
-                component="img"
-                src="/assets/Neged.png"
-                alt="NIGED-EASE Logo"
-                sx={{
-                  width: 200,
-                  height: 'auto',
-                  borderRadius: '16px',
-                  backgroundColor: 'white',
-                  padding: '10px',
-                  border: '2px solid #06b6d4',
-                  boxShadow: '0 6px 16px rgba(6, 182, 212, 0.15)',
-                  objectFit: 'contain',
-                  display: 'block',
-                  mb: { xs: 2, md: 0 }
-                }}
-              />
+          <Grid container spacing={4}>
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <Box 
+                  component="img"
+                  src="/assets/Neged.png"
+                  alt="NIGED-EASE Logo"
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    mr: 1.5,
+                    borderRadius: '12px',
+                    backgroundColor: 'white',
+                    padding: '6px',
+                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.1)',
+                    border: '1px solid rgba(203, 213, 225, 0.3)',
+                    objectFit: 'contain',
+                  }}
+                />
+                <Typography 
+                  component="span" 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 700, 
+                    background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                    backgroundClip: 'text',
+                    textFillColor: 'transparent',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  {t('app_name')}
+                </Typography>
+              </Box>
+              <Stack spacing={3} direction="row" sx={{ mb: 4 }}>
+                <IconButton sx={{ color: '#1877F2' }}>
+                  <FacebookLogo size={24} weight="fill" />
+                </IconButton>
+                <IconButton sx={{ color: '#E4405F' }}>
+                  <InstagramLogo size={24} weight="fill" />
+                </IconButton>
+                <IconButton sx={{ color: '#229ED9' }}>
+                  <TelegramLogo size={24} weight="fill" />
+                </IconButton>
+                <IconButton sx={{ color: '#0A66C2' }}>
+                  <LinkedinLogo size={24} weight="fill" />
+                </IconButton>
+              </Stack>
             </Grid>
             
-            {/* Navigation Links - Middle */}
-            <Grid item xs={12} md={4}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Grid item xs={12} sm={4}>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#0694A2' }}>
+                {t('quick_links')}
+              </Typography>
+              <Stack spacing={2}>
                 <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <Typography variant="body1" fontWeight={500}>
-                    Home
+                  <Typography 
+                    variant="body1" 
+                    sx={{
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        color: 'primary.main',
+                        transform: 'translateX(5px)'
+                      },
+                      display: 'inline-block'
+                    }}
+                  >
+                    {t('home')}
                   </Typography>
                 </Link>
                 <Link href="/features" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <Typography variant="body1" fontWeight={500}>
-                    Features
+                  <Typography 
+                    variant="body1" 
+                    sx={{
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        color: 'primary.main',
+                        transform: 'translateX(5px)'
+                      },
+                      display: 'inline-block'
+                    }}
+                  >
+                    {t('features')}
                   </Typography>
                 </Link>
                 <Link href="/contact" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <Typography variant="body1" fontWeight={500}>
-                    Contact
+                  <Typography 
+                    variant="body1" 
+                    sx={{
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        color: 'primary.main',
+                        transform: 'translateX(5px)'
+                      },
+                      display: 'inline-block'
+                    }}
+                  >
+                    {t('contact')}
                   </Typography>
-                </Link>
-              </Box>
-            </Grid>
-            
-            {/* Contact Information - Right */}
-            <Grid item xs={12} md={4}>
-              <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                Contact Us
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                Email: Contact@nigedease.com
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 4 }}>
-                Phone: +251933778687
-              </Typography>
-              
-              {/* Social Icons */}
-              <Stack direction="row" spacing={3}>
-                <Link href="#" aria-label="Facebook" style={{ color: '#1877F2' }}>
-                  <FacebookLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="Instagram" style={{ color: '#E4405F' }}>
-                  <InstagramLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="Telegram" style={{ color: '#0088cc' }}>
-                  <TelegramLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="LinkedIn" style={{ color: '#0A66C2' }}>
-                  <LinkedinLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="Twitter" style={{ color: '#1DA1F2' }}>
-                  <TwitterLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="Snapchat" style={{ color: '#FFFC00' }}>
-                  <SnapchatLogo size={24} weight="fill" />
                 </Link>
               </Stack>
             </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#0694A2' }}>
+                {t('contact_us')}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {t('contact_email')}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 3 }}>
+                {t('contact_phone')}
+              </Typography>
+            </Grid>
           </Grid>
+          
+          <Box 
+            sx={{ 
+              mt: 6, 
+              pt: 3, 
+              borderTop: '1px solid',
+              borderColor: 'rgba(203, 213, 225, 0.5)',
+              textAlign: 'center'
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {t('copyright')}
+            </Typography>
+          </Box>
         </Container>
       </Box>
     </Box>

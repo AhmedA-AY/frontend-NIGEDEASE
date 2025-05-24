@@ -1,4 +1,7 @@
+'use client';
+
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -8,6 +11,7 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
+import IconButton from '@mui/material/IconButton';
 import Link from 'next/link';
 import { 
   FacebookLogo, 
@@ -20,16 +24,19 @@ import {
   Envelope,
   MapPin
 } from '@phosphor-icons/react/dist/ssr';
+import { useTranslation } from 'react-i18next';
 
 import { paths } from '@/paths';
-import ContactForm from '@/components/contact/contact-form';
 
-export const metadata = {
-  title: 'NIGED-EASE | Contact Us',
-  description: 'Get in touch with our team for any inquiries about our Ethiopian business management solution',
-};
+// Dynamically import the LanguageSwitcher with SSR disabled to prevent hydration errors
+const LanguageSwitcher = dynamic(
+  () => import('@/components/core/language-switcher').then(mod => mod.LanguageSwitcher),
+  { ssr: false }
+);
 
 export default function ContactPage(): React.JSX.Element {
+  const { t } = useTranslation('contact');
+  
   return (
     <Box sx={{ 
       bgcolor: 'background.default', 
@@ -76,20 +83,20 @@ export default function ContactPage(): React.JSX.Element {
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)'
         }}
       >
-        <Container maxWidth="lg">
-          <Box sx={{ 
-            py: 2, 
-            display: 'flex', 
-            alignItems: 'center', 
+      <Container maxWidth="lg">
+        <Box sx={{ 
+          py: 2, 
+          display: 'flex', 
+          alignItems: 'center', 
             justifyContent: 'space-between',
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-                <Box 
-                  component="img"
-                  src="/assets/Neged.png"
-                  alt="NIGED-EASE Logo"
-                  sx={{
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <Box 
+                component="img"
+                src="/assets/Neged.png"
+                alt="NIGED-EASE Logo"
+                sx={{
                     width: 40,
                     height: 40,
                     mr: 1.5,
@@ -105,11 +112,11 @@ export default function ContactPage(): React.JSX.Element {
                       boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)',
                       transform: 'translateY(-2px)'
                     }
-                  }}
-                />
-                <Typography 
-                  component="span" 
-                  variant="h6" 
+                }}
+              />
+              <Typography 
+                component="span" 
+                variant="h6" 
                   sx={{ 
                     fontWeight: 700, 
                     background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
@@ -119,7 +126,7 @@ export default function ContactPage(): React.JSX.Element {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  NIGED-EASE
+                  {t('app_name')}
                 </Typography>
               </Link>
               <Box sx={{ 
@@ -155,14 +162,14 @@ export default function ContactPage(): React.JSX.Element {
                         width: '100%'
                       }
                     }}
-                  >
-                    Home
-                  </Typography>
-                </Link>
-                <Link href="/features" style={{ textDecoration: 'none' }}>
-                  <Typography 
-                    component="span" 
-                    variant="body1" 
+              >
+                {t('home')}
+              </Typography>
+            </Link>
+            <Link href="/features" style={{ textDecoration: 'none' }}>
+              <Typography 
+                component="span" 
+                variant="body1" 
                     sx={{ 
                       cursor: 'pointer', 
                       color: 'text.primary',
@@ -186,14 +193,14 @@ export default function ContactPage(): React.JSX.Element {
                         width: '100%'
                       }
                     }}
-                  >
-                    Features
-                  </Typography>
-                </Link>
-                <Link href="/contact" style={{ textDecoration: 'none' }}>
-                  <Typography 
-                    component="span" 
-                    variant="body1" 
+              >
+                {t('features')}
+              </Typography>
+            </Link>
+            <Link href="/contact" style={{ textDecoration: 'none' }}>
+              <Typography 
+                component="span" 
+                variant="body1" 
                     sx={{ 
                       cursor: 'pointer', 
                       color: 'primary.main', 
@@ -209,51 +216,52 @@ export default function ContactPage(): React.JSX.Element {
                         backgroundColor: 'primary.main',
                       }
                     }}
-                  >
-                    Contact
-                  </Typography>
-                </Link>
-              </Box>
+              >
+                {t('contact')}
+              </Typography>
+            </Link>
+          </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <LanguageSwitcher />
               <Button 
                 variant="contained" 
                 color="primary" 
-                sx={{ 
-                  borderRadius: 2, 
-                  px: 3,
-                  py: 1,
-                  background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
-                  boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
-                  transition: 'all 0.3s ease',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: '-100%',
-                    width: '100%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                    transition: 'all 0.6s ease',
-                  },
-                  '&:hover': {
-                    boxShadow: '0 6px 20px rgba(99, 102, 241, 0.6)',
-                    transform: 'translateY(-2px)',
+                  sx={{ 
+                    borderRadius: 2, 
+                    px: 3,
+                    py: 1,
+                    background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                    boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
                     '&::before': {
-                      left: '100%',
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: '-100%',
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                      transition: 'all 0.6s ease',
+                    },
+                    '&:hover': {
+                      boxShadow: '0 6px 20px rgba(99, 102, 241, 0.6)',
+                      transform: 'translateY(-2px)',
+                      '&::before': {
+                        left: '100%',
+                      }
                     }
-                  }
-                }}
+                  }}
                 component={Link}
                 href={paths.auth.signIn}
               >
-                Sign In
+                {t('login')}
               </Button>
             </Box>
-          </Box>
-        </Container>
+        </Box>
+      </Container>
       </Box>
 
       {/* Hero Section */}
@@ -313,7 +321,7 @@ export default function ContactPage(): React.JSX.Element {
               }
             }}
           >
-            <Typography 
+            <Typography
               variant="h1"
               sx={{
                 fontSize: { xs: '2.5rem', md: '3.5rem' },
@@ -328,7 +336,7 @@ export default function ContactPage(): React.JSX.Element {
                 textShadow: '0 10px 30px rgba(99, 102, 241, 0.1)',
               }}
             >
-              Get in Touch With Us
+              {t('hero_title')}
             </Typography>
             <Typography 
               variant="body1" 
@@ -342,7 +350,7 @@ export default function ContactPage(): React.JSX.Element {
                 opacity: 0.9,
               }}
             >
-              Have questions about our services or need support? Our team is here to help you get the most out of NIGED-EASE for your Ethiopian business needs.
+              {t('hero_subtitle')}
             </Typography>
           </Box>
         </Container>
@@ -375,7 +383,253 @@ export default function ContactPage(): React.JSX.Element {
                 }
               }}
             >
-              <ContactForm />
+              <Paper 
+                elevation={0} 
+                sx={{ 
+                  p: { xs: 3, md: 5 }, 
+                  borderRadius: 4,
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+                  transition: 'all 0.3s ease',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  height: '100%',
+                  '&:hover': {
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
+                    transform: 'translateY(-5px)',
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '4px',
+                    background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                  }
+                }}
+              >
+                <Typography 
+                  variant="h3" 
+                  sx={{ 
+                    mb: 4, 
+                    fontWeight: 700,
+                    background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                    backgroundClip: 'text',
+                    textFillColor: 'transparent',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontSize: { xs: '1.75rem', md: '2.25rem' }
+                  }}
+                >
+                  {t('contact_form_title')}
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label={t('first_name')}
+                      fullWidth
+                      required
+                      variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2.5,
+                          height: 56,
+                          transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'primary.main'
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#6366F1',
+                            borderWidth: 1,
+                            boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.1)'
+                          }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: 'primary.main'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label={t('last_name')}
+                      fullWidth
+                      required
+                      variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2.5,
+                          height: 56,
+                          transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'primary.main'
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#6366F1',
+                            borderWidth: 1,
+                            boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.1)'
+                          }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: 'primary.main'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label={t('email')}
+                      fullWidth
+                      required
+                      variant="outlined"
+                      type="email"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2.5,
+                          height: 56,
+                          transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'primary.main'
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#6366F1',
+                            borderWidth: 1,
+                            boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.1)'
+                          }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: 'primary.main'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label={t('phone')}
+                      fullWidth
+                      variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2.5,
+                          height: 56,
+                          transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'primary.main'
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#6366F1',
+                            borderWidth: 1,
+                            boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.1)'
+                          }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: 'primary.main'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      select
+                      label={t('inquiry_type')}
+                      fullWidth
+                      variant="outlined"
+                      defaultValue="general"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2.5,
+                          transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'primary.main'
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#6366F1',
+                            borderWidth: 1,
+                            boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.1)'
+                          }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: 'primary.main'
+                        }
+                      }}
+                    >
+                      <MenuItem value="general">{t('inquiry_general')}</MenuItem>
+                      <MenuItem value="sales">{t('inquiry_sales')}</MenuItem>
+                      <MenuItem value="support">{t('inquiry_support')}</MenuItem>
+                      <MenuItem value="partnership">{t('inquiry_partnership')}</MenuItem>
+                      <MenuItem value="other">{t('inquiry_other')}</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label={t('message')}
+                      fullWidth
+                      required
+                      variant="outlined"
+                      multiline
+                      rows={5}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2.5,
+                          transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'primary.main'
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#6366F1',
+                            borderWidth: 1,
+                            boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.1)'
+                          }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: 'primary.main'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Button 
+                      variant="contained" 
+                      color="primary" 
+                      size="large"
+                      fullWidth
+                      sx={{ 
+                        py: 1.5,
+                        borderRadius: 2.5,
+                        fontWeight: 600,
+                        background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                        boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)',
+                        transition: 'all 0.3s ease',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          top: 0,
+                          left: '-100%',
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                          transition: 'all 0.6s ease',
+                        },
+                        '&:hover': {
+                          boxShadow: '0 10px 20px rgba(99, 102, 241, 0.3)',
+                          transform: 'translateY(-2px)',
+                          '&::before': {
+                            left: '100%',
+                          }
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                          boxShadow: '0 5px 10px rgba(99, 102, 241, 0.2)',
+                        }
+                      }}
+                    >
+                      {t('send_message')}
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Paper>
             </Grid>
             
             {/* Contact Info */}
@@ -411,7 +665,7 @@ export default function ContactPage(): React.JSX.Element {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  Contact Information
+                  {t('contact_info_title')}
                 </Typography>
                 
                 <Stack spacing={4}>
@@ -442,17 +696,17 @@ export default function ContactPage(): React.JSX.Element {
                     </Box>
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        Phone
+                        {t('phone_label')}
                       </Typography>
                       <Typography variant="body1" color="text.secondary">
-                        +251 11 123 4567
+                        {t('phone1')}
                       </Typography>
                       <Typography variant="body1" color="text.secondary">
-                        +251 91 234 5678
+                        {t('phone2')}
                       </Typography>
                     </Box>
                   </Box>
-
+                  
                   <Box 
                     sx={{ 
                       display: 'flex', 
@@ -480,14 +734,17 @@ export default function ContactPage(): React.JSX.Element {
                     </Box>
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        Email
+                        {t('email_label')}
                       </Typography>
                       <Typography variant="body1" color="text.secondary">
-                        melkemk503@gmail.com
+                        {t('email1')}
+                      </Typography>
+                      <Typography variant="body1" color="text.secondary">
+                        {t('email2')}
                       </Typography>
                     </Box>
                   </Box>
-
+                  
                   <Box 
                     sx={{ 
                       display: 'flex', 
@@ -515,23 +772,23 @@ export default function ContactPage(): React.JSX.Element {
                     </Box>
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        Office
+                        {t('office_label')}
                       </Typography>
                       <Typography variant="body1" color="text.secondary">
-                        Churchill Avenue
+                        {t('address1')}
                       </Typography>
                       <Typography variant="body1" color="text.secondary">
-                        Addis Ababa, Ethiopia
+                        {t('address2')}
                       </Typography>
                     </Box>
                   </Box>
                 </Stack>
-
+                
                 <Box sx={{ mt: 6 }}>
                   <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                    Follow Us
+                    {t('follow_us')}
                   </Typography>
-                  <Stack direction="row" spacing={3}>
+                  <Stack direction="row" spacing={2}>
                     {[
                       { icon: <FacebookLogo weight="fill" />, color: '#1877F2' },
                       { icon: <InstagramLogo weight="fill" />, color: '#E4405F' },
@@ -542,11 +799,11 @@ export default function ContactPage(): React.JSX.Element {
                       <Box 
                         key={index}
                         sx={{ 
-                          width: 40,
-                          height: 40,
+                          width: 40, 
+                          height: 40, 
                           borderRadius: '50%', 
-                          display: 'flex',
-                          alignItems: 'center',
+                          display: 'flex', 
+                          alignItems: 'center', 
                           justifyContent: 'center',
                           color: item.color,
                           bgcolor: `${item.color}15`,
@@ -587,97 +844,152 @@ export default function ContactPage(): React.JSX.Element {
             }}
           >
             <Typography variant="h5" color="text.secondary" sx={{ fontWeight: 500 }}>
-              Map will be integrated here
+              {t('map_placeholder')}
             </Typography>
           </Paper>
         </Container>
       </Box>
 
       {/* Footer */}
-      <Box sx={{ 
-        bgcolor: '#f8fafc', 
-        borderTop: '3px solid #06b6d4',
-        py: 6 
-      }}>
+      <Box 
+        component="footer" 
+        sx={{ 
+          bgcolor: '#f8fafc',
+          py: 8,
+          borderTop: '1px solid',
+          borderColor: 'rgba(203, 213, 225, 0.5)',
+        }}
+      >
         <Container maxWidth="lg">
-          <Grid container spacing={6}>
-            {/* Logo Section - Left */}
-            <Grid item xs={12} md={4}>
-              <Box 
-                component="img"
-                src="/assets/Neged.png"
-                alt="NIGED-EASE Logo"
-                sx={{
-                  width: 200,
-                  height: 'auto',
-                  borderRadius: '16px',
-                  backgroundColor: 'white',
-                  padding: '10px',
-                  border: '2px solid #06b6d4',
-                  boxShadow: '0 6px 16px rgba(6, 182, 212, 0.15)',
-                  objectFit: 'contain',
-                  display: 'block',
-                  mb: { xs: 2, md: 0 }
-                }}
-              />
+          <Grid container spacing={4}>
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <Box 
+                  component="img"
+                  src="/assets/Neged.png"
+                  alt="NIGED-EASE Logo"
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    mr: 1.5,
+                    borderRadius: '12px',
+                    backgroundColor: 'white',
+                    padding: '6px',
+                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.1)',
+                    border: '1px solid rgba(203, 213, 225, 0.3)',
+                    objectFit: 'contain',
+                  }}
+                />
+                <Typography 
+                  component="span" 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 700, 
+                    background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                    backgroundClip: 'text',
+                    textFillColor: 'transparent',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  {t('app_name')}
+                </Typography>
+              </Box>
+              <Stack spacing={3} direction="row" sx={{ mb: 4 }}>
+                <IconButton sx={{ color: '#1877F2' }}>
+                  <FacebookLogo size={24} weight="fill" />
+                </IconButton>
+                <IconButton sx={{ color: '#E4405F' }}>
+                  <InstagramLogo size={24} weight="fill" />
+                </IconButton>
+                <IconButton sx={{ color: '#229ED9' }}>
+                  <TelegramLogo size={24} weight="fill" />
+                </IconButton>
+                <IconButton sx={{ color: '#0A66C2' }}>
+                  <LinkedinLogo size={24} weight="fill" />
+                </IconButton>
+              </Stack>
             </Grid>
             
-            {/* Navigation Links - Middle */}
-            <Grid item xs={12} md={4}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Grid item xs={12} sm={4}>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#0694A2' }}>
+                {t('quick_links')}
+              </Typography>
+              <Stack spacing={2}>
                 <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <Typography variant="body1" fontWeight={500}>
-                    Home
+                  <Typography 
+                    variant="body1" 
+                    sx={{
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        color: 'primary.main',
+                        transform: 'translateX(5px)'
+                      },
+                      display: 'inline-block'
+                    }}
+                  >
+                    {t('home')}
                   </Typography>
                 </Link>
                 <Link href="/features" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <Typography variant="body1" fontWeight={500}>
-                    Features
+                  <Typography 
+                    variant="body1" 
+                    sx={{
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        color: 'primary.main',
+                        transform: 'translateX(5px)'
+                      },
+                      display: 'inline-block'
+                    }}
+                  >
+                    {t('features')}
                   </Typography>
                 </Link>
                 <Link href="/contact" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <Typography variant="body1" fontWeight={500}>
-                    Contact
+                  <Typography 
+                    variant="body1" 
+                    sx={{
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        color: 'primary.main',
+                        transform: 'translateX(5px)'
+                      },
+                      display: 'inline-block'
+                    }}
+                  >
+                    {t('contact')}
                   </Typography>
-                </Link>
-              </Box>
-            </Grid>
-            
-            {/* Contact Information - Right */}
-            <Grid item xs={12} md={4}>
-              <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                Contact Us
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                Email: melkemk503@gmail.com
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 4 }}>
-                Phone: +251933778687
-              </Typography>
-              
-              {/* Social Icons */}
-              <Stack direction="row" spacing={3}>
-                <Link href="#" aria-label="Facebook" style={{ color: '#1877F2' }}>
-                  <FacebookLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="Instagram" style={{ color: '#E4405F' }}>
-                  <InstagramLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="Telegram" style={{ color: '#0088cc' }}>
-                  <TelegramLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="LinkedIn" style={{ color: '#0A66C2' }}>
-                  <LinkedinLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="Twitter" style={{ color: '#1DA1F2' }}>
-                  <TwitterLogo size={24} weight="fill" />
-                </Link>
-                <Link href="#" aria-label="Snapchat" style={{ color: '#FFFC00' }}>
-                  <SnapchatLogo size={24} weight="fill" />
                 </Link>
               </Stack>
             </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#0694A2' }}>
+                {t('contact_us')}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {t('contact_email')}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 3 }}>
+                {t('contact_phone')}
+              </Typography>
+            </Grid>
           </Grid>
+          
+          <Box 
+            sx={{ 
+              mt: 6, 
+              pt: 3, 
+              borderTop: '1px solid',
+              borderColor: 'rgba(203, 213, 225, 0.5)',
+              textAlign: 'center'
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {t('copyright')}
+            </Typography>
+          </Box>
         </Container>
       </Box>
     </Box>
