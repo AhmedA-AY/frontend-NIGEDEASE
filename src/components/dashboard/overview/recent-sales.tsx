@@ -17,6 +17,7 @@ import {
   Stack,
   Avatar
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { RecentSale } from '@/services/api/dashboard';
 
 interface RecentSalesProps {
@@ -24,6 +25,8 @@ interface RecentSalesProps {
 }
 
 export function RecentSales({ sales }: RecentSalesProps) {
+  const { t } = useTranslation('admin');
+
   // Generate initials from customer name
   const getInitials = (name: string): string => {
     return name
@@ -62,17 +65,17 @@ export function RecentSales({ sales }: RecentSalesProps) {
 
   return (
     <Card>
-      <CardHeader title="Recent Sales" />
+      <CardHeader title={t('overview.recent_sales')} />
       <Divider />
       <CardContent sx={{ p: 0 }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Order</TableCell>
-              <TableCell>Customer</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="right">Amount</TableCell>
+              <TableCell>{t('overview.order')}</TableCell>
+              <TableCell>{t('overview.customer')}</TableCell>
+              <TableCell>{t('overview.date')}</TableCell>
+              <TableCell>{t('overview.status')}</TableCell>
+              <TableCell align="right">{t('overview.amount')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -111,7 +114,7 @@ export function RecentSales({ sales }: RecentSalesProps) {
                     </Typography>
                     {sale.paid < sale.amount && (
                       <Typography variant="caption" color="text.secondary">
-                        Paid: ${sale.paid.toFixed(2)}
+                        {t('overview.paid')}: ${sale.paid.toFixed(2)}
                       </Typography>
                     )}
                   </TableCell>
