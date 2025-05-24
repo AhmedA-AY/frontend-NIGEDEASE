@@ -45,9 +45,6 @@ export default function ReportsPage() {
   const handlePrint = useReactToPrint({
     contentRef: reportRef,
     documentTitle: 'Report',
-    onBeforeGetContent: () => {
-      setIsLoading(true);
-    },
     onAfterPrint: () => {
       setIsLoading(false);
     }
