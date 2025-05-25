@@ -495,5 +495,40 @@
     "subtitle": "የሲስተም ተጠቃሚዎችን እና የእነሱን መዳረሻ ያስተዳድሩ",
     "profile_image": "የመገለጫ ምስል URL",
     "assigned_store_required": "የተመደበ መደብር ያስፈልጋል"
+  },
+  "reports": {
+    "title": "ሪፖርቶች",
+    "loading": "ሪፖርቶችን በመጫን ላይ...",
+    "no_store_error": "እባክዎ ሪፖርቶችን ለመመልከት መደብር ይምረጡ",
+    "load_error": "ሪፖርቶችን መጫን አልተሳካም። እባክዎ ቆይተው እንደገና ይሞክሩ።",
+    "data_error": "የሪፖርት ውሂብን መጫን አልተሳካም። እባክዎ ቆይተው እንደገና ይሞክሩ።",
+    "current_store": "በአሁኑ ጊዜ የሚያስተዳድሩት",
+    "settings": "የሪፖርት ቅንብሮች",
+    "select_type": "የሪፖርት አይነት ይምረጡ",
+    "start_date": "የመጀመሪያ ቀን",
+    "end_date": "የመጨረሻ ቀን",
+    "format": "የሪፖርት ቅርጸት",
+    "table": "ሰንጠረዥ",
+    "graph": "ግራፍ",
+    "generate": "ሪፖርት ይፍጠሩ",
+    "export_pdf": "ወደ PDF ይላኩ",
+    "no_reports": "ምንም ሪፖርቶች አልተገኙም",
+    "daily_sales": "የዕለት ሽያጮች",
+    "monthly_sales": "የወር ሽያጮች",
+    "inventory_status": "የእቃ ክምችት ሁኔታ",
+    "top_products": "ዋና ምርቶች",
+    "sales_by_category": "ሽያጭ በምድብ",
+    "expenses_report": "የወጪዎች ሪፖርት"
+  },
+  "inventory_search": {
+    "title": "የእቃ ክምችት ፍለጋ",
+    "search_placeholder": "በሁሉም መደብሮች ውስጥ ምርቶችን ይፈልጉ...",
+    "fetch_error": "የፍለጋ ውጤቶችን ማምጣት አልተሳካም",
+    "error_occurred": "በፍለጋ ወቅት ስህተት ተከስቷል",
+    "inventory_locations": "የእቃ ክምችት ቦታዎች",
+    "no_products": "ከእርስዎ የፍለጋ መስፈርት ጋር የሚዛመዱ ምንም ምርቶች አልተገኙም",
+    "product_details": "የምርት ዝርዝሮች",
+    "total_quantity": "ጠቅላላ ብዛት",
+    "available_in": "የሚገኝበት"
   }
 } 

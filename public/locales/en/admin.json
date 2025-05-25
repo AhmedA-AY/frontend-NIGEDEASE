@@ -544,5 +544,40 @@
       "category_deleted": "Expense category deleted successfully",
       "confirm_delete": "Are you sure you want to delete this expense category? This action cannot be undone."
     }
+  },
+  "reports": {
+    "title": "Reports",
+    "loading": "Loading reports...",
+    "no_store_error": "Please select a store to view reports",
+    "load_error": "Failed to load available reports. Please try again later.",
+    "data_error": "Failed to load report data. Please try again later.",
+    "current_store": "Currently managing",
+    "settings": "Report Settings",
+    "select_type": "Select Report Type",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "format": "Report Format",
+    "table": "Table",
+    "graph": "Graph",
+    "generate": "Generate Report",
+    "export_pdf": "Export to PDF",
+    "no_reports": "No reports available",
+    "daily_sales": "Daily Sales",
+    "monthly_sales": "Monthly Sales",
+    "inventory_status": "Inventory Status",
+    "top_products": "Top Products",
+    "sales_by_category": "Sales by Category",
+    "expenses_report": "Expenses Report"
+  },
+  "inventory_search": {
+    "title": "Inventory Search",
+    "search_placeholder": "Search products across all stores...",
+    "fetch_error": "Failed to fetch search results",
+    "error_occurred": "An error occurred while searching",
+    "inventory_locations": "Inventory Locations",
+    "no_products": "No products found matching your search criteria",
+    "product_details": "Product Details",
+    "total_quantity": "Total Quantity",
+    "available_in": "Available in"
   }
 } 

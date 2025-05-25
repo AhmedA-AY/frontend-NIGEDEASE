@@ -28,8 +28,10 @@ import { useReactToPrint } from 'react-to-print';
 import { ReportDisplay } from '@/components/reports/report-display';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import { useTranslation } from 'react-i18next';
 
 export default function ReportsPage() {
+  const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const { userInfo } = useCurrentUser();
   const [isLoading, setIsLoading] = React.useState(true);
@@ -52,7 +54,7 @@ export default function ReportsPage() {
 
   const fetchAvailableReports = React.useCallback(async () => {
     if (!currentStore) {
-      setError('Please select a store to view reports');
+      setError(t('reports.no_store_error'));
       setIsLoading(false);
       return;
     }
@@ -63,11 +65,11 @@ export default function ReportsPage() {
       setError(null);
     } catch (err) {
       console.error('Error fetching available reports:', err);
-      setError('Failed to load available reports. Please try again later.');
+      setError(t('reports.load_error'));
     } finally {
       setIsLoading(false);
     }
-  }, [currentStore]);
+  }, [currentStore, t]);
 
   const fetchReportData = React.useCallback(async () => {
     if (!currentStore || !selectedReport) return;
@@ -86,11 +88,11 @@ export default function ReportsPage() {
       setReportData(data);
     } catch (err) {
       console.error('Error fetching report data:', err);
-      setError('Failed to load report data. Please try again later.');
+      setError(t('reports.data_error'));
     } finally {
       setIsLoading(false);
     }
-  }, [currentStore, selectedReport, startDate, endDate, reportFormat]);
+  }, [currentStore, selectedReport, startDate, endDate, reportFormat, t]);
 
   React.useEffect(() => {
     fetchAvailableReports();
@@ -108,7 +110,7 @@ export default function ReportsPage() {
         <Box sx={{ my: 5, textAlign: 'center' }}>
           <CircularProgress />
           <Typography variant="h6" sx={{ mt: 2 }}>
-            Loading reports...
+            {t('reports.loading')}
           </Typography>
         </Box>
       </Container>
@@ -125,7 +127,7 @@ export default function ReportsPage() {
             onClick={fetchAvailableReports}
             sx={{ mt: 2 }}
           >
-            Retry
+            {t('common.retry')}
           </Button>
         </Box>
       </Container>
@@ -136,7 +138,7 @@ export default function ReportsPage() {
     <Container maxWidth={false}>
       <Box sx={{ py: 3 }}>
         <Typography variant="h4" gutterBottom>
-          Reports
+          {t('reports.title')}
         </Typography>
 
         {currentStore && (
@@ -154,7 +156,7 @@ export default function ReportsPage() {
             }}
           >
             <Typography variant="subtitle1">
-              Currently managing: <strong>{currentStore.name}</strong> ({currentStore.location})
+              {t('reports.current_store')}: <strong>{currentStore.name}</strong> ({currentStore.location})
             </Typography>
           </Paper>
         )}
@@ -164,13 +166,13 @@ export default function ReportsPage() {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Report Settings
+                  {t('reports.settings')}
                 </Typography>
                 
                 <TextField
                   select
                   fullWidth
-                  label="Select Report Type"
+                  label={t('reports.select_type')}
                   value={selectedReport?.type || ''}
                   onChange={(e) => {
                     const report = availableReports.find(r => r.type === e.target.value);
@@ -189,13 +191,13 @@ export default function ReportsPage() {
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <Box sx={{ mb: 2 }}>
                       <DatePicker
-                        label="Start Date"
+                        label={t('reports.start_date')}
                         value={startDate}
                         onChange={(newValue) => setStartDate(newValue)}
                         sx={{ width: '100%', mb: 2 }}
                       />
                       <DatePicker
-                        label="End Date"
+                        label={t('reports.end_date')}
                         value={endDate}
                         onChange={(newValue) => setEndDate(newValue)}
                         sx={{ width: '100%' }}
@@ -206,7 +208,7 @@ export default function ReportsPage() {
 
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="subtitle2" gutterBottom>
-                    Report Format
+                    {t('reports.format')}
                   </Typography>
                   <ToggleButtonGroup
                     value={reportFormat}
@@ -216,11 +218,11 @@ export default function ReportsPage() {
                   >
                     <ToggleButton value="table">
                       <TableChartIcon sx={{ mr: 1 }} />
-                      Table
+                      {t('reports.table')}
                     </ToggleButton>
                     <ToggleButton value="graph">
                       <BarChartIcon sx={{ mr: 1 }} />
-                      Graph
+                      {t('reports.graph')}
                     </ToggleButton>
                   </ToggleButtonGroup>
                 </Box>
@@ -231,7 +233,7 @@ export default function ReportsPage() {
                   onClick={fetchReportData}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Loading...' : 'Generate Report'}
+                  {isLoading ? t('common.loading') : t('reports.generate')}
                 </Button>
               </CardContent>
             </Card>
@@ -249,7 +251,7 @@ export default function ReportsPage() {
                       variant="outlined"
                       onClick={handlePrint}
                     >
-                      Export to PDF
+                      {t('reports.export_pdf')}
                     </Button>
                   </Box>
                   

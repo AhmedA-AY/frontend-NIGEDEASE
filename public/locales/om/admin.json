@@ -513,5 +513,40 @@
     "subtitle": "Fayyadamtoota siistimaa fi itti dhiyaannaa isaanii bulchaa",
     "profile_image": "URL Suuraa Profaayilii",
     "assigned_store_required": "Suuqii ramadamaa barbaachisaa dha"
+  },
+  "reports": {
+    "title": "Gabaasawwan",
+    "loading": "Gabaasawwan fe'ama jiru...",
+    "no_store_error": "Maaloo gabaasawwan ilaaluuf suuqii filadhu",
+    "load_error": "Gabaasawwan argachuu hin dandeenye. Maaloo tarii irra deebi'i yaali.",
+    "data_error": "Data gabaasaa fe'uu hin dandeenye. Maaloo tarii irra deebi'i yaali.",
+    "current_store": "Yeroo ammaa bulchaa jiru",
+    "settings": "Qindaa'ina Gabaasaa",
+    "select_type": "Gosa Gabaasaa Filadhu",
+    "start_date": "Guyyaa Jalqabaa",
+    "end_date": "Guyyaa Xumuraa",
+    "format": "Bifa Gabaasaa",
+    "table": "Gabatee",
+    "graph": "Graafii",
+    "generate": "Gabaasa Uumi",
+    "export_pdf": "Gara PDF Baasi",
+    "no_reports": "Gabaasawwan hin argamne",
+    "daily_sales": "Gurgurtaa Guyyaa",
+    "monthly_sales": "Gurgurtaa Ji'a",
+    "inventory_status": "Haala Kuusaa",
+    "top_products": "Oomishawwan Filatamoo",
+    "sales_by_category": "Gurgurtaa Gooroon",
+    "expenses_report": "Gabaasa Baasii"
+  },
+  "inventory_search": {
+    "title": "Barbaacha Kuusaa",
+    "search_placeholder": "Oomishawwan suuqiiwwan hunda keessa barbaadi...",
+    "fetch_error": "Bu'aa barbaacha argachuu hin dandeenye",
+    "error_occurred": "Yeroo barbaadaa rakkoon uumameera",
+    "inventory_locations": "Iddoowwan Kuusaa",
+    "no_products": "Oomishawwan ulaagaa barbaacha keessan waliin wal-simu hin argamne",
+    "product_details": "Ibsa Oomishaa",
+    "total_quantity": "Hamma Waliigala",
+    "available_in": "Kan argamu"
   }
 } 
