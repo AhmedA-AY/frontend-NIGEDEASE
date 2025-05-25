@@ -86,6 +86,7 @@ export const stockManagerNavItems = [
   { key: 'stock-manager-payments', title: 'Payments', href: paths.stockManager.payments, icon: 'credit-card' },
   { key: 'stock-manager-invoice-verification', title: 'Invoice Verification', href: paths.stockManager.invoiceVerification, icon: 'file-text' },
   { key: 'stock-manager-inventory-search', title: 'Inventory Search', href: paths.stockManager.inventorySearch, icon: 'magnifying-glass' },
+  { key: 'stock-manager-stock-transfers', title: 'Stock Transfers', href: paths.stockManager.stockTransfers, icon: 'arrows-left-right' },
 ] satisfies NavItemConfig[];
 
 export const superAdminNavItems = [

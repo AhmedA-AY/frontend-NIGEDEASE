@@ -232,6 +232,45 @@ export interface ClothingCollectionCreateData {
 
 export interface ClothingCollectionUpdateData extends ClothingCollectionCreateData {}
 
+export interface InventorySearchResult {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  store: {
+    id: string;
+    name: string;
+    location: string;
+    created_at: string;
+    updated_at: string;
+    is_active: string;
+  };
+  product_unit: {
+    id: string;
+    name: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
+  };
+  product_category: {
+    id: string;
+    name: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
+  };
+  purchase_price: string;
+  sale_price: string;
+  inventory: {
+    store_id: string;
+    store_name: string;
+    store_location: string;
+    quantity: number;
+  }[];
+  created_at: string;
+  updated_at: string;
+}
+
 // API client
 export const inventoryApi = {
   // Product Units
@@ -578,5 +617,11 @@ export const inventoryApi = {
   
   deleteClothingCollection: async (storeId: string, id: string): Promise<void> => {
     await coreApiClient.delete(`/clothings/stores/${storeId}/collections/${id}/`);
+  },
+
+  // Search products across all stores
+  searchProducts: async (companyId: string, searchTerm: string): Promise<InventorySearchResult[]> => {
+    const response = await coreApiClient.get<InventorySearchResult[]>(`/inventory/companies/${companyId}/product-search/${encodeURIComponent(searchTerm)}/`);
+    return response.data;
   },
 }; 

@@ -56,6 +56,7 @@ export const paths = {
     invoiceVerification: '/stock-manager/invoice-verification',
     profile: '/stock-manager/profile',
     inventorySearch: '/stock-manager/inventory-search',
+    stockTransfers: '/stock-manager/stock-transfers',
   },
   superAdmin: {
     dashboard: '/super-admin/dashboard',
