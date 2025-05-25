@@ -13,6 +13,10 @@ import { Bank as BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
 import { CreditCard as CreditCardIcon } from '@phosphor-icons/react/dist/ssr/CreditCard';
 import { Storefront as StorefrontIcon } from '@phosphor-icons/react/dist/ssr/Storefront';
 import { UserGear as UserGearIcon } from '@phosphor-icons/react/dist/ssr/UserGear';
+import { ChartLine as ChartLineIcon } from '@phosphor-icons/react/dist/ssr/ChartLine';
+import { FileText as FileTextIcon } from '@phosphor-icons/react/dist/ssr/FileText';
+import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { ArrowsLeftRight as ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowsLeftRight';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -29,4 +33,8 @@ export const navIcons = {
   bank: BankIcon,
   'credit-card': CreditCardIcon,
   'storefront': StorefrontIcon,
+  'chart-line': ChartLineIcon,
+  'file-text': FileTextIcon,
+  'magnifying-glass': MagnifyingGlassIcon,
+  'arrows-left-right': ArrowsLeftRightIcon,
 } as Record<string, Icon>;

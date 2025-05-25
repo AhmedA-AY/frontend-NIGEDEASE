@@ -71,8 +71,11 @@ export const adminNavItems = [
   { key: 'admin-stores', title: 'Stores', href: paths.admin.stores, icon: 'storefront' },
   { key: 'admin-users', title: 'Users', href: paths.admin.users, icon: 'user-gear' },
   { key: 'admin-reports', title: 'Reports', href: paths.admin.reports, icon: 'chart-line' },
+  { key: 'admin-predictions', title: 'Predictions', href: paths.admin.predictions, icon: 'chart-line' },
   { key: 'admin-invoice-verification', title: 'Invoice Verification', href: paths.admin.invoiceVerification, icon: 'file-text' },
   { key: 'admin-inventory-search', title: 'Inventory Search', href: paths.admin.inventorySearch, icon: 'magnifying-glass' },
+  { key: 'admin-stock', title: 'Stock', href: paths.admin.stock, icon: 'package' },
+  { key: 'admin-stock-transfers', title: 'Stock Transfers', href: paths.admin.stockTransfers, icon: 'arrows-left-right' },
 ] satisfies NavItemConfig[];
 
 export const stockManagerNavItems = [

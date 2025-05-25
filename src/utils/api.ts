@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create an axios instance with base URL and default headers
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io',
   headers: {
     'Content-Type': 'application/json',
   },

@@ -23,6 +23,7 @@ import {
   List as ListIcon
 } from '@phosphor-icons/react/dist/ssr';
 import { useTranslation } from 'react-i18next';
+import Chatbot from '@/components/chat/Chatbot';
 
 import { paths } from '@/paths';
 
@@ -1103,6 +1104,9 @@ export default function LandingPage(): React.JSX.Element {
           </Grid>
         </Container>
       </Box>
+
+      {/* Add Chatbot component */}
+      <Chatbot />
 
       {/* Footer */}
       <Box sx={{ 

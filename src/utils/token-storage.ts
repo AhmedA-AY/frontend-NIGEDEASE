@@ -32,31 +32,33 @@ const decodeToken = (token: string): any => {
 const tokenStorage = {
   // Get the stored access token
   getAccessToken: (): string | null => {
+    if (!isBrowser) return null;
     return localStorage.getItem(ACCESS_TOKEN_KEY);
   },
 
   // Get the stored refresh token
   getRefreshToken: (): string | null => {
+    if (!isBrowser) return null;
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
 
   // Get the stored user role
   getUserRole: (): string | null => {
+    if (!isBrowser) return null;
     return localStorage.getItem(USER_ROLE_KEY);
   },
 
-  // Get the assigned store (for non-admin users)
-  getAssignedStore: (): any | null => {
-    const storeStr = localStorage.getItem(ASSIGNED_STORE_KEY);
-    if (storeStr) {
-      try {
-        return JSON.parse(storeStr);
-      } catch (e) {
-        console.error('Failed to parse assigned store', e);
-        return null;
-      }
-    }
-    return null;
+  // Get the stored company ID
+  getCompanyId: (): string | null => {
+    if (!isBrowser) return null;
+    return localStorage.getItem(COMPANY_ID_KEY);
+  },
+
+  // Get the assigned store
+  getAssignedStore: (): any => {
+    if (!isBrowser) return null;
+    const store = localStorage.getItem(ASSIGNED_STORE_KEY);
+    return store ? JSON.parse(store) : null;
   },
 
   // Get the company stores (for admin users)

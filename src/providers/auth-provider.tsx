@@ -53,6 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const accessToken = tokenStorage.getAccessToken();
         const role = tokenStorage.getUserRole();
+        const companyId = tokenStorage.getCompanyId();
         
         if (accessToken) {
           try {
@@ -67,7 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 id: tokenInfo.user_id,
                 email: tokenInfo.email,
                 role: role,
-                company_id: tokenInfo.company_id,
+                company_id: companyId || tokenInfo.company_id,
               };
               
               // Try to get full user profile with profile_image
@@ -78,6 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   first_name: userProfile.first_name,
                   last_name: userProfile.last_name,
                   profile_image: userProfile.profile_image,
+                  company_id: userProfile.company_id || basicUserInfo.company_id,
                 });
               } catch (profileError) {
                 console.error('Error fetching full profile:', profileError);
@@ -106,7 +108,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('Error initializing auth:', error);
       } finally {
         setIsInitialized(true);
         setIsLoading(false);

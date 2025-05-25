@@ -36,6 +36,10 @@ export const paths = {
     reports: '/admin/reports',
     invoiceVerification: '/admin/invoice-verification',
     inventorySearch: '/admin/inventory-search',
+    predictions: '/admin/predictions',
+    stock: '/admin/stock',
+    stockTransfers: '/admin/stock-transfers',
+    settings: '/admin/settings',
   },
   stockManager: {
     dashboard: '/stock-manager/dashboard',
