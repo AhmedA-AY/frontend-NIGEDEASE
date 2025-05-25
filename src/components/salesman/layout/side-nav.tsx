@@ -175,10 +175,11 @@ function renderNavItems({ items = [], pathname, t }: { items?: NavItemConfig[]; 
   );
 }
 
-function NavItem({ disabled, external, href, icon, items, matcher, pathname, title, t }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, matcher, pathname, title = '', items, t }: NavItemProps): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
-  const active = isNavItemActive({ disabled, external, href, matcher, pathname });
-  const hasItems = Array.isArray(items) && items.length > 0;
+  const hasChildren = items && items.length > 0;
+  const active = isNavItemActive({ disabled, external, href, matcher, pathname }) || 
+    (hasChildren && items!.some(item => isNavItemActive({ href: item.href, pathname })));
   const Icon = icon ? navIcons[icon] : null;
 
   // Translate the menu item title
@@ -191,8 +192,8 @@ function NavItem({ disabled, external, href, icon, items, matcher, pathname, tit
   return (
     <li>
       <Box
-        onClick={hasItems ? handleToggle : undefined}
-        {...(href && !hasItems
+        onClick={hasChildren ? handleToggle : undefined}
+        {...(href && !hasChildren
           ? {
               component: external ? 'a' : RouterLink,
               href,
@@ -266,7 +267,7 @@ function NavItem({ disabled, external, href, icon, items, matcher, pathname, tit
             {translatedTitle}
           </Typography>
         </Box>
-        {hasItems && (
+        {hasChildren && (
           <Box
             sx={{
               alignItems: 'center',
@@ -279,7 +280,7 @@ function NavItem({ disabled, external, href, icon, items, matcher, pathname, tit
           </Box>
         )}
       </Box>
-      {hasItems && open && (
+      {hasChildren && open && (
         <Stack
           component="ul"
           spacing={0.5}

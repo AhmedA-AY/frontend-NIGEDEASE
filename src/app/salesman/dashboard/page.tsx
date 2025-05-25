@@ -24,7 +24,7 @@ import { financialsApi } from '@/services/api/financials';
 import { inventoryApi, Product } from '@/services/api/inventory';
 import { paymentsApi, Payment } from '@/services/api/payments';
 import { useTransactions } from '@/hooks/salesman/use-transactions';
-import { useCustomers } from '@/hooks/admin/use-customers';
+import { useCustomers } from '@/hooks/salesman/use-customers';
 import { useProducts } from '@/hooks/admin/use-products';
 import { formatCurrency } from '@/utils/format-currency';
 import { StoreSelect } from '@/components/common/store-select';

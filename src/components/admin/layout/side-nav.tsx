@@ -197,7 +197,7 @@ function renderNavItems({ items = [], pathname, t }: { items?: NavItemConfig[]; 
   );
 }
 
-function NavItem({ disabled, external, href, icon, matcher, pathname, title, items, t }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, matcher, pathname, title = '', items, t }: NavItemProps): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   const hasChildren = items && items.length > 0;
   const active = isNavItemActive({ disabled, external, href, matcher, pathname }) || 
