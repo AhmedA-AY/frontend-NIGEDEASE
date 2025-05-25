@@ -3,8 +3,8 @@ import tokenStorage from '@/utils/token-storage';
 import { paths } from '@/paths';
 
 // API Base URLs
-export const USER_MANAGEMENT_API = 'http://evergreen-technologies-ngedease-userservice.147.79.115.12.sslip.io';
-export const CORE_API = 'http://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io';
+export const USER_MANAGEMENT_API = process.env.NEXT_PUBLIC_USER_MANAGEMENT_API || 'http://evergreen-technologies-ngedease-userservice.147.79.115.12.sslip.io';
+export const CORE_API = process.env.NEXT_PUBLIC_CORE_API || 'http://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io';
 
 // Create axios instance for the user management service
 export const userManagementApiClient = axios.create({
