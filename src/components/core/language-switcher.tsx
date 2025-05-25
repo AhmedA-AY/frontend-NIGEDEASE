@@ -47,11 +47,21 @@ export function LanguageSwitcher(): React.JSX.Element {
   };
   
   const handleLanguageChange = (language: string) => {
-    i18n.changeLanguage(language);
+    console.log('Changing language to:', language);
+    
+    // First set cookie for consistent storage
     Cookies.set('NEXT_LOCALE', language);
     
-    // Reload the page to apply the language change
-    router.refresh();
+    // Then change the language in i18next
+    i18n.changeLanguage(language).then(() => {
+      console.log('Language changed successfully to:', i18n.language);
+      console.log('Resources loaded:', i18n.services.resourceStore.data);
+      console.log('Admin namespace available:', i18n.hasResourceBundle(language, 'admin'));
+      
+      // Force reload the page instead of just refreshing the router
+      // This ensures all translations are properly applied
+      window.location.reload();
+    });
     
     handleClose();
   };

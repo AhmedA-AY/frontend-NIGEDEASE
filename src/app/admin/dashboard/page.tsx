@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Card, CardHeader, Container, Grid, Stack, Typography, Button, Paper } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
@@ -28,10 +28,14 @@ import { useDashboardData, DashboardPeriod } from '@/hooks/admin/use-dashboard';
 import { Storefront } from '@phosphor-icons/react/dist/ssr/Storefront';
 
 export default function AdminDashboardPage() {
-  const { t } = useTranslation('admin');
+  const { t, i18n } = useTranslation('admin');
   const { userInfo } = useCurrentUser();
   const { currentStore, stores } = useStore();
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('month');
+  const [isDebugVisible, setIsDebugVisible] = useState(false);
+  
+  // Debug information
+  const isDevMode = process.env.NODE_ENV === 'development';
   
   // Use the new TanStack Query hook
   const { 
@@ -42,12 +46,90 @@ export default function AdminDashboardPage() {
     dataUpdatedAt 
   } = useDashboardData(currentStore?.id, selectedPeriod);
 
+  // For debugging - log translation key values
+  useEffect(() => {
+    if (isDevMode) {
+      console.log('Current language:', i18n.language);
+      console.log('Translation key values:');
+      console.log('dashboard.overview =', t('dashboard.overview'));
+      console.log('dashboard.stats.total_sales =', t('dashboard.stats.total_sales'));
+      console.log('dashboard.stats.total_expenses =', t('dashboard.stats.total_expenses'));
+      console.log('dashboard.stats.payment_received =', t('dashboard.stats.payment_received'));
+      console.log('dashboard.stats.total_customers =', t('dashboard.stats.total_customers'));
+      console.log('dashboard.charts.sales_vs_expenses =', t('dashboard.charts.sales_vs_expenses'));
+      
+      // Check if the admin namespace is loaded
+      console.log('Is admin namespace loaded:', i18n.hasResourceBundle(i18n.language, 'admin'));
+      console.log('Available namespaces:', Object.keys(i18n.services.resourceStore.data[i18n.language] || {}));
+      
+      // Check if specific keys exist in the resources
+      const adminResources = i18n.getResourceBundle(i18n.language, 'admin');
+      console.log('Admin resources:', adminResources);
+      
+      if (adminResources) {
+        console.log('Has dashboard key:', 'dashboard' in adminResources);
+        if ('dashboard' in adminResources) {
+          const dashboardRes = adminResources.dashboard;
+          console.log('Dashboard resources:', dashboardRes);
+          console.log('Has overview key:', 'overview' in dashboardRes);
+          console.log('Has stats key:', 'stats' in dashboardRes);
+        }
+      }
+      
+      // Try to manually force loading the namespace if it's not loaded
+      if (!i18n.hasResourceBundle(i18n.language, 'admin')) {
+        console.log('Attempting to load admin namespace...');
+        i18n.loadNamespaces('admin').then(() => {
+          console.log('Admin namespace loaded successfully');
+        }).catch(err => {
+          console.error('Error loading admin namespace:', err);
+        });
+      }
+    }
+  }, [t, i18n, isDevMode]);
+
+  // Helper function to safely get translations with fallbacks
+  const safeTranslate = (key: string, fallback: string): string => {
+    // First try to get the translation directly
+    const result = t(key);
+    
+    // If we're using a non-English language, show more detailed debugging
+    if (isDevMode && i18n.language !== 'en') {
+      console.log(`Translating [${key}] in language [${i18n.language}]:`, result);
+      console.log('Has resource bundle:', i18n.hasResourceBundle(i18n.language, 'admin'));
+      
+      // Try to inspect the resource directly
+      const resourceBundle = i18n.getResourceBundle(i18n.language, 'admin');
+      if (resourceBundle) {
+        // Get nested keys
+        const keys = key.split('.');
+        let value = resourceBundle;
+        for (const k of keys) {
+          value = value?.[k];
+          if (!value) break;
+        }
+        console.log('Direct resource lookup:', value);
+      }
+    }
+    
+    // If the result is the same as the key, it means translation failed
+    if (result === key) {
+      return fallback;
+    }
+    
+    return result;
+  };
+
   const handlePeriodChange = (period: DashboardPeriod) => {
     setSelectedPeriod(period);
   };
 
   const handleRetry = () => {
     refetch();
+  };
+  
+  const toggleDebug = () => {
+    setIsDebugVisible(!isDebugVisible);
   };
 
   // Create the options for the charts
@@ -118,11 +200,11 @@ export default function AdminDashboardPage() {
   // Create the chart series based on the data
   const dailySalesChartSeries = [
     {
-      name: t('dashboard.charts.sales'),
+      name: safeTranslate('dashboard.charts.sales', 'Sales'),
       data: dashboardData?.dailySales.map((item: any) => item.sales) || [],
     },
     {
-      name: t('dashboard.charts.expenses'),
+      name: safeTranslate('dashboard.charts.expenses', 'Expenses'),
       data: dashboardData?.dailySales.map((item: any) => item.expenses) || [],
     },
   ];
@@ -132,7 +214,7 @@ export default function AdminDashboardPage() {
       <Container maxWidth="xl">
         <Box sx={{ py: 4 }}>
           <Typography variant="h4" gutterBottom>
-            {t('dashboard.loading')}
+            {safeTranslate('dashboard.loading', 'Loading dashboard data...')}
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
             <Box sx={{ position: 'relative' }}>
@@ -163,11 +245,11 @@ export default function AdminDashboardPage() {
       <Container maxWidth="xl">
         <Box sx={{ py: 4 }}>
           <Typography variant="h4" gutterBottom color="error">
-            {t('dashboard.error')}
+            {safeTranslate('dashboard.error', 'Error Loading Dashboard')}
           </Typography>
           <Paper sx={{ p: 3, mb: 3, bgcolor: '#fff8f8', color: 'error.main' }}>
             <Typography variant="body1" paragraph>
-              {error instanceof Error ? error.message : t('dashboard.error_message')}
+              {error instanceof Error ? error.message : safeTranslate('dashboard.error_message', 'Failed to load dashboard data. Please try again.')}
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button 
@@ -176,7 +258,7 @@ export default function AdminDashboardPage() {
                 startIcon={<RefreshIcon />}
             onClick={handleRetry}
           >
-            {t('dashboard.retry')}
+            {safeTranslate('dashboard.retry', 'Retry')}
           </Button>
             </Box>
           </Paper>
@@ -190,11 +272,11 @@ export default function AdminDashboardPage() {
       <Container maxWidth="xl">
         <Box sx={{ py: 4 }}>
             <Typography variant="h4" gutterBottom>
-              {t('dashboard.no_store')}
+              {safeTranslate('dashboard.no_store', 'No Store Selected')}
             </Typography>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="body1" paragraph>
-              {t('dashboard.no_store_message')}
+              {safeTranslate('dashboard.no_store_message', 'Please select a store from the dropdown menu to view the dashboard.')}
             </Typography>
           </Paper>
           </Box>
@@ -239,7 +321,7 @@ export default function AdminDashboardPage() {
           <Grid container justifyContent="space-between" spacing={2} alignItems="center">
             <Grid item xs={12} sm={6}>
               <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-                {t('dashboard.overview')}
+                {safeTranslate('dashboard.overview', 'Admin Overview')}
               </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -265,7 +347,7 @@ export default function AdminDashboardPage() {
                       textTransform: 'capitalize'
                     }}
                   >
-                    {t(`dashboard.filter_periods.${period}`)}
+                    {safeTranslate(`dashboard.filter_periods.${period}`, period)}
                   </Button>
                 ))}
               </Stack>
@@ -277,7 +359,7 @@ export default function AdminDashboardPage() {
         <Grid container spacing={3} sx={{ mb: { xs: 2, sm: 4 } }}>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard 
-              title={t('dashboard.stats.total_sales')}
+              title={safeTranslate('dashboard.stats.total_sales', 'Total Sales')}
               value={formattedTotalSales}
               change={salesGrowthFormatted}
               positive={salesGrowth ? salesGrowth >= 0 : true}
@@ -286,7 +368,7 @@ export default function AdminDashboardPage() {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard 
-              title={t('dashboard.stats.total_expenses')}
+              title={safeTranslate('dashboard.stats.total_expenses', 'Total Expenses')}
               value={formattedTotalExpenses}
               change={expensesChangePercentage}
               positive={false}
@@ -295,7 +377,7 @@ export default function AdminDashboardPage() {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard 
-              title={t('dashboard.stats.payment_received')}
+              title={safeTranslate('dashboard.stats.payment_received', 'Payment Received')}
               value={formattedPaymentReceived}
               change={paymentsChangePercentage}
               positive={true}
@@ -304,7 +386,7 @@ export default function AdminDashboardPage() {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard 
-              title={t('dashboard.stats.total_customers')}
+              title={safeTranslate('dashboard.stats.total_customers', 'Total Customers')}
               value={formattedTotalCustomers}
               change={customersChangePercentage}
               positive={true}
@@ -316,7 +398,7 @@ export default function AdminDashboardPage() {
         {/* Sales vs Expenses Chart */}
         <Card sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 4 } }}>
           <CardHeader
-            title={t('dashboard.charts.sales_vs_expenses')}
+            title={safeTranslate('dashboard.charts.sales_vs_expenses', 'Sales vs Expenses')}
             sx={{ p: 0, mb: 2 }}
             titleTypographyProps={{ variant: 'h6' }}
           />
@@ -371,7 +453,39 @@ interface StatCardProps {
 }
 
 function StatCard({ title, value, change, positive, icon }: StatCardProps) {
-  const { t } = useTranslation('admin');
+  const { t, i18n } = useTranslation('admin');
+  
+  // Helper function to safely get translations with fallbacks
+  const safeTranslate = (key: string, fallback: string): string => {
+    // First try to get the translation directly
+    const result = t(key);
+    
+    // If we're using a non-English language, show more detailed debugging
+    if (process.env.NODE_ENV === 'development' && i18n.language !== 'en') {
+      console.log(`Translating [${key}] in language [${i18n.language}]:`, result);
+      console.log('Has resource bundle:', i18n.hasResourceBundle(i18n.language, 'admin'));
+      
+      // Try to inspect the resource directly
+      const resourceBundle = i18n.getResourceBundle(i18n.language, 'admin');
+      if (resourceBundle) {
+        // Get nested keys
+        const keys = key.split('.');
+        let value = resourceBundle;
+        for (const k of keys) {
+          value = value?.[k];
+          if (!value) break;
+        }
+        console.log('Direct resource lookup:', value);
+      }
+    }
+    
+    // If the result is the same as the key, it means translation failed
+    if (result === key) {
+      return fallback;
+    }
+    
+    return result;
+  };
   
   return (
     <Card sx={{ 

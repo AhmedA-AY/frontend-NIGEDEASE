@@ -45,7 +45,7 @@ export default function ExpenseEditModal({
   const [currencies, setCurrencies] = useState<Currency[]>(propCurrencies);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [currentStoreId, setCurrentStoreId] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(propPaymentModes.length === 0 || propCurrencies.length === 0);
   const { userInfo, isLoading: isUserLoading } = useCurrentUser();
   
   // Load payment modes and currencies from API if needed
@@ -54,6 +54,12 @@ export default function ExpenseEditModal({
     if (propPaymentModes.length > 0 && propCurrencies.length > 0) {
       setPaymentModes(propPaymentModes);
       setCurrencies(propCurrencies);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Only fetch data when the modal is open
+    if (!open) {
       return;
     }
     
@@ -98,7 +104,7 @@ export default function ExpenseEditModal({
     }
     
     fetchData();
-  }, [userInfo, propPaymentModes, propCurrencies]);
+  }, [userInfo, propPaymentModes, propCurrencies, open]);
   
   // Reset form data when modal opens with new expense data
   useEffect(() => {

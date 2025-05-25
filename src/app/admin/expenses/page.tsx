@@ -527,6 +527,8 @@ export default function ExpensesPage(): React.JSX.Element {
         onSave={handleSaveExpense}
         expense={currentExpense}
         categories={categories}
+        paymentModes={paymentModes}
+        currencies={currencies}
       />
       
       {/* Delete Confirmation Modal */}
