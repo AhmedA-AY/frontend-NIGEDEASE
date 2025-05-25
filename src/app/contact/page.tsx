@@ -31,12 +31,12 @@ const ContactPage = () => {
   return (
     <Box 
       component="main" 
-      sx={{ 
+        sx={{
         flexGrow: 1, 
         py: 4, 
         backgroundColor: 'background.paper' 
-      }}
-    >
+        }}
+      >
       <Container maxWidth="lg">
         <Grid container spacing={3}>
           <Grid item xs={12}>
@@ -46,17 +46,17 @@ const ContactPage = () => {
             <Typography variant="body1" align="center" color="text.secondary" paragraph>
               We'd love to hear from you! Reach out to our team with any questions.
             </Typography>
-          </Grid>
-          
-          {/* Contact Info */}
+            </Grid>
+            
+            {/* Contact Info */}
           <Grid item xs={12} md={4}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Stack spacing={3}>
                   <Typography variant="h6" gutterBottom>
-                    Contact Information
-                  </Typography>
-                  
+                  Contact Information
+                </Typography>
+                
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Phone size={24} />
                     <Typography variant="body1">+251 912 345 678</Typography>
@@ -70,8 +70,8 @@ const ContactPage = () => {
                   <Stack direction="row" spacing={2} alignItems="center">
                     <MapPin size={24} />
                     <Typography variant="body1">Addis Ababa, Ethiopia</Typography>
-                  </Stack>
-                  
+                </Stack>
+                
                   <Stack direction="row" spacing={1}>
                     <IconButton color="primary">
                       <FacebookLogo size={20} />
@@ -98,9 +98,9 @@ const ContactPage = () => {
                 <ContactForm />
               </CardContent>
             </Card>
+            </Grid>
           </Grid>
-        </Grid>
-      </Container>
+        </Container>
     </Box>
   );
 };

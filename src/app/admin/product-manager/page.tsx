@@ -2,126 +2,165 @@
 
 import React from 'react';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
+import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
+import CardHeader from '@mui/material/CardHeader';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { ListBullets as ListBulletsIcon } from '@phosphor-icons/react/dist/ssr/ListBullets';
-import { Tag as TagIcon } from '@phosphor-icons/react/dist/ssr/Tag';
-import { Storefront as StorefrontIcon } from '@phosphor-icons/react/dist/ssr/Storefront';
-import { TShirt as TShirtIcon } from '@phosphor-icons/react/dist/ssr/TShirt';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import { ArrowRight as ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
+import { Tag as CategoryIcon } from '@phosphor-icons/react/dist/ssr/Tag';
+import { Ruler as UnitIcon } from '@phosphor-icons/react/dist/ssr/Ruler';
+import { ShoppingBag as ProductIcon } from '@phosphor-icons/react/dist/ssr/ShoppingBag';
+import { TShirt as ClothingIcon } from '@phosphor-icons/react/dist/ssr/TShirt';
+
 import { paths } from '@/paths';
 
-export default function ProductManagerPage(): React.JSX.Element {
-  // Product Manager sections
-  const sections = [
-    {
-      id: 'categories',
-      title: 'Categories',
-      description: 'Manage product categories and subcategories',
-      icon: <ListBulletsIcon size={52} weight="bold" />,
-      color: '#0ea5e9',
-      link: paths.admin.categories,
-    },
-    {
-      id: 'products',
-      title: 'Products',
-      description: 'Manage product inventory and details',
-      icon: <StorefrontIcon size={52} weight="bold" />,
-      color: '#0ea5e9',
-      link: paths.admin.products,
-    },
-    {
-      id: 'product-units',
-      title: 'Product Units',
-      description: 'Manage measurement units for products',
-      icon: <TagIcon size={52} weight="bold" />,
-      color: '#0ea5e9',
-      link: paths.admin.productUnits,
-    },
-    {
-      id: 'clothings',
-      title: 'Clothings',
-      description: 'Manage clothing attributes like colors, sizes, and materials',
-      icon: <TShirtIcon size={52} weight="bold" />,
-      color: '#0ea5e9',
-      link: paths.admin.clothing,
-    },
-  ];
+interface PageHeadingProps {
+  title: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
+}
 
-  // Generate breadcrumb path links
-  const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Product Manager', url: paths.admin.productManager },
+function PageHeading({ title, subtitle, actions }: PageHeadingProps): React.JSX.Element {
+  return (
+    <Stack
+      direction="row"
+      justifyContent="space-between"
+      spacing={4}
+    >
+      <div>
+        <Typography variant="h4">
+          {title}
+        </Typography>
+        {subtitle && (
+          <Typography
+            color="text.secondary"
+            sx={{ mt: 1 }}
+            variant="body1"
+          >
+            {subtitle}
+          </Typography>
+        )}
+      </div>
+      {actions && (
+        <div>
+          {actions}
+        </div>
+      )}
+    </Stack>
+  );
+}
+
+export default function ProductManagerPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
+  const router = useRouter();
+
+  const productManagementOptions = [
+    {
+      title: t('nav.categories'),
+      description: t('categories.all_categories'),
+      icon: <CategoryIcon size={32} />,
+      href: paths.admin.categories,
+    },
+    {
+      title: t('nav.product_units'),
+      description: t('product_units.all_units'),
+      icon: <UnitIcon size={32} />,
+      href: paths.admin.productUnits,
+    },
+    {
+      title: t('nav.products'),
+      description: t('products.all_products'),
+      icon: <ProductIcon size={32} />,
+      href: paths.admin.products,
+    },
+    {
+      title: t('nav.clothing'),
+      description: t('clothing.subtitle'),
+      icon: <ClothingIcon size={32} />,
+      href: paths.admin.clothing,
+    },
   ];
 
   return (
-    <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
-      {/* Header and Breadcrumbs */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>Product Manager</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
-          {breadcrumbItems.map((item, index) => (
-            <React.Fragment key={index}>
-              {index > 0 && <Box component="span" sx={{ mx: 0.5 }}>-</Box>}
-              <Typography 
-                component="a" 
-                href={item.url} 
-                variant="body2" 
-                color={index === breadcrumbItems.length - 1 ? 'text.primary' : 'inherit'}
-                sx={{ textDecoration: 'none' }}
-              >
-                {item.label}
-              </Typography>
-            </React.Fragment>
-          ))}
-        </Box>
-      </Box>
-
-      {/* Section Cards */}
-      <Grid container spacing={3}>
-        {sections.map((section) => (
-          <Grid item xs={12} sm={6} md={4} key={section.id}>
-            <Link href={section.link} style={{ textDecoration: 'none' }}>
-              <Card 
-                sx={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  transition: 'transform 0.3s, box-shadow 0.3s',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
-                    boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-                  }
-                }}
-              >
-                <Box 
+    <Box component="main" sx={{ flexGrow: 1, py: 4 }}>
+      <Container maxWidth="xl">
+        <Stack spacing={4}>
+          <PageHeading 
+            title={t('product_manager.title')} 
+            subtitle={t('product_manager.subtitle')} 
+          />
+          
+          <Grid container spacing={3}>
+            {productManagementOptions.map((option) => (
+              <Grid item xs={12} sm={6} md={3} key={option.title}>
+                <Card 
                   sx={{ 
-                    p: 3, 
+                    height: '100%', 
                     display: 'flex', 
-                    justifyContent: 'center',
-                    bgcolor: 'rgba(14, 165, 233, 0.1)'
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 4px 20px 0 rgba(0,0,0,0.12)',
+                    },
+                    boxShadow: 2,
+                    borderRadius: 2,
                   }}
+                  onClick={() => router.push(option.href)}
                 >
-                  <Box sx={{ color: section.color }}>
-                    {section.icon}
-                  </Box>
-                </Box>
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography gutterBottom variant="h5" component="div">
-                    {section.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {section.description}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Link>
+                  <CardHeader
+                    avatar={
+                      <Box
+                        sx={{
+                          alignItems: 'center',
+                          backgroundColor: 'primary.lightest',
+                          borderRadius: 2,
+                          color: 'primary.main',
+                          display: 'flex',
+                          height: 48,
+                          justifyContent: 'center',
+                          width: 48,
+                        }}
+                      >
+                        {option.icon}
+                      </Box>
+                    }
+                    title={
+                      <Typography variant="h6">
+                        {option.title}
+                      </Typography>
+                    }
+                  />
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {option.description}
+                    </Typography>
+                    <Button
+                      color="primary"
+                      size="small"
+                      variant="text"
+                      endIcon={<ArrowRightIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(option.href);
+                      }}
+                    >
+                      {t('common.view')}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
+        </Stack>
+      </Container>
     </Box>
   );
 } 

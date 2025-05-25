@@ -10,6 +10,7 @@ import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useSnackbar } from 'notistack';
+import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore } from '@/providers/store-provider';
 
@@ -35,6 +36,7 @@ export default function CategoryEditModal({
   category = { name: '', description: '' },
   isNew = true
 }: CategoryEditModalProps): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const [formData, setFormData] = React.useState<CategoryData>({ name: '', description: '' });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -78,7 +80,7 @@ export default function CategoryEditModal({
     const newErrors: Record<string, string> = {};
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Category name is required';
+      newErrors.name = t('categories.category_name') + ' ' + t('common.is_required');
     }
     
     if (!formData.store_id) {
@@ -120,7 +122,7 @@ export default function CategoryEditModal({
         console.log('Category saved successfully');
       } catch (error) {
         console.error('Error submitting category:', error);
-        enqueueSnackbar('Failed to save category', { variant: 'error' });
+        enqueueSnackbar(t('common.error'), { variant: 'error' });
       } finally {
         setIsSubmitting(false);
       }
@@ -131,13 +133,13 @@ export default function CategoryEditModal({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{isNew ? 'Add New Category' : 'Edit Category'}</DialogTitle>
+      <DialogTitle>{isNew ? t('categories.add_category') : t('categories.edit_category')}</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
           margin="dense"
           name="name"
-          label="Category Name"
+          label={t('categories.category_name')}
           type="text"
           fullWidth
           value={formData.name}
@@ -151,7 +153,7 @@ export default function CategoryEditModal({
         <TextField
           margin="dense"
           name="description"
-          label="Description (Optional)"
+          label={t('categories.category_description')}
           type="text"
           fullWidth
           multiline
@@ -169,7 +171,9 @@ export default function CategoryEditModal({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+        <Button onClick={onClose} disabled={isSubmitting}>
+          {t('common.cancel')}
+        </Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
@@ -181,7 +185,11 @@ export default function CategoryEditModal({
           disabled={isSubmitting}
           startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
         >
-          {isSubmitting ? 'Saving...' : isNew ? 'Add Category' : 'Save Changes'}
+          {isSubmitting 
+            ? t('common.saving') 
+            : isNew 
+              ? t('categories.add_category') 
+              : t('common.save')}
         </Button>
       </DialogActions>
     </Dialog>

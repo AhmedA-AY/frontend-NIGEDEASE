@@ -60,6 +60,8 @@ import {
   useProducts,
   useCurrencies
 } from '@/hooks/queries';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 // Purchase modal props interface
 interface PurchaseModalProps {
@@ -79,8 +81,10 @@ interface PurchaseModalProps {
 }
 
 export default function PurchasesPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
   const [tabValue, setTabValue] = React.useState(0);
   const [selectedPurchases, setSelectedPurchases] = React.useState<string[]>([]);
   const [anchorElMap, setAnchorElMap] = React.useState<{ [key: string]: HTMLElement | null }>({});
@@ -363,14 +367,14 @@ export default function PurchasesPage(): React.JSX.Element {
 
   const handleEditPurchase = async (id: string) => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store_selected'), { variant: 'error' });
       return;
     }
     
     try {
       const purchase = purchases.find(p => p.id === id);
       if (!purchase) {
-        enqueueSnackbar('Purchase not found', { variant: 'error' });
+        enqueueSnackbar(t('purchases.purchase_not_found'), { variant: 'error' });
         return;
       }
       
@@ -416,7 +420,7 @@ export default function PurchasesPage(): React.JSX.Element {
       setIsPurchaseModalOpen(true);
     } catch (error) {
       console.error('Error loading purchase details:', error);
-      enqueueSnackbar('Failed to load purchase details', { variant: 'error' });
+      enqueueSnackbar(t('purchases.error_loading_purchase'), { variant: 'error' });
     }
   };
 
@@ -427,7 +431,7 @@ export default function PurchasesPage(): React.JSX.Element {
 
   const handleConfirmDelete = async () => {
     if (!purchaseToDelete || !currentStore) {
-      enqueueSnackbar('No purchase selected or no store selected', { variant: 'error' });
+      enqueueSnackbar(t('purchases.no_purchase_selected'), { variant: 'error' });
       return;
     }
     
@@ -437,38 +441,38 @@ export default function PurchasesPage(): React.JSX.Element {
         id: purchaseToDelete 
       });
       
-      enqueueSnackbar('Purchase deleted successfully', { variant: 'success' });
+      enqueueSnackbar(t('purchases.purchase_deleted'), { variant: 'success' });
       setIsDeleteModalOpen(false);
       setPurchaseToDelete(null);
     } catch (error) {
       console.error('Error deleting purchase:', error);
-      enqueueSnackbar('Failed to delete purchase', { variant: 'error' });
+      enqueueSnackbar(t('purchases.error_deleting'), { variant: 'error' });
     }
   };
 
   const handleSavePurchase = async (purchaseData: any) => {
     if (!currentStore) {
-      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      enqueueSnackbar(t('common.no_store_selected'), { variant: 'warning' });
       return;
     }
 
     if (!purchaseData.supplier) {
-      enqueueSnackbar('Please select a supplier', { variant: 'error' });
+      enqueueSnackbar(t('purchases.supplier_required'), { variant: 'error' });
       return;
     }
 
     if (!purchaseData.products || purchaseData.products.length === 0) {
-      enqueueSnackbar('Please add at least one product to the purchase', { variant: 'error' });
+      enqueueSnackbar(t('purchases.products_required'), { variant: 'error' });
       return;
     }
 
     if (!purchaseData.currency_id) {
-      enqueueSnackbar('Please select a currency', { variant: 'error' });
+      enqueueSnackbar(t('purchases.currency_required'), { variant: 'error' });
       return;
     }
 
     if (!purchaseData.payment_mode_id) {
-      enqueueSnackbar('Please select a payment mode', { variant: 'error' });
+      enqueueSnackbar(t('purchases.payment_mode_required'), { variant: 'error' });
       return;
     }
 
@@ -495,14 +499,14 @@ export default function PurchasesPage(): React.JSX.Element {
           id: purchaseData.id,
           data: createOrUpdateData
         });
-        enqueueSnackbar('Purchase updated successfully', { variant: 'success' });
+        enqueueSnackbar(t('purchases.purchase_updated'), { variant: 'success' });
       } else {
         // Create new purchase
         await createPurchaseMutation.mutateAsync({
           storeId: currentStore.id,
           data: createOrUpdateData
         });
-        enqueueSnackbar('Purchase created successfully', { variant: 'success' });
+        enqueueSnackbar(t('purchases.purchase_created'), { variant: 'success' });
       }
 
       // Close modal and reset state
@@ -510,14 +514,14 @@ export default function PurchasesPage(): React.JSX.Element {
       
     } catch (error: any) {
       console.error('Error saving purchase:', error);
-      enqueueSnackbar(error.message || 'Failed to save purchase', { variant: 'error' });
+      enqueueSnackbar(t('purchases.error_saving'), { variant: 'error' });
     }
   };
 
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Purchases', url: paths.admin.purchases },
+    { label: t('dashboard.title'), url: paths.admin.dashboard },
+    { label: t('purchases.title'), url: paths.admin.purchases },
   ];
 
   const PurchaseModal = ({ open, onClose, onSave, purchase, suppliers, currencies, paymentModes, isLoading, products, selectedProduct, currentQuantity, setSelectedProduct, setCurrentQuantity }: PurchaseModalProps) => {
@@ -620,7 +624,7 @@ export default function PurchasesPage(): React.JSX.Element {
     return (
       <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
         <DialogTitle>
-          {formData.id ? 'Edit Purchase' : 'Add New Purchase'}
+          {formData.id ? t('purchases.edit_purchase') : t('purchases.add_purchase')}
         </DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -628,13 +632,13 @@ export default function PurchasesPage(): React.JSX.Element {
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
-                  <InputLabel id="supplier-label">Supplier</InputLabel>
+                  <InputLabel id="supplier-label">{t('purchases.purchase_supplier')}</InputLabel>
                   <Select
                     labelId="supplier-label"
                     name="supplier"
                     value={formData.supplier || ''}
                     onChange={handleChange}
-                    label="Supplier"
+                    label={t('purchases.purchase_supplier')}
                     disabled={isLoading}
                   >
                     {suppliers.map((supplier) => (
@@ -648,7 +652,7 @@ export default function PurchasesPage(): React.JSX.Element {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Date"
+                  label={t('purchases.purchase_date')}
                   name="date"
                   type="date"
                   value={formData.date || ''}
@@ -661,23 +665,23 @@ export default function PurchasesPage(): React.JSX.Element {
 
             {/* Products Section */}
             <Card sx={{ p: 2, mt: 2, bgcolor: '#f9fafb' }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>Add Items</Typography>
+              <Typography variant="h6" sx={{ mb: 2 }}>{t('purchases.add_item')}</Typography>
               
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} sm={5}>
                   <FormControl fullWidth>
-                    <InputLabel id="product-label">Product</InputLabel>
+                    <InputLabel id="product-label">{t('products.product_name')}</InputLabel>
                     <Select
                       labelId="product-label"
                       name="selectedProduct"
                       value={selectedProduct || ''}
                       onChange={(e) => setSelectedProduct(e.target.value)}
-                      label="Product"
+                      label={t('products.product_name')}
                       disabled={isLoading}
                       displayEmpty
                       renderValue={(selected) => {
                         if (!selected) {
-                          return <Typography color="text.secondary">Select a product</Typography>;
+                          return <Typography color="text.secondary">{t('purchases.select_product')}</Typography>;
                         }
                         const product = products.find(p => p.id === selected);
                         return product ? product.name : '';
@@ -701,7 +705,7 @@ export default function PurchasesPage(): React.JSX.Element {
                 <Grid item xs={12} sm={3}>
                   <TextField
                     fullWidth
-                    label="Quantity"
+                    label={t('purchases.quantity')}
                     name="currentQuantity"
                     type="number"
                     value={currentQuantity}
@@ -718,7 +722,7 @@ export default function PurchasesPage(): React.JSX.Element {
                     disabled={isLoading || !selectedProduct}
                     sx={{ height: '56px', bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
                   >
-                    Add to Order
+                    {t('purchases.add_item')}
                   </Button>
                 </Grid>
               </Grid>
@@ -729,11 +733,11 @@ export default function PurchasesPage(): React.JSX.Element {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Product</TableCell>
-                        <TableCell align="right">Quantity</TableCell>
-                        <TableCell align="right">Unit Price</TableCell>
-                        <TableCell align="right">Total</TableCell>
-                        <TableCell align="right">Actions</TableCell>
+                        <TableCell>{t('products.product_name')}</TableCell>
+                        <TableCell align="right">{t('purchases.quantity')}</TableCell>
+                        <TableCell align="right">{t('purchases.price')}</TableCell>
+                        <TableCell align="right">{t('purchases.total')}</TableCell>
+                        <TableCell align="right">{t('common.actions')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -755,21 +759,21 @@ export default function PurchasesPage(): React.JSX.Element {
                         </TableRow>
                       ))}
                       <TableRow>
-                        <TableCell colSpan={3} align="right"><strong>Subtotal:</strong></TableCell>
+                        <TableCell colSpan={3} align="right"><strong>{t('purchases.subtotal')}:</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
-                          <strong>${formData.subtotal ? formData.subtotal.toFixed(2) : '0.00'}</strong>
+                          ${formData.subtotal ? formData.subtotal.toFixed(2) : '0.00'}
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell colSpan={3} align="right"><strong>Tax ({formData.tax || 0}%):</strong></TableCell>
+                        <TableCell colSpan={3} align="right"><strong>{t('purchases.tax')} ({formData.tax || 0}%):</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
-                          <strong>${formData.taxAmount ? formData.taxAmount.toFixed(2) : '0.00'}</strong>
+                          ${formData.taxAmount ? formData.taxAmount.toFixed(2) : '0.00'}
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell colSpan={3} align="right"><strong>Total Amount:</strong></TableCell>
+                        <TableCell colSpan={3} align="right"><strong>{t('purchases.total')}:</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
-                          <strong>${formData.totalAmount ? formData.totalAmount.toFixed(2) : '0.00'}</strong>
+                          ${formData.totalAmount ? formData.totalAmount.toFixed(2) : '0.00'}
                         </TableCell>
                       </TableRow>
                     </TableBody>
@@ -782,13 +786,13 @@ export default function PurchasesPage(): React.JSX.Element {
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
-                  <InputLabel id="currency-label">Currency</InputLabel>
+                  <InputLabel id="currency-label">{t('common.currency')}</InputLabel>
                   <Select
                     labelId="currency-label"
                     name="currency_id"
                     value={formData.currency_id || ''}
                     onChange={handleChange}
-                    label="Currency"
+                    label={t('common.currency')}
                     disabled={isLoading}
                   >
                     {currencies.map((currency) => (
@@ -801,13 +805,13 @@ export default function PurchasesPage(): React.JSX.Element {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
-                  <InputLabel id="payment-mode-label">Payment Mode</InputLabel>
+                  <InputLabel id="payment-mode-label">{t('purchases.payment_method')}</InputLabel>
                   <Select
                     labelId="payment-mode-label"
                     name="payment_mode_id"
                     value={formData.payment_mode_id || ''}
                     onChange={handleChange}
-                    label="Payment Mode"
+                    label={t('purchases.payment_method')}
                     disabled={isLoading}
                   >
                     {paymentModes.map((mode) => (
@@ -821,7 +825,7 @@ export default function PurchasesPage(): React.JSX.Element {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Tax Percentage"
+                  label={t('purchases.tax')}
                   name="tax"
                   type="number"
                   value={taxValue}
@@ -831,7 +835,7 @@ export default function PurchasesPage(): React.JSX.Element {
                     endAdornment: <InputAdornment position="end">%</InputAdornment>,
                   }}
                   disabled={isLoading}
-                  helperText="Tax percentage to apply to the purchase"
+                  helperText={t('purchases.tax')}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -844,21 +848,21 @@ export default function PurchasesPage(): React.JSX.Element {
                       disabled={isLoading}
                     />
                   }
-                  label="Credit Purchase"
+                  label={t('purchases.credit')}
                 />
               </Grid>
             </Grid>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose} disabled={isLoading}>Cancel</Button>
+          <Button onClick={onClose} disabled={isLoading}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleSubmit} 
             variant="contained" 
             disabled={isLoading || !formData.supplier || (formData.products && formData.products.length === 0)}
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
           >
-            {isLoading ? <CircularProgress size={24} /> : 'Save'}
+            {isLoading ? <CircularProgress size={24} /> : t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -869,7 +873,7 @@ export default function PurchasesPage(): React.JSX.Element {
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
       {/* Header and Breadcrumbs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>Purchases</Typography>
+        <Typography variant="h4" sx={{ mb: 1 }}>{t('purchases.title')}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
           {breadcrumbItems.map((item, index) => (
             <React.Fragment key={index}>
@@ -897,12 +901,12 @@ export default function PurchasesPage(): React.JSX.Element {
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddNewPurchase}
           >
-            Add New Purchase
+            {t('purchases.add_purchase')}
           </Button>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <TextField
-            placeholder="Search By Invoice..."
+            placeholder={t('purchases.search_invoice')}
             size="small"
             InputProps={{
               startAdornment: (
@@ -920,14 +924,14 @@ export default function PurchasesPage(): React.JSX.Element {
             input={<OutlinedInput size="small" />}
             renderValue={(selected) => {
               if (!selected) {
-                return <Typography color="text.secondary">Select Supplier...</Typography>;
+                return <Typography color="text.secondary">{t('purchases.select_supplier')}</Typography>;
               }
               const supplier = suppliers.find(s => s.id === selected);
               return supplier ? supplier.name : "";
             }}
             sx={{ minWidth: 200 }}
           >
-            <MenuItem value="">All Suppliers</MenuItem>
+            <MenuItem value="">{t('purchases.all_suppliers')}</MenuItem>
             {suppliers.map(supplier => (
               <MenuItem key={supplier.id} value={supplier.id}>{supplier.name}</MenuItem>
             ))}
@@ -941,7 +945,7 @@ export default function PurchasesPage(): React.JSX.Element {
           }}>
             <input 
               type="text" 
-              placeholder="Start Date"
+              placeholder={t('purchases.start_date')}
               style={{ 
                 border: 'none', 
                 padding: '8px 12px',
@@ -952,7 +956,7 @@ export default function PurchasesPage(): React.JSX.Element {
             <Box sx={{ display: 'flex', alignItems: 'center', px: 1 }}>→</Box>
             <input 
               type="text" 
-              placeholder="End Date"
+              placeholder={t('purchases.end_date')}
               style={{ 
                 border: 'none', 
                 padding: '8px 12px',
@@ -968,7 +972,7 @@ export default function PurchasesPage(): React.JSX.Element {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="purchase type tabs">
           <Tab 
-            label="All Purchases" 
+            label={t('purchases.all_purchases')}
             sx={{ 
               textTransform: 'none',
               minHeight: 48,
@@ -978,7 +982,7 @@ export default function PurchasesPage(): React.JSX.Element {
             }} 
           />
           <Tab 
-            label="Unpaid" 
+            label={t('purchases.unpaid')}
             sx={{ 
               textTransform: 'none',
               minHeight: 48,
@@ -987,7 +991,7 @@ export default function PurchasesPage(): React.JSX.Element {
             }} 
           />
           <Tab 
-            label="Paid" 
+            label={t('purchases.paid')}
             sx={{ 
               textTransform: 'none',
               minHeight: 48,
@@ -997,7 +1001,7 @@ export default function PurchasesPage(): React.JSX.Element {
           />
           {selectedPurchaseDetails && (
             <Tab 
-              label="Purchase Details" 
+              label={t('purchases.purchase_details')}
               sx={{ 
                 textTransform: 'none',
                 minHeight: 48,
@@ -1012,15 +1016,15 @@ export default function PurchasesPage(): React.JSX.Element {
       {/* Purchases Table or Purchase Details */}
       {tabValue === 3 && selectedPurchaseDetails ? (
         <Card sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Purchase Details</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>{t('purchases.purchase_details')}</Typography>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Invoice Number</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('purchases.invoice_number')}</Typography>
                 <Typography variant="body1">{selectedPurchaseDetails.id}</Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Purchase Date</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('purchases.purchase_date')}</Typography>
                 <Typography variant="body1">
                   {new Date(selectedPurchaseDetails.created_at).toLocaleDateString('en-US', {
                     day: '2-digit',
@@ -1030,9 +1034,9 @@ export default function PurchasesPage(): React.JSX.Element {
                 </Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Status</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('purchases.purchase_status')}</Typography>
                 <Chip 
-                  label={selectedPurchaseDetails.status || (selectedPurchaseDetails.is_credit ? 'Credit' : 'Paid')} 
+                  label={selectedPurchaseDetails.status || (selectedPurchaseDetails.is_credit ? t('purchases.credit') : t('purchases.paid'))} 
                   size="small"
                   sx={{ 
                     bgcolor: selectedPurchaseDetails.status === 'UNPAID' || selectedPurchaseDetails.is_credit ? 'warning.100' : 'success.100',
@@ -1044,16 +1048,16 @@ export default function PurchasesPage(): React.JSX.Element {
             </Grid>
             <Grid item xs={12} md={6}>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Supplier</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('purchases.purchase_supplier')}</Typography>
                 <Typography variant="body1">{selectedPurchaseDetails.supplier.name}</Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Contact Info</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('common.contact_info')}</Typography>
                 <Typography variant="body1">{selectedPurchaseDetails.supplier.email}</Typography>
                 <Typography variant="body1">{selectedPurchaseDetails.supplier.phone}</Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Total Amount</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('purchases.total')}</Typography>
                 <Typography variant="body1">${parseFloat(selectedPurchaseDetails.total_amount).toFixed(2)}</Typography>
               </Box>
             </Grid>
@@ -1065,14 +1069,14 @@ export default function PurchasesPage(): React.JSX.Element {
               onClick={() => setTabValue(0)}
               sx={{ mr: 1 }}
             >
-              Back to Purchases
+              {t('common.back')}
             </Button>
             <Button 
               variant="contained" 
               onClick={() => handleEditPurchase(selectedPurchaseDetails.id)}
               sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             >
-              Edit Purchase
+              {t('common.edit')}
             </Button>
           </Box>
         </Card>
@@ -1083,20 +1087,19 @@ export default function PurchasesPage(): React.JSX.Element {
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={companyPurchases.length > 0 && selectedPurchases.length === companyPurchases.length}
-                    indeterminate={selectedPurchases.length > 0 && selectedPurchases.length < companyPurchases.length}
+                    checked={selectedPurchases.length === companyPurchases.length}
                     onChange={handleSelectAll}
                   />
                 </TableCell>
-                <TableCell>Invoice Number</TableCell>
-                <TableCell>Purchase Date</TableCell>
-                <TableCell>Supplier</TableCell>
-                <TableCell>Purchase Status</TableCell>
-                <TableCell>Total Amount</TableCell>
-                <TableCell>Paid Amount</TableCell>
-                <TableCell>Due Amount</TableCell>
-                <TableCell>Payment Status</TableCell>
-                <TableCell>Action</TableCell>
+                <TableCell>{t('purchases.invoice_number')}</TableCell>
+                <TableCell>{t('purchases.purchase_date')}</TableCell>
+                <TableCell>{t('purchases.purchase_supplier')}</TableCell>
+                <TableCell>{t('purchases.purchase_status')}</TableCell>
+                <TableCell>{t('purchases.total')}</TableCell>
+                <TableCell>{t('purchases.paid')}</TableCell>
+                <TableCell>{t('common.due_amount')}</TableCell>
+                <TableCell>{t('purchases.payment_status')}</TableCell>
+                <TableCell>{t('common.action')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1104,13 +1107,13 @@ export default function PurchasesPage(): React.JSX.Element {
                 <TableRow>
                   <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
                     <CircularProgress size={24} />
-                    <Typography sx={{ ml: 2 }}>Loading purchases...</Typography>
+                    <Typography sx={{ ml: 2 }}>{t('purchases.loading_purchases')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : companyPurchases.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
-                    <Typography>No purchases found</Typography>
+                    <Typography>{t('purchases.no_purchases')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -1182,8 +1185,8 @@ export default function PurchasesPage(): React.JSX.Element {
                           open={isMenuOpen}
                           onClose={() => handleMenuClose(purchase.id)}
                         >
-                          <MenuItem onClick={() => handleEditPurchase(purchase.id)}>Edit</MenuItem>
-                          <MenuItem onClick={() => handleDeletePurchase(purchase.id)}>Delete</MenuItem>
+                          <MenuItem onClick={() => handleEditPurchase(purchase.id)}>{t('common.edit')}</MenuItem>
+                          <MenuItem onClick={() => handleDeletePurchase(purchase.id)}>{t('common.delete')}</MenuItem>
                         </Menu>
                       </TableCell>
                     </TableRow>
@@ -1216,8 +1219,8 @@ export default function PurchasesPage(): React.JSX.Element {
         open={isDeleteModalOpen} 
         onClose={() => setIsDeleteModalOpen(false)} 
         onConfirm={handleConfirmDelete} 
-        title="Confirm Delete"
-        message={`Are you sure you want to delete this purchase?`}
+        title={t('common.confirmation')}
+        message={t('purchases.confirm_delete')}
       />
     </Box>
   );

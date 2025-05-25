@@ -30,6 +30,7 @@ import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore } from '@/providers/store-provider';
 import { useSnackbar } from 'notistack';
 import { InputAdornment } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 interface ProductItem {
   id: string;
@@ -97,6 +98,7 @@ const PurchaseEditModal = ({
   const { enqueueSnackbar } = useSnackbar();
   const { userInfo } = useCurrentUser();
   const { currentStore } = useStore();
+  const { t } = useTranslation('admin');
   
   // State
   const [formData, setFormData] = React.useState<PurchaseData>(purchase);
@@ -431,7 +433,7 @@ const PurchaseEditModal = ({
   
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{isNew ? 'Add New Purchase' : 'Edit Purchase'}</DialogTitle>
+      <DialogTitle>{isNew ? t('purchases.add_purchase') : t('purchases.edit_purchase')}</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           {/* Supplier Selection */}
@@ -602,11 +604,12 @@ const PurchaseEditModal = ({
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Product</TableCell>
-                  <TableCell align="right">Quantity</TableCell>
-                  <TableCell align="right">Unit Price</TableCell>
-                  <TableCell align="right">Subtotal</TableCell>
-                  <TableCell align="right">Actions</TableCell>
+                  <TableCell>{t('products.product_name')}</TableCell>
+                  <TableCell align="right">{t('purchases.quantity')}</TableCell>
+                  <TableCell align="right">{t('purchases.price')}</TableCell>
+                  <TableCell align="right">{t('purchases.discount')}</TableCell>
+                  <TableCell align="right">{t('purchases.subtotal')}</TableCell>
+                  <TableCell align="center">{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -634,6 +637,7 @@ const PurchaseEditModal = ({
                           sx={{ width: '100px' }}
                         />
                       </TableCell>
+                      <TableCell align="right">{product.discount.toFixed(2)}</TableCell>
                       <TableCell align="right">{product.subtotal.toFixed(2)}</TableCell>
                       <TableCell align="right">
                         <IconButton 
@@ -658,31 +662,22 @@ const PurchaseEditModal = ({
                 {formData.products.length > 0 && (
                 <>
                 <TableRow>
-                  <TableCell colSpan={3} align="right">
-                    <strong>Subtotal:</strong>
+                  <TableCell colSpan={4} align="right"><strong>{t('purchases.subtotal')}:</strong></TableCell>
+                  <TableCell align="right" colSpan={2}>
+                    ${formData.subtotal?.toFixed(2) || '0.00'}
                   </TableCell>
-                  <TableCell align="right">
-                    <strong>${(formData.subtotal || 0).toFixed(2)}</strong>
-                  </TableCell>
-                  <TableCell />
                 </TableRow>
                 <TableRow>
-                  <TableCell colSpan={3} align="right">
-                    <strong>Tax ({formData.tax || 0}%):</strong>
+                  <TableCell colSpan={4} align="right"><strong>{t('purchases.tax')} ({formData.tax || 0}%):</strong></TableCell>
+                  <TableCell align="right" colSpan={2}>
+                    ${formData.taxAmount?.toFixed(2) || '0.00'}
                   </TableCell>
-                  <TableCell align="right">
-                    <strong>${(formData.taxAmount || 0).toFixed(2)}</strong>
-                  </TableCell>
-                  <TableCell />
                 </TableRow>
                 <TableRow>
-                  <TableCell colSpan={3} align="right">
-                    <strong>Total:</strong>
+                  <TableCell colSpan={4} align="right"><strong>{t('purchases.total')}:</strong></TableCell>
+                  <TableCell align="right" colSpan={2}>
+                    ${formData.totalAmount.toFixed(2)}
                   </TableCell>
-                  <TableCell align="right">
-                    <strong>${formData.totalAmount.toFixed(2)}</strong>
-                  </TableCell>
-                  <TableCell />
                 </TableRow>
                 </>
                 )}

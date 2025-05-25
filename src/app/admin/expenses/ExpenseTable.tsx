@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { Expense, ExpenseCategory } from '@/services/api/financials';
 import { PaymentMode } from '@/services/api/transactions';
 import { Currency } from '@/services/api/companies';
+import { useTranslation } from 'react-i18next';
 
 interface ExpenseTableProps {
   expenses: Expense[];
@@ -55,6 +56,7 @@ export default function ExpenseTable({
 }: ExpenseTableProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { t } = useTranslation('admin');
 
   if (isLoading) {
     return (
@@ -68,7 +70,7 @@ export default function ExpenseTable({
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
         <Typography variant="body1" color="text.secondary">
-          No expenses found. Create your first expense.
+          {t('expenses.no_expenses')}
         </Typography>
       </Box>
     );
@@ -141,11 +143,11 @@ export default function ExpenseTable({
               
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 1 }}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Category</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('expenses.expense_category')}</Typography>
                   <Typography variant="body2">{getCategoryName(expense.expense_category)}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Amount</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('expenses.expense_amount')}</Typography>
                   <Typography variant="body2" fontWeight="bold">
                     {expense.amount} {getCurrencyCode(expense.currency)}
                   </Typography>
@@ -153,12 +155,12 @@ export default function ExpenseTable({
               </Box>
               
               <Box sx={{ mb: 1 }}>
-                <Typography variant="caption" color="text.secondary">Description</Typography>
+                <Typography variant="caption" color="text.secondary">{t('expenses.expense_description')}</Typography>
                 <Typography variant="body2">{expense.description}</Typography>
               </Box>
               
               <Box>
-                <Typography variant="caption" color="text.secondary">Payment Mode</Typography>
+                <Typography variant="caption" color="text.secondary">{t('expenses.expense_payment_mode')}</Typography>
                 <Chip 
                   label={getPaymentModeName(expense.payment_mode)} 
                   size="small" 
@@ -191,12 +193,12 @@ export default function ExpenseTable({
                   onChange={onSelectAll}
                 />
               </TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Payment Mode</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>{t('expenses.expense_date')}</TableCell>
+              <TableCell>{t('expenses.expense_category')}</TableCell>
+              <TableCell>{t('expenses.expense_description')}</TableCell>
+              <TableCell>{t('expenses.expense_amount')}</TableCell>
+              <TableCell>{t('expenses.expense_payment_mode')}</TableCell>
+              <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -251,6 +253,7 @@ export default function ExpenseTable({
                     <IconButton
                       onClick={() => onDelete(expense.id)}
                       size="small"
+                      color="error"
                     >
                       <TrashSimpleIcon />
                     </IconButton>

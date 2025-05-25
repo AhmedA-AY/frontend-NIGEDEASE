@@ -30,6 +30,7 @@ import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as EditIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { TrashSimple as DeleteIcon } from '@phosphor-icons/react/dist/ssr/TrashSimple';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 import { PageHeading } from '@/components/page-heading';
 import { useSnackbar } from 'notistack';
@@ -43,6 +44,7 @@ import { useStore } from '@/providers/store-provider';
 import { ProductUnit, ProductUnitCreateData } from '@/services/api/inventory';
 
 export default function ProductUnitsPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const { isLoading: isLoadingUnits, data: productUnits = [] } = useProductUnits(currentStore?.id || '');
   const { mutate: createProductUnit, isPending: isCreating } = useCreateProductUnit();
@@ -65,7 +67,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
   
   const handleOpenAddDialog = () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store'), { variant: 'error' });
       return;
     }
     
@@ -94,12 +96,12 @@ export default function ProductUnitsPage(): React.JSX.Element {
   
   const handleAddUnit = () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store'), { variant: 'error' });
       return;
     }
     
     if (!newUnit.name) {
-      enqueueSnackbar('Unit name is required', { variant: 'error' });
+      enqueueSnackbar(t('product_units.unit_name') + ' ' + t('common.is_required'), { variant: 'error' });
       return;
     }
     
@@ -117,6 +119,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
+        enqueueSnackbar(t('product_units.unit_created'), { variant: 'success' });
       }
     });
   };
@@ -125,7 +128,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
     if (!openUnit || !currentStore) return;
     
     if (!newUnit.name) {
-      enqueueSnackbar('Unit name is required', { variant: 'error' });
+      enqueueSnackbar(t('product_units.unit_name') + ' ' + t('common.is_required'), { variant: 'error' });
       return;
     }
     
@@ -144,6 +147,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
+        enqueueSnackbar(t('product_units.unit_updated'), { variant: 'success' });
       }
     });
   };
@@ -158,6 +162,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
       onSuccess: () => {
         setIsDeleteDialogOpen(false);
         setOpenUnit(null);
+        enqueueSnackbar(t('product_units.unit_deleted'), { variant: 'success' });
       }
     });
   };
@@ -173,8 +178,8 @@ export default function ProductUnitsPage(): React.JSX.Element {
         <Container maxWidth="xl">
           <Stack spacing={4}>
             <PageHeading 
-              title="Product Units Management" 
-              subtitle={currentStore ? `Store: ${currentStore.name}` : 'No store selected'}
+              title={t('product_units.title')} 
+              subtitle={currentStore ? `${t('common.store')}: ${currentStore.name}` : t('dashboard.no_store')}
               actions={
                 <Button
                   startIcon={<PlusIcon />}
@@ -182,32 +187,33 @@ export default function ProductUnitsPage(): React.JSX.Element {
                   onClick={handleOpenAddDialog}
                   disabled={isLoading || !currentStore}
                 >
-                  Add Product Unit
+                  {t('product_units.add_unit')}
                 </Button>
               }
             />
             <Card sx={{ boxShadow: 2, borderRadius: 2 }}>
-              <CardHeader title="Product Units" />
+              <CardHeader title={t('product_units.all_units')} />
               <CardContent>
                 {!currentStore ? (
-                  <Alert severity="warning">Please select a store to view product units.</Alert>
+                  <Alert severity="warning">{t('dashboard.no_store_message')}</Alert>
                 ) : isLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                     <CircularProgress />
+                    <Typography sx={{ ml: 2 }}>{t('product_units.loading_units')}</Typography>
                   </Box>
                 ) : error ? (
                   <Alert severity="error">{error}</Alert>
                 ) : productUnits.length === 0 ? (
-                  <Alert severity="info">No product units found for this store. Start by adding your first product unit.</Alert>
+                  <Alert severity="info">{t('product_units.no_units')}</Alert>
                 ) : (
                   <TableContainer component={Paper} elevation={0}>
                     <Table sx={{ minWidth: 650 }}>
                       <TableHead>
                         <TableRow>
-                          <TableCell>Name</TableCell>
-                          <TableCell>Description</TableCell>
-                          <TableCell>Created At</TableCell>
-                          <TableCell align="right">Actions</TableCell>
+                          <TableCell>{t('common.name')}</TableCell>
+                          <TableCell>{t('common.description')}</TableCell>
+                          <TableCell>{t('common.created_at')}</TableCell>
+                          <TableCell align="right">{t('common.actions')}</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -223,7 +229,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
                             </TableCell>
                             <TableCell align="right">
                               <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                <Tooltip title="Edit">
+                                <Tooltip title={t('common.edit')}>
                                   <IconButton 
                                     edge="end" 
                                     size="small"
@@ -232,7 +238,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
                                     <EditIcon />
                                   </IconButton>
                                 </Tooltip>
-                                <Tooltip title="Delete">
+                                <Tooltip title={t('common.delete')}>
                                   <IconButton 
                                     edge="end" 
                                     size="small"
@@ -257,7 +263,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
 
       {/* Add Product Unit Dialog */}
       <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Product Unit</DialogTitle>
+        <DialogTitle>{t('product_units.add_unit')}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
@@ -265,7 +271,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
               margin="dense"
               id="name"
               name="name"
-              label="Unit Name"
+              label={t('product_units.unit_name')}
               type="text"
               fullWidth
               value={newUnit.name || ''}
@@ -276,7 +282,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
               margin="dense"
               id="description"
               name="description"
-              label="Description"
+              label={t('common.description')}
               type="text"
               fullWidth
               multiline
@@ -287,20 +293,20 @@ export default function ProductUnitsPage(): React.JSX.Element {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsAddDialogOpen(false)} disabled={isCreating}>Cancel</Button>
+          <Button onClick={() => setIsAddDialogOpen(false)} disabled={isCreating}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleAddUnit} 
             variant="contained"
             disabled={isCreating}
           >
-            {isCreating ? 'Saving...' : 'Add Unit'}
+            {isCreating ? t('common.saving') : t('common.add')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Edit Product Unit Dialog */}
       <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Product Unit</DialogTitle>
+        <DialogTitle>{t('product_units.edit_unit')}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
@@ -308,7 +314,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
               margin="dense"
               id="edit-name"
               name="name"
-              label="Unit Name"
+              label={t('product_units.unit_name')}
               type="text"
               fullWidth
               value={newUnit.name || ''}
@@ -319,7 +325,7 @@ export default function ProductUnitsPage(): React.JSX.Element {
               margin="dense"
               id="edit-description"
               name="description"
-              label="Description"
+              label={t('common.description')}
               type="text"
               fullWidth
               multiline
@@ -330,33 +336,33 @@ export default function ProductUnitsPage(): React.JSX.Element {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>Cancel</Button>
+          <Button onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleEditUnit} 
             variant="contained"
             disabled={isUpdating}
           >
-            {isUpdating ? 'Saving...' : 'Save Changes'}
+            {isUpdating ? t('common.saving') : t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Product Unit</DialogTitle>
+        <DialogTitle>{t('product_units.delete_unit')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the product unit "{openUnit?.name}"? This action cannot be undone.
+            {t('product_units.confirm_delete').replace('{name}', openUnit?.name || '')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>Cancel</Button>
+          <Button onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleDeleteUnit} 
             color="error"
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? t('common.deleting') : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

@@ -12,6 +12,7 @@ import { ArrowSquareUpRight as ArrowSquareUpRightIcon } from '@phosphor-icons/re
 import { CaretUpDown as CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/CaretUpDown';
 import { CaretDown as CaretDownIcon } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { CaretRight as CaretRightIcon } from '@phosphor-icons/react/dist/ssr/CaretRight';
+import { useTranslation } from 'react-i18next';
 
 import type { NavItemConfig } from '@/types/nav';
 import { paths } from '@/paths';
@@ -23,6 +24,7 @@ import { navIcons } from '@/components/dashboard/layout/nav-icons';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
+  const { t } = useTranslation('admin');
 
   return (
     <Box
@@ -87,10 +89,10 @@ export function SideNav(): React.JSX.Element {
         >
           <Box sx={{ flex: '1 1 auto' }}>
             <Typography color="var(--mui-palette-neutral-400)" variant="body2" sx={{ fontWeight: 500 }}>
-              Role
+              {t('common.role')}
             </Typography>
             <Typography color="inherit" variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Admin
+              {t('common.admin')}
             </Typography>
           </Box>
           <CaretUpDownIcon />
@@ -120,17 +122,17 @@ export function SideNav(): React.JSX.Element {
           scrollbarColor: 'rgba(255, 255, 255, 0.1) transparent',
         }}
       >
-        {renderNavItems({ pathname, items: adminNavItems })}
+        {renderNavItems({ pathname, items: adminNavItems, t })}
       </Box>
       
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', flexShrink: 0 }} />
       <Stack spacing={2} sx={{ p: '16px', mb: 2, flexShrink: 0 }}>
         <div>
           <Typography color="var(--mui-palette-neutral-100)" variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Need help?
+            {t('common.need_help')}
           </Typography>
           <Typography color="var(--mui-palette-neutral-400)" variant="body2">
-            Contact our support team.
+            {t('common.contact_support')}
           </Typography>
         </div>
         <Button
@@ -167,7 +169,7 @@ export function SideNav(): React.JSX.Element {
           }}
           variant="contained"
         >
-          Contact Support
+          {t('common.contact_support_button')}
         </Button>
       </Stack>
     </Box>
@@ -176,13 +178,14 @@ export function SideNav(): React.JSX.Element {
 
 interface NavItemProps extends Omit<NavItemConfig, 'key'> {
   pathname: string;
+  t: (key: string) => string;
 }
 
-function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pathname: string }): React.JSX.Element {
+function renderNavItems({ items = [], pathname, t }: { items?: NavItemConfig[]; pathname: string; t: (key: string) => string }): React.JSX.Element {
   const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
     const { key, ...item } = curr;
 
-    acc.push(<NavItem key={key} pathname={pathname} {...item} />);
+    acc.push(<NavItem key={key} pathname={pathname} t={t} {...item} />);
 
     return acc;
   }, []);
@@ -194,7 +197,7 @@ function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pat
   );
 }
 
-function NavItem({ disabled, external, href, icon, matcher, pathname, title, items }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, matcher, pathname, title, items, t }: NavItemProps): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   const hasChildren = items && items.length > 0;
   const active = isNavItemActive({ disabled, external, href, matcher, pathname }) || 
@@ -204,6 +207,9 @@ function NavItem({ disabled, external, href, icon, matcher, pathname, title, ite
   const handleToggle = () => {
     setOpen(!open);
   };
+
+  // Translate the menu item title
+  const translatedTitle = t(`navigation.${title.toLowerCase().replace(/\s+/g, '_')}`);
 
   return (
     <li>
@@ -279,24 +285,48 @@ function NavItem({ disabled, external, href, icon, matcher, pathname, title, ite
               letterSpacing: '0.01em',
             }}
           >
-            {title}
+            {translatedTitle}
           </Typography>
         </Box>
-        {hasChildren && (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {open ? (
-              <CaretDownIcon fontSize="var(--icon-fontSize-sm)" />
-            ) : (
-              <CaretRightIcon fontSize="var(--icon-fontSize-sm)" />
-            )}
+        {hasChildren ? (
+          <Box
+            sx={{
+              alignItems: 'center',
+              display: 'flex',
+              justifyContent: 'center',
+              ml: 0.5,
+            }}
+          >
+            {open ? <CaretDownIcon fontSize="var(--icon-fontSize-sm)" /> : <CaretRightIcon fontSize="var(--icon-fontSize-sm)" />}
           </Box>
-        )}
+        ) : null}
       </Box>
-      {hasChildren && open && (
-        <Box sx={{ pl: 3, mt: 1 }}>
-          {renderNavItems({ items: items, pathname })}
-        </Box>
-      )}
+      {hasChildren ? (
+        <Stack
+          component="ul"
+          spacing={0.5}
+          sx={{
+            listStyle: 'none',
+            m: 0,
+            p: 0,
+            pl: 2, // Indent to show hierarchy
+            height: open ? 'auto' : 0,
+            opacity: open ? 1 : 0,
+            overflow: 'hidden',
+            transition: 'height 0.3s ease-in-out, opacity 0.3s ease-in-out',
+            visibility: open ? 'visible' : 'hidden',
+          }}
+        >
+          {items!.map((item) => {
+            const { key, ...others } = item;
+            return (
+              <Box component="li" key={key} sx={{ display: 'block', my: 0.5 }}>
+                <NavItem pathname={pathname} t={t} {...others} />
+              </Box>
+            );
+          })}
+        </Stack>
+      ) : null}
     </li>
   );
 } 

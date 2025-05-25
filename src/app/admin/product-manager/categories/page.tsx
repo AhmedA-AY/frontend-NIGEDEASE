@@ -20,6 +20,7 @@ import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { CloudArrowUp as CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr/CloudArrowUp';
+import { useTranslation } from 'react-i18next';
 import CategoryEditModal from '@/components/admin/product-manager/CategoryEditModal';
 import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
 import { paths } from '@/paths';
@@ -28,6 +29,7 @@ import { useSnackbar } from 'notistack';
 import { useStore } from '@/providers/store-provider';
 
 export default function CategoriesPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = React.useState(false);
@@ -55,11 +57,11 @@ export default function CategoriesPage(): React.JSX.Element {
     } catch (err) {
       console.error('Error fetching categories:', err);
       setError('Failed to load categories. Please try again.');
-      enqueueSnackbar('Failed to load categories', { variant: 'error' });
+      enqueueSnackbar(t('common.error'), { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, currentStore]);
+  }, [enqueueSnackbar, currentStore, t]);
 
   React.useEffect(() => {
     if (currentStore) {
@@ -93,13 +95,13 @@ export default function CategoriesPage(): React.JSX.Element {
       setIsLoading(true);
       try {
         await inventoryApi.deleteProductCategory(currentStore.id, categoryToDelete);
-        enqueueSnackbar('Category deleted successfully', { variant: 'success' });
+        enqueueSnackbar(t('categories.category_deleted'), { variant: 'success' });
         await fetchCategories();
         setIsDeleteModalOpen(false);
         setCategoryToDelete(null);
       } catch (err) {
         console.error('Error deleting category:', err);
-        enqueueSnackbar('Failed to delete category', { variant: 'error' });
+        enqueueSnackbar(t('common.error'), { variant: 'error' });
       } finally {
         setIsLoading(false);
       }
@@ -156,7 +158,7 @@ export default function CategoriesPage(): React.JSX.Element {
           description: categoryData.description || ''
         };
         await inventoryApi.updateProductCategory(currentStore.id, categoryData.id, updateData);
-        enqueueSnackbar('Category updated successfully', { variant: 'success' });
+        enqueueSnackbar(t('categories.category_updated'), { variant: 'success' });
       } else {
         // Add new category
         console.log('Creating new category with data:', {
@@ -173,7 +175,7 @@ export default function CategoriesPage(): React.JSX.Element {
         
         const result = await inventoryApi.createProductCategory(currentStore.id, createData);
         console.log('Category created successfully, result:', result);
-        enqueueSnackbar('Category created successfully', { variant: 'success' });
+        enqueueSnackbar(t('categories.category_created'), { variant: 'success' });
       }
       
       await fetchCategories();
@@ -182,7 +184,7 @@ export default function CategoriesPage(): React.JSX.Element {
       console.error('Error saving category:', err);
       
       // More detailed error message
-      let errorMessage = 'Failed to save category';
+      let errorMessage = t('common.error');
       
       if (err.response && err.response.data) {
         // Try to extract error message from API response
@@ -210,16 +212,16 @@ export default function CategoriesPage(): React.JSX.Element {
 
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Product Manager', url: paths.admin.productManager },
-    { label: 'Categories', url: paths.admin.categories },
+    { label: t('nav.dashboard'), url: paths.admin.dashboard },
+    { label: t('nav.product_manager'), url: paths.admin.productManager },
+    { label: t('nav.categories'), url: paths.admin.categories },
   ];
 
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
       {/* Header and Breadcrumbs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>Categories</Typography>
+        <Typography variant="h4" sx={{ mb: 1 }}>{t('categories.title')}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
           {breadcrumbItems.map((item, index) => (
             <React.Fragment key={index}>
@@ -247,14 +249,14 @@ export default function CategoriesPage(): React.JSX.Element {
           onClick={handleAddCategory}
           disabled={isLoading}
         >
-          Add New Category
+          {t('categories.add_category')}
         </Button>
         <Button 
           variant="outlined" 
           startIcon={<CloudArrowUpIcon weight="bold" />}
           disabled={isLoading}
         >
-          Import Categories
+          {t('categories.import_categories')}
         </Button>
       </Box>
 
@@ -276,10 +278,10 @@ export default function CategoriesPage(): React.JSX.Element {
                   disabled={isLoading}
                 />
               </TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Created At</TableCell>
-              <TableCell>Action</TableCell>
+              <TableCell>{t('common.name')}</TableCell>
+              <TableCell>{t('common.description')}</TableCell>
+              <TableCell>{t('common.created_at')}</TableCell>
+              <TableCell>{t('common.action')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -288,7 +290,7 @@ export default function CategoriesPage(): React.JSX.Element {
                 <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                   <CircularProgress size={24} sx={{ mr: 1 }} />
                   <Typography variant="body2" display="inline">
-                    Loading categories...
+                    {t('categories.loading_categories')}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -296,7 +298,7 @@ export default function CategoriesPage(): React.JSX.Element {
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                   <Typography variant="body2">
-                    No categories found. Create your first category.
+                    {t('categories.no_categories')}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -362,8 +364,8 @@ export default function CategoriesPage(): React.JSX.Element {
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        title="Delete Category"
-        message="Are you sure you want to delete this category? This action cannot be undone."
+        title={t('categories.delete_category')}
+        message={t('categories.confirm_delete')}
       />
     </Box>
   );

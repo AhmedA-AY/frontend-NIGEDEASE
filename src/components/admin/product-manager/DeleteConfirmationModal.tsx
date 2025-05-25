@@ -8,6 +8,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
+import { useTranslation } from 'react-i18next';
 
 interface DeleteConfirmationModalProps {
   open: boolean;
@@ -26,6 +27,8 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   message,
   isLoading = false
 }) => {
+  const { t } = useTranslation('admin');
+  
   return (
     <Dialog
       open={open}
@@ -43,7 +46,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={isLoading}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button 
           onClick={onConfirm} 
@@ -51,7 +54,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
           disabled={isLoading}
           startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
         >
-          {isLoading ? 'Deleting...' : 'Delete'}
+          {isLoading ? t('common.deleting') : t('common.delete')}
         </Button>
       </DialogActions>
     </Dialog>

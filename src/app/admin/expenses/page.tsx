@@ -40,6 +40,7 @@ import ExpenseTable from './ExpenseTable';
 import { Stack as MuiStack } from '@mui/system';
 import { useStore } from '@/providers/store-provider';
 import tokenStorage from '@/utils/token-storage';
+import { useTranslation } from 'react-i18next';
 
 // Payment Mode Name Display component
 const PaymentModeDisplay = ({ modeId, paymentModes }: { modeId: string, paymentModes: PaymentMode[] }) => {
@@ -54,6 +55,7 @@ const CurrencyDisplay = ({ currencyId, currencies }: { currencyId: string, curre
 };
 
 export default function ExpensesPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const [selectedExpenses, setSelectedExpenses] = React.useState<string[]>([]);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
@@ -229,7 +231,7 @@ export default function ExpensesPage(): React.JSX.Element {
     
     if (!storeId) {
       console.log('No store ID available');
-      enqueueSnackbar('Unable to add expense: Store data not available.', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store_selected'), { variant: 'error' });
       return;
     }
     
@@ -324,15 +326,15 @@ export default function ExpensesPage(): React.JSX.Element {
 
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Expenses', url: paths.admin.expenses },
+    { label: t('dashboard.title'), url: paths.admin.dashboard },
+    { label: t('navigation.expenses'), url: paths.admin.expenses },
   ];
 
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
       {/* Header and Breadcrumbs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>Expenses</Typography>
+        <Typography variant="h4" sx={{ mb: 1 }}>{t('expenses.title')}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
           {breadcrumbItems.map((item, index) => (
             <React.Fragment key={index}>
@@ -361,7 +363,7 @@ export default function ExpensesPage(): React.JSX.Element {
             onClick={handleAddNewExpense}
             disabled={isLoading || currencies.length === 0 || (!currentStore?.id && !currentStoreId)}
           >
-            Add New Expense
+            {t('expenses.add_expense')}
           </Button>
           <Button
             variant="outlined"

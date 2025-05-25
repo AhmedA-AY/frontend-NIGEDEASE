@@ -9,6 +9,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import { ApexOptions } from 'apexcharts';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { format as formatDate, subDays, subMonths } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 import DynamicApexChart from '@/components/dynamic-apex-chart';
 import { TopSellingProduct, RecentSale, StockAlert, TopCustomer } from '@/services/api/dashboard';
@@ -27,6 +28,7 @@ import { useDashboardData, DashboardPeriod } from '@/hooks/admin/use-dashboard';
 import { Storefront } from '@phosphor-icons/react/dist/ssr/Storefront';
 
 export default function AdminDashboardPage() {
+  const { t } = useTranslation('admin');
   const { userInfo } = useCurrentUser();
   const { currentStore, stores } = useStore();
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('month');
@@ -116,11 +118,11 @@ export default function AdminDashboardPage() {
   // Create the chart series based on the data
   const dailySalesChartSeries = [
     {
-      name: 'Sales',
+      name: t('dashboard.charts.sales'),
       data: dashboardData?.dailySales.map((item: any) => item.sales) || [],
     },
     {
-      name: 'Expenses',
+      name: t('dashboard.charts.expenses'),
       data: dashboardData?.dailySales.map((item: any) => item.expenses) || [],
     },
   ];
@@ -130,7 +132,7 @@ export default function AdminDashboardPage() {
       <Container maxWidth="xl">
         <Box sx={{ py: 4 }}>
           <Typography variant="h4" gutterBottom>
-            Loading dashboard data...
+            {t('dashboard.loading')}
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
             <Box sx={{ position: 'relative' }}>
@@ -161,11 +163,11 @@ export default function AdminDashboardPage() {
       <Container maxWidth="xl">
         <Box sx={{ py: 4 }}>
           <Typography variant="h4" gutterBottom color="error">
-            Error Loading Dashboard
+            {t('dashboard.error')}
           </Typography>
           <Paper sx={{ p: 3, mb: 3, bgcolor: '#fff8f8', color: 'error.main' }}>
             <Typography variant="body1" paragraph>
-              {error instanceof Error ? error.message : 'Failed to load dashboard data. Please try again.'}
+              {error instanceof Error ? error.message : t('dashboard.error_message')}
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button 
@@ -174,7 +176,7 @@ export default function AdminDashboardPage() {
                 startIcon={<RefreshIcon />}
             onClick={handleRetry}
           >
-            Retry
+            {t('dashboard.retry')}
           </Button>
             </Box>
           </Paper>
@@ -188,11 +190,11 @@ export default function AdminDashboardPage() {
       <Container maxWidth="xl">
         <Box sx={{ py: 4 }}>
             <Typography variant="h4" gutterBottom>
-            No Store Selected
+              {t('dashboard.no_store')}
             </Typography>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="body1" paragraph>
-              Please select a store from the dropdown menu to view the dashboard.
+              {t('dashboard.no_store_message')}
             </Typography>
           </Paper>
           </Box>
@@ -237,7 +239,7 @@ export default function AdminDashboardPage() {
           <Grid container justifyContent="space-between" spacing={2} alignItems="center">
             <Grid item xs={12} sm={6}>
               <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-                Dashboard
+                {t('dashboard.overview')}
               </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -249,130 +251,114 @@ export default function AdminDashboardPage() {
                   mb: { xs: 1, sm: 0 } 
                 }}
               >
-          <Button 
-                  color={selectedPeriod === 'today' ? 'primary' : 'inherit'}
-            onClick={() => handlePeriodChange('today')}
-                  variant={selectedPeriod === 'today' ? 'contained' : 'text'}
-                  size="small"
-                  sx={{ minWidth: { xs: '60px', sm: '80px' } }}
-          >
-            Today
-          </Button>
-          <Button 
-                  color={selectedPeriod === 'week' ? 'primary' : 'inherit'}
-            onClick={() => handlePeriodChange('week')}
-                  variant={selectedPeriod === 'week' ? 'contained' : 'text'}
-                  size="small"
-                  sx={{ minWidth: { xs: '60px', sm: '80px' } }}
-          >
-                  Week
-          </Button>
-          <Button 
-                  color={selectedPeriod === 'month' ? 'primary' : 'inherit'}
-            onClick={() => handlePeriodChange('month')}
-                  variant={selectedPeriod === 'month' ? 'contained' : 'text'}
-                  size="small"
-                  sx={{ minWidth: { xs: '60px', sm: '80px' } }}
-          >
-                  Month
-          </Button>
-          <Button 
-                  color={selectedPeriod === 'year' ? 'primary' : 'inherit'}
-            onClick={() => handlePeriodChange('year')}
-                  variant={selectedPeriod === 'year' ? 'contained' : 'text'}
-                  size="small"
-                  sx={{ minWidth: { xs: '60px', sm: '80px' } }}
-          >
-                  Year
-          </Button>
-        </Stack>
+                {['today', 'week', 'month', 'year'].map((period) => (
+                  <Button
+                    key={period}
+                    variant={selectedPeriod === period ? 'contained' : 'outlined'}
+                    size="small"
+                    onClick={() => handlePeriodChange(period as DashboardPeriod)}
+                    sx={{ 
+                      minWidth: 'auto',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 1,
+                      textTransform: 'capitalize'
+                    }}
+                  >
+                    {t(`dashboard.filter_periods.${period}`)}
+                  </Button>
+                ))}
+              </Stack>
             </Grid>
           </Grid>
         </Box>
 
-        <Box sx={{ mb: { xs: 3, sm: 4 } }}>
-          <Grid container spacing={{ xs: 2, sm: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Total Sales"
-                value={formattedTotalSales}
-                change={salesGrowthFormatted}
-                positive={salesGrowth ? salesGrowth >= 0 : false}
-                icon={<TrendingUpIcon />}
-              />
-            </Grid>
+        {/* Main Stats */}
+        <Grid container spacing={3} sx={{ mb: { xs: 2, sm: 4 } }}>
           <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Total Expenses"
-                value={formattedTotalExpenses}
-                change={expensesChangePercentage}
-                positive={false}
-                icon={<TrendingDownIcon />}
-              />
+            <StatCard 
+              title={t('dashboard.stats.total_sales')}
+              value={formattedTotalSales}
+              change={salesGrowthFormatted}
+              positive={salesGrowth ? salesGrowth >= 0 : true}
+              icon={<TrendingUpIcon sx={{ fontSize: 30, color: '#2979ff' }} />}
+            />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Payment Received"
-                value={formattedPaymentReceived}
-                change={paymentsChangePercentage}
-                positive={true}
-                icon={<ReceiptIcon />}
-              />
+            <StatCard 
+              title={t('dashboard.stats.total_expenses')}
+              value={formattedTotalExpenses}
+              change={expensesChangePercentage}
+              positive={false}
+              icon={<TrendingDownIcon sx={{ fontSize: 30, color: '#ff9800' }} />}
+            />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Total Customers"
-                value={formattedTotalCustomers}
-                change={customersChangePercentage}
-                positive={true}
-                icon={<PeopleIcon />}
-              />
-            </Grid>
+            <StatCard 
+              title={t('dashboard.stats.payment_received')}
+              value={formattedPaymentReceived}
+              change={paymentsChangePercentage}
+              positive={true}
+              icon={<ReceiptIcon sx={{ fontSize: 30, color: '#4caf50' }} />}
+            />
           </Grid>
-        </Box>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard 
+              title={t('dashboard.stats.total_customers')}
+              value={formattedTotalCustomers}
+              change={customersChangePercentage}
+              positive={true}
+              icon={<PeopleIcon sx={{ fontSize: 30, color: '#f44336' }} />}
+            />
+          </Grid>
+        </Grid>
 
-        <Grid container spacing={{ xs: 2, sm: 3 }}>
-          <Grid item xs={12} lg={8}>
-            <Card>
-              <CardHeader 
-                title="Sales vs Expenses" 
-                sx={{ 
-                  '& .MuiCardHeader-title': {
-                    fontSize: { xs: '1rem', sm: '1.25rem' }
-                  }
-                }}
-              />
-              <Box 
-                sx={{ 
-                  height: { xs: 300, sm: 400 },
-                  p: { xs: 1, sm: 3 },
-                  position: 'relative'
-                }}
-              >
-                <DynamicApexChart
-                  options={dailySalesChartOptions}
-                  series={dailySalesChartSeries}
-                  type="area"
-                  height={350}
-                />
-              </Box>
-            </Card>
+        {/* Sales vs Expenses Chart */}
+        <Card sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 4 } }}>
+          <CardHeader
+            title={t('dashboard.charts.sales_vs_expenses')}
+            sx={{ p: 0, mb: 2 }}
+            titleTypographyProps={{ variant: 'h6' }}
+          />
+          <Box sx={{ p: 2, height: 350 }}>
+            <DynamicApexChart 
+              options={dailySalesChartOptions}
+              series={dailySalesChartSeries}
+              type="line"
+              height={350}
+            />
+          </Box>
+        </Card>
+
+        {/* Overview Sections */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <TopSellingProducts 
+              products={topSellingProducts || []} 
+              t={t} 
+            />
           </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <TopSellingProducts products={topSellingProducts || []} />
+          <Grid item xs={12} md={6}>
+            <RecentSales 
+              sales={recentSales || []} 
+              t={t}  
+            />
           </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <RecentSales sales={recentSales || []} />
+          <Grid item xs={12} md={6}>
+            <StockAlerts 
+              alerts={stockAlerts || []} 
+              t={t}  
+            />
           </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <StockAlerts alerts={stockAlerts || []} />
-          </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <TopCustomers customers={topCustomers || []} />
+          <Grid item xs={12} md={6}>
+            <TopCustomers 
+              customers={topCustomers || []} 
+              t={t}  
+            />
           </Grid>
         </Grid>
       </Container>
-      </Box>
+    </Box>
   );
 }
 
@@ -386,95 +372,49 @@ interface StatCardProps {
 
 function StatCard({ title, value, change, positive, icon }: StatCardProps) {
   return (
-    <Card
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        p: { xs: 2, sm: 3 },
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-        borderRadius: 2,
-        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-        },
-      }}
-    >
+    <Card sx={{ 
+      p: 3, 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.05)'
+    }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography 
-          color="text.secondary" 
-          variant="overline" 
-          sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}
-        >
+        <Typography variant="subtitle2" color="text.secondary">
           {title}
         </Typography>
-        <Box
-            sx={{ 
-            backgroundColor: positive ? 'success.lightest' : 'error.lightest',
-            borderRadius: 1,
-              display: 'flex',
+        <Box 
+          sx={{ 
+            bgcolor: positive ? 'success.lighter' : 'error.lighter',
+            color: positive ? 'success.main' : 'error.main',
+            borderRadius: '50%',
+            p: 1,
+            display: 'flex',
             alignItems: 'center',
-            p: '4px 8px',
+            justifyContent: 'center'
           }}
         >
-          {positive ? (
-            <TrendingUpIcon
-              fontSize="small"
-              sx={{ color: 'success.main', fontSize: { xs: '0.875rem', sm: '1rem' } }}
-            />
-          ) : (
-            <TrendingDownIcon
-              fontSize="small"
-              sx={{ color: 'error.main', fontSize: { xs: '0.875rem', sm: '1rem' } }}
-            />
-          )}
-          <Typography
-            color={positive ? 'success.main' : 'error.main'}
-            sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
-            variant="body2"
-            >
-              {change}
-            </Typography>
+          {icon}
         </Box>
       </Box>
-      <Typography 
-        variant="h4" 
-        sx={{ 
-          fontWeight: 700,
-          fontSize: { xs: '1.5rem', sm: '2rem' }, 
-          mb: 2,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}
-      >
+      <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
         {value}
       </Typography>
-      <Box
-        sx={{
-          alignItems: 'center',
-          borderRadius: 1,
-          display: 'flex',
-          mt: 'auto',
-          width: 'fit-content',
-        }}
-      >
-        <Box
-          sx={{
-            alignItems: 'center',
-            backgroundColor: 'primary.lightest',
-            borderRadius: '50%',
-            display: 'flex',
-            height: { xs: 32, sm: 40 },
-            justifyContent: 'center',
-            width: { xs: 32, sm: 40 },
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        {positive ? (
+          <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5, fontSize: 16 }} />
+        ) : (
+          <TrendingDownIcon sx={{ color: 'error.main', mr: 0.5, fontSize: 16 }} />
+        )}
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            color: positive ? 'success.main' : 'error.main',
+            fontWeight: 'medium'
           }}
         >
-          {React.cloneElement(icon as React.ReactElement, {
-            style: { color: 'var(--mui-palette-primary-main)', fontSize: '1.25rem' },
-          })}
-        </Box>
+          {change}
+        </Typography>
       </Box>
     </Card>
   );
