@@ -23,11 +23,21 @@ import {
   FacebookLogo, 
   LinkedinLogo 
 } from '@phosphor-icons/react/dist/ssr';
+import { useTranslation } from 'react-i18next';
 
 import { paths } from '@/paths';
 import ContactForm from '@/components/contact/contact-form';
 
 const ContactPage = () => {
+  const { t, i18n } = useTranslation('contact');
+
+  // Helper function to safely get translations with fallbacks
+  const safeTranslate = (key: string, fallback: string): string => {
+    const result = t(key);
+    // If the result is the same as the key, it means translation failed
+    return result === key ? fallback : result;
+  };
+
   return (
     <Box 
       component="main" 
@@ -41,10 +51,10 @@ const ContactPage = () => {
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h4" align="center" gutterBottom>
-              Get In Touch
+              {safeTranslate('get_in_touch', 'Get In Touch')}
             </Typography>
             <Typography variant="body1" align="center" color="text.secondary" paragraph>
-              We'd love to hear from you! Reach out to our team with any questions.
+              {safeTranslate('contact_subtitle', 'We\'d love to hear from you! Reach out to our team with any questions.')}
             </Typography>
             </Grid>
             
@@ -54,22 +64,22 @@ const ContactPage = () => {
               <CardContent>
                 <Stack spacing={3}>
                   <Typography variant="h6" gutterBottom>
-                  Contact Information
-                </Typography>
+                    {safeTranslate('contact_information', 'Contact Information')}
+                  </Typography>
                 
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Phone size={24} />
-                    <Typography variant="body1">+251 912 345 678</Typography>
+                    <Typography variant="body1">{safeTranslate('phone_number', '+251 912 345 678')}</Typography>
                   </Stack>
                   
                   <Stack direction="row" spacing={2} alignItems="center">
                     <EnvelopeSimple size={24} />
-                    <Typography variant="body1">info@niged-ease.com</Typography>
+                    <Typography variant="body1">{safeTranslate('email', 'info@niged-ease.com')}</Typography>
                   </Stack>
                   
                   <Stack direction="row" spacing={2} alignItems="center">
                     <MapPin size={24} />
-                    <Typography variant="body1">Addis Ababa, Ethiopia</Typography>
+                    <Typography variant="body1">{safeTranslate('address', 'Addis Ababa, Ethiopia')}</Typography>
                 </Stack>
                 
                   <Stack direction="row" spacing={1}>
