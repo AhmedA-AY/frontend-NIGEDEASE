@@ -42,8 +42,10 @@ import ProductEditModal from '@/components/admin/product-manager/ProductEditModa
 import { useCurrentUser } from '@/hooks/use-auth';
 import { companiesApi } from '@/services/api/companies';
 import { useStore } from '@/providers/store-provider';
+import { useTranslation } from 'react-i18next';
 
 export default function ProductsPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -73,7 +75,7 @@ export default function ProductsPage(): React.JSX.Element {
   // Fetch products and categories
   const fetchData = useCallback(async () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
+      enqueueSnackbar(t('dashboard.no_store_message'), { variant: 'warning' });
       setIsLoading(false);
       return;
     }
@@ -92,11 +94,11 @@ export default function ProductsPage(): React.JSX.Element {
       setProductUnits(unitsData);
     } catch (error) {
       console.error('Error fetching data:', error);
-      enqueueSnackbar('Failed to load products', { variant: 'error' });
+      enqueueSnackbar(t('products.loading_products'), { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, currentStore]);
+  }, [enqueueSnackbar, currentStore, t]);
 
   useEffect(() => {
     if (currentStore) {
@@ -146,7 +148,7 @@ export default function ProductsPage(): React.JSX.Element {
 
   const handleAddProduct = () => {
     if (!currentStore) {
-      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      enqueueSnackbar(t('dashboard.no_store_message'), { variant: 'warning' });
       return;
     }
     
@@ -196,13 +198,13 @@ export default function ProductsPage(): React.JSX.Element {
       });
       setIsProductModalOpen(true);
     } else {
-      enqueueSnackbar('Product not found', { variant: 'error' });
+      enqueueSnackbar(t('products.product_not_found'), { variant: 'error' });
     }
   };
 
   const handleSaveProduct = async (productData: ProductCreateData & { id?: string }) => {
     if (!currentStore) {
-      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      enqueueSnackbar(t('dashboard.no_store_message'), { variant: 'warning' });
       return;
     }
     
@@ -212,12 +214,12 @@ export default function ProductsPage(): React.JSX.Element {
         // Update existing product
         console.log('Updating product with ID:', productData.id);
         await inventoryApi.updateProduct(currentStore.id, productData.id, productData);
-        enqueueSnackbar('Product updated successfully', { variant: 'success' });
+        enqueueSnackbar(t('products.product_updated'), { variant: 'success' });
       } else {
         // Add new product
         console.log('Creating new product with data:', productData);
         await inventoryApi.createProduct(currentStore.id, productData);
-        enqueueSnackbar('Product added successfully', { variant: 'success' });
+        enqueueSnackbar(t('products.product_created'), { variant: 'success' });
       }
       fetchData();
       setIsProductModalOpen(false);
@@ -229,14 +231,14 @@ export default function ProductsPage(): React.JSX.Element {
         console.log('Backend validation errors:', error.response.data);
         enqueueSnackbar(JSON.stringify(error.response.data), { variant: 'error' });
       } else {
-        enqueueSnackbar('Failed to save product', { variant: 'error' });
+        enqueueSnackbar(t('products.save_error'), { variant: 'error' });
       }
     }
   };
 
   const handleViewProduct = (id: string) => {
     // In a real application, this would navigate to product details
-    enqueueSnackbar(`View product with ID: ${id}`, { variant: 'info' });
+    enqueueSnackbar(`${t('products.view_product_info')} ${id}`, { variant: 'info' });
   };
 
   const openDeleteConfirmation = (id: string) => {
@@ -246,20 +248,20 @@ export default function ProductsPage(): React.JSX.Element {
 
   const handleDeleteConfirm = async () => {
     if (!currentStore) {
-      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      enqueueSnackbar(t('dashboard.no_store_message'), { variant: 'warning' });
       return;
     }
     
     if (productToDelete) {
       try {
         await inventoryApi.deleteProduct(currentStore.id, productToDelete);
-        enqueueSnackbar('Product deleted successfully', { variant: 'success' });
+        enqueueSnackbar(t('products.product_deleted'), { variant: 'success' });
         fetchData();
         setDeleteConfirmOpen(false);
         setProductToDelete(null);
       } catch (error) {
         console.error('Error deleting product:', error);
-        enqueueSnackbar('Failed to delete product', { variant: 'error' });
+        enqueueSnackbar(t('products.delete_error'), { variant: 'error' });
       }
     }
   };
@@ -271,20 +273,20 @@ export default function ProductsPage(): React.JSX.Element {
 
   const handleExportProducts = () => {
     // In a real application, this would export products to CSV/Excel
-    enqueueSnackbar('Export products to CSV/Excel', { variant: 'info' });
+    enqueueSnackbar(t('products.export_info'), { variant: 'info' });
   };
 
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Product Manager', url: paths.admin.productManager },
-    { label: 'Products', url: paths.admin.products },
+    { label: t('navigation.dashboard'), url: paths.admin.dashboard },
+    { label: t('navigation.product_manager'), url: paths.admin.productManager },
+    { label: t('navigation.products'), url: paths.admin.products },
   ];
   
   // Find category name by ID
   const getCategoryName = (categoryId: string) => {
     const category = categories.find(cat => cat.id === categoryId);
-    return category ? category.name : 'Unknown Category';
+    return category ? category.name : t('products.unknown_category');
   };
 
   return (
@@ -294,7 +296,7 @@ export default function ProductsPage(): React.JSX.Element {
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
             <SquaresIcon size={28} weight="bold" style={{ marginRight: '8px', color: '#0ea5e9' }} />
-            <Typography variant="h4">Products</Typography>
+            <Typography variant="h4">{t('products.title')}</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
             {breadcrumbItems.map((item, index) => (
@@ -319,7 +321,7 @@ export default function ProductsPage(): React.JSX.Element {
             startIcon={<ExportIcon weight="bold" />}
             onClick={handleExportProducts}
           >
-            Export
+            {t('common.export')}
           </Button>
           <Button 
             variant="contained" 
@@ -327,7 +329,7 @@ export default function ProductsPage(): React.JSX.Element {
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddProduct}
           >
-            Add Product
+            {t('products.add_product')}
           </Button>
         </Stack>
       </Box>
@@ -337,7 +339,7 @@ export default function ProductsPage(): React.JSX.Element {
         <Grid container spacing={2} alignItems="flex-end">
           <Grid item xs={12} md={4}>
             <OutlinedInput
-              placeholder="Search products..."
+              placeholder={t('common.search') + '...'}
               fullWidth
               value={searchTerm}
               onChange={handleSearchChange}
@@ -350,15 +352,15 @@ export default function ProductsPage(): React.JSX.Element {
           </Grid>
           <Grid item xs={12} md={3}>
             <FormControl fullWidth size="small">
-              <InputLabel id="category-label">Category</InputLabel>
+              <InputLabel id="category-label">{t('products.product_category')}</InputLabel>
               <Select
                 labelId="category-label"
                 id="category-select"
                 value={categoryFilter}
-                label="Category"
+                label={t('products.product_category')}
                 onChange={handleCategoryChange as any}
               >
-                <MenuItem value="">All Categories</MenuItem>
+                <MenuItem value="">{t('categories.all_categories')}</MenuItem>
                 {categories.map(category => (
                   <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
                 ))}
@@ -371,7 +373,7 @@ export default function ProductsPage(): React.JSX.Element {
               fullWidth
               onClick={handleResetFilters}
             >
-              Reset Filters
+              {t('common.reset')}
             </Button>
           </Grid>
         </Grid>
@@ -390,11 +392,11 @@ export default function ProductsPage(): React.JSX.Element {
                     onChange={handleSelectAll}
                   />
                 </TableCell>
-                <TableCell>Image</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell align="center">Actions</TableCell>
+                <TableCell>{t('products.product_image')}</TableCell>
+                <TableCell>{t('common.name')}</TableCell>
+                <TableCell>{t('products.product_category')}</TableCell>
+                <TableCell>{t('common.description')}</TableCell>
+                <TableCell align="center">{t('common.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -402,13 +404,13 @@ export default function ProductsPage(): React.JSX.Element {
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <CircularProgress size={24} />
-                    <Typography sx={{ ml: 2 }}>Loading products...</Typography>
+                    <Typography sx={{ ml: 2 }}>{t('products.loading_products')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : filteredProducts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                    <Typography>No products found</Typography>
+                    <Typography>{t('products.no_products')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -508,16 +510,16 @@ export default function ProductsPage(): React.JSX.Element {
         open={deleteConfirmOpen}
         onClose={handleDeleteCancel}
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogTitle>{t('products.delete_product')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this product? This action cannot be undone.
+            {t('products.confirm_delete')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
+          <Button onClick={handleDeleteCancel}>{t('common.cancel')}</Button>
           <Button onClick={handleDeleteConfirm} color="error" autoFocus>
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

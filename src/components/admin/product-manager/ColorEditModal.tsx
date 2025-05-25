@@ -13,6 +13,7 @@ import Box from '@mui/material/Box';
 import { HexColorPicker } from 'react-colorful';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
+import { useTranslation } from 'react-i18next';
 
 interface ColorData {
   id?: string;
@@ -36,6 +37,7 @@ export default function ColorEditModal({
   color = { name: '', description: '', hexCode: '#3B82F6' },
   isNew = true
 }: ColorEditModalProps): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const [formData, setFormData] = React.useState<ColorData>({ name: '', description: '', hexCode: '#3B82F6' });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   
@@ -78,17 +80,17 @@ export default function ColorEditModal({
     const newErrors: Record<string, string> = {};
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Color name is required';
+      newErrors.name = t('clothing.colors.color_name_required');
     }
     
     if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.description = t('clothing.colors.description_required');
     }
     
     // Validate hex color code using regex
     const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
     if (!hexColorRegex.test(formData.hexCode)) {
-      newErrors.hexCode = 'Please enter a valid hex color code';
+      newErrors.hexCode = t('clothing.colors.valid_hex_required');
     }
     
     setErrors(newErrors);
@@ -103,7 +105,7 @@ export default function ColorEditModal({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{isNew ? 'Add New Color' : 'Edit Color'}</DialogTitle>
+      <DialogTitle>{isNew ? t('clothing.colors.add_color') : t('clothing.colors.edit_color')}</DialogTitle>
       <DialogContent>
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -111,7 +113,7 @@ export default function ColorEditModal({
               autoFocus
               margin="dense"
               name="name"
-              label="Color Name"
+              label={t('clothing.colors.color_name')}
               type="text"
               fullWidth
               value={formData.name}
@@ -125,7 +127,7 @@ export default function ColorEditModal({
             <TextField
               margin="dense"
               name="description"
-              label="Description"
+              label={t('common.description')}
               type="text"
               fullWidth
               multiline
@@ -139,11 +141,11 @@ export default function ColorEditModal({
           
           <Grid item xs={12}>
             <Box sx={{ mt: 2, mb: 1 }}>
-              <Typography variant="subtitle1">Color</Typography>
+              <Typography variant="subtitle1">{t('clothing.colors.title')}</Typography>
               <TextField
                 margin="dense"
                 name="hexCode"
-                label="Hex Code"
+                label={t('clothing.colors.color_code')}
                 type="text"
                 value={formData.hexCode}
                 onChange={handleChange}
@@ -177,20 +179,20 @@ export default function ColorEditModal({
                   fontWeight: 'bold'
                 }}
               >
-                {formData.name || 'Color Preview'}
+                {formData.name || t('clothing.colors.color_preview')}
               </Typography>
             </Box>
           </Grid>
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
           sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
         >
-          {isNew ? 'Add Color' : 'Save Changes'}
+          {isNew ? t('clothing.colors.add_color') : t('common.save')}
         </Button>
       </DialogActions>
     </Dialog>

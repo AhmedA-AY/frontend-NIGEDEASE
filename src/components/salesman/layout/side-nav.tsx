@@ -12,6 +12,7 @@ import { ArrowSquareUpRight as ArrowSquareUpRightIcon } from '@phosphor-icons/re
 import { CaretUpDown as CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/CaretUpDown';
 import { CaretDown as CaretDownIcon } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { CaretRight as CaretRightIcon } from '@phosphor-icons/react/dist/ssr/CaretRight';
+import { useTranslation } from 'react-i18next';
 
 import type { NavItemConfig } from '@/types/nav';
 import { paths } from '@/paths';
@@ -23,6 +24,7 @@ import { navIcons } from '@/components/dashboard/layout/nav-icons';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
+  const { t } = useTranslation('admin');
 
   return (
     <Box
@@ -88,10 +90,10 @@ export function SideNav(): React.JSX.Element {
         >
           <Box sx={{ flex: '1 1 auto' }}>
             <Typography color="var(--mui-palette-neutral-400)" variant="body2" sx={{ fontWeight: 500 }}>
-              Role
+              {t('common.role')}
             </Typography>
             <Typography color="inherit" variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Salesman
+              {t('common.salesman')}
             </Typography>
           </Box>
           <CaretUpDownIcon />
@@ -99,16 +101,16 @@ export function SideNav(): React.JSX.Element {
       </Stack>
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
       <Box component="nav" sx={{ flex: '1 1 auto', p: '16px' }}>
-        {renderNavItems({ pathname, items: salesNavItems })}
+        {renderNavItems({ pathname, items: salesNavItems, t })}
       </Box>
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
       <Stack spacing={2} sx={{ p: '16px', mb: 2 }}>
         <div>
           <Typography color="var(--mui-palette-neutral-100)" variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Need help?
+            {t('common.need_help')}
           </Typography>
           <Typography color="var(--mui-palette-neutral-400)" variant="body2">
-            Contact our support team.
+            {t('common.contact_support')}
           </Typography>
         </div>
         <Button
@@ -145,18 +147,23 @@ export function SideNav(): React.JSX.Element {
           }}
           variant="contained"
         >
-          Contact Support
+          {t('common.contact_support_button')}
         </Button>
       </Stack>
     </Box>
   );
 }
 
-function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pathname: string }): React.JSX.Element {
+interface NavItemProps extends Omit<NavItemConfig, 'key'> {
+  pathname: string;
+  t: (key: string) => string;
+}
+
+function renderNavItems({ items = [], pathname, t }: { items?: NavItemConfig[]; pathname: string; t: (key: string) => string }): React.JSX.Element {
   const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
     const { key, ...item } = curr;
 
-    acc.push(<NavItem key={key} pathname={pathname} {...item} />);
+    acc.push(<NavItem key={key} pathname={pathname} t={t} {...item} />);
 
     return acc;
   }, []);
@@ -168,15 +175,15 @@ function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pat
   );
 }
 
-interface NavItemProps extends Omit<NavItemConfig, 'key'> {
-  pathname: string;
-}
-
-function NavItem({ disabled, external, href, icon, items, matcher, pathname, title }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, matcher, pathname, title = '', items, t }: NavItemProps): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
-  const active = isNavItemActive({ disabled, external, href, matcher, pathname });
-  const hasItems = Array.isArray(items) && items.length > 0;
+  const hasChildren = items && items.length > 0;
+  const active = isNavItemActive({ disabled, external, href, matcher, pathname }) || 
+    (hasChildren && items!.some(item => isNavItemActive({ href: item.href, pathname })));
   const Icon = icon ? navIcons[icon] : null;
+
+  // Translate the menu item title
+  const translatedTitle = t(`navigation.${title.toLowerCase().replace(/\s+/g, '_')}`);
 
   const handleToggle = () => {
     setOpen(!open);
@@ -185,8 +192,8 @@ function NavItem({ disabled, external, href, icon, items, matcher, pathname, tit
   return (
     <li>
       <Box
-        onClick={hasItems ? handleToggle : undefined}
-        {...(href && !hasItems
+        onClick={hasChildren ? handleToggle : undefined}
+        {...(href && !hasChildren
           ? {
               component: external ? 'a' : RouterLink,
               href,
@@ -257,35 +264,42 @@ function NavItem({ disabled, external, href, icon, items, matcher, pathname, tit
               letterSpacing: '0.01em',
             }}
           >
-            {title}
+            {translatedTitle}
           </Typography>
         </Box>
-        {hasItems && (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {open ? (
-              <CaretDownIcon fontSize="var(--icon-fontSize-sm)" />
-            ) : (
-              <CaretRightIcon fontSize="var(--icon-fontSize-sm)" />
-            )}
+        {hasChildren && (
+          <Box
+            sx={{
+              alignItems: 'center',
+              display: 'flex',
+              justifyContent: 'center',
+              ml: 0.5,
+            }}
+          >
+            {open ? <CaretDownIcon fontSize="var(--icon-fontSize-sm)" /> : <CaretRightIcon fontSize="var(--icon-fontSize-sm)" />}
           </Box>
         )}
       </Box>
-      {hasItems && open && (
-        <Box component="ul" sx={{ listStyle: 'none', m: 0, mt: 1, p: 0, pl: 3 }}>
-          {items.map((item) => (
-            <NavItem
-              key={item.key}
-              disabled={item.disabled}
-              external={item.external}
-              href={item.href}
-              icon={item.icon}
-              items={item.items}
-              matcher={item.matcher}
-              pathname={pathname}
-              title={item.title}
-            />
-          ))}
-        </Box>
+      {hasChildren && open && (
+        <Stack
+          component="ul"
+          spacing={0.5}
+          sx={{
+            listStyle: 'none',
+            m: 0,
+            p: 0,
+            pl: 2, // Indent to show hierarchy
+          }}
+        >
+          {items.map((item) => {
+            const { key, ...others } = item;
+            return (
+              <Box component="li" key={key} sx={{ display: 'block', my: 0.5 }}>
+                <NavItem pathname={pathname} t={t} {...others} />
+              </Box>
+            );
+          })}
+        </Stack>
       )}
     </li>
   );

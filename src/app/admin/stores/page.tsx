@@ -30,11 +30,13 @@ import { useSnackbar } from 'notistack';
 import { paths } from '@/paths';
 import StoreEditModal from '@/components/admin/stores/StoreEditModal';
 import { useCheckCompanySubscription } from '@/hooks/use-companies';
+import { useTranslation } from 'react-i18next';
 
 export default function StoresPage(): React.JSX.Element {
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
   const { userInfo } = useCurrentUser();
+  const { t } = useTranslation('admin');
   
   const [isLoading, setIsLoading] = React.useState(true);
   const [stores, setStores] = React.useState<InventoryStore[]>([]);
@@ -65,11 +67,11 @@ export default function StoresPage(): React.JSX.Element {
       setStores(filteredStores);
     } catch (error) {
       console.error('Error fetching stores:', error);
-      enqueueSnackbar('Failed to fetch stores', { variant: 'error' });
+      enqueueSnackbar(t('stores.loading_error'), { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo, enqueueSnackbar]);
+  }, [userInfo, enqueueSnackbar, t]);
   
   // Load data on component mount
   React.useEffect(() => {
@@ -99,7 +101,7 @@ export default function StoresPage(): React.JSX.Element {
       const { current_stores_count, max_stores } = subscriptionData;
       
       if (current_stores_count >= max_stores) {
-        enqueueSnackbar(`You've reached the maximum number of stores (${max_stores}) allowed by your subscription plan. Please upgrade your plan to add more stores.`, { 
+        enqueueSnackbar(t('stores.subscription_limit', { max: max_stores }), { 
           variant: 'error', 
           autoHideDuration: 6000 
         });
@@ -128,11 +130,11 @@ export default function StoresPage(): React.JSX.Element {
       setIsLoading(true);
       try {
         await inventoryApi.deleteStore(storeToDelete);
-        enqueueSnackbar('Store deleted successfully', { variant: 'success' });
+        enqueueSnackbar(t('stores.store_deleted'), { variant: 'success' });
         fetchStores();
       } catch (error) {
         console.error('Error deleting store:', error);
-        enqueueSnackbar('Failed to delete store', { variant: 'error' });
+        enqueueSnackbar(t('stores.delete_error'), { variant: 'error' });
       } finally {
         setIsLoading(false);
         setIsDeleteModalOpen(false);
@@ -155,11 +157,11 @@ export default function StoresPage(): React.JSX.Element {
           phone_number: storeData.phone_number || '',
           email: storeData.email || ''
         });
-        enqueueSnackbar('Store updated successfully', { variant: 'success' });
+        enqueueSnackbar(t('stores.store_updated'), { variant: 'success' });
       } else {
         // Add new store - ensure company_id is provided
         if (!userInfo?.company_id) {
-          throw new Error("Company ID is required to create a store");
+          throw new Error(t('stores.company_required'));
         }
 
         await inventoryApi.createStore({
@@ -171,13 +173,13 @@ export default function StoresPage(): React.JSX.Element {
           phone_number: storeData.phone_number || '',
           email: storeData.email || ''
         });
-        enqueueSnackbar('Store created successfully', { variant: 'success' });
+        enqueueSnackbar(t('stores.store_created'), { variant: 'success' });
       }
       fetchStores();
       setIsStoreModalOpen(false);
     } catch (error) {
       console.error('Error saving store:', error);
-      enqueueSnackbar('Failed to save store', { variant: 'error' });
+      enqueueSnackbar(t('stores.save_error'), { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -185,15 +187,15 @@ export default function StoresPage(): React.JSX.Element {
   
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Stores', url: paths.admin.stores },
+    { label: t('common.dashboard'), url: paths.admin.dashboard },
+    { label: t('stores.title'), url: paths.admin.stores },
   ];
   
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
       {/* Header and Breadcrumbs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>Stores Management</Typography>
+        <Typography variant="h4" sx={{ mb: 1 }}>{t('stores.title')}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
           {breadcrumbItems.map((item, index) => (
             <React.Fragment key={index}>
@@ -221,12 +223,12 @@ export default function StoresPage(): React.JSX.Element {
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddNewStore}
           >
-            Add New Store
+            {t('stores.add_store')}
           </Button>
         </Box>
         <Box>
           <TextField
-            placeholder="Search stores..."
+            placeholder={t('common.search')}
             size="small"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -246,24 +248,26 @@ export default function StoresPage(): React.JSX.Element {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Location</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell width="100px">Actions</TableCell>
+                <TableCell>{t('stores.store_name')}</TableCell>
+                <TableCell>{t('stores.store_address')}</TableCell>
+                <TableCell>{t('stores.store_phone')}</TableCell>
+                <TableCell>{t('stores.store_email')}</TableCell>
+                <TableCell>{t('common.status')}</TableCell>
+                <TableCell align="right">{t('common.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
-                    <CircularProgress size={32} />
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                    <CircularProgress />
                   </TableCell>
                 </TableRow>
               ) : filteredStores.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
-                    <Typography variant="body1" color="text.secondary">
-                      No stores found
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1">
+                      {searchQuery ? t('common.no_results') : t('stores.no_stores')}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -272,24 +276,36 @@ export default function StoresPage(): React.JSX.Element {
                   <TableRow key={store.id} hover>
                     <TableCell>{store.name}</TableCell>
                     <TableCell>{store.location}</TableCell>
+                    <TableCell>{store.phone_number || '-'}</TableCell>
+                    <TableCell>{store.email || '-'}</TableCell>
                     <TableCell>
                       <Chip 
-                        label={store.is_active === 'active' ? 'Active' : 'Inactive'} 
+                        label={store.is_active === 'active' ? t('common.active') : t('common.inactive')} 
                         color={store.is_active === 'active' ? 'success' : 'default'}
                         size="small"
                       />
                     </TableCell>
-                    <TableCell>
-                      <IconButton onClick={(event) => handleMenuOpen(event, store.id)}>
-                        <DotsThreeIcon size={24} />
+                    <TableCell align="right">
+                      <IconButton
+                        onClick={(event) => handleMenuOpen(event, store.id)}
+                        size="small"
+                      >
+                        <DotsThreeIcon />
                       </IconButton>
                       <Menu
                         anchorEl={anchorElMap[store.id]}
                         open={Boolean(anchorElMap[store.id])}
                         onClose={() => handleMenuClose(store.id)}
                       >
-                        <MenuItem onClick={() => handleEditStore(store)}>Edit</MenuItem>
-                        <MenuItem onClick={() => handleDeleteStore(store.id)}>Delete</MenuItem>
+                        <MenuItem onClick={() => handleEditStore(store)}>
+                          {t('common.edit')}
+                        </MenuItem>
+                        <MenuItem 
+                          onClick={() => handleDeleteStore(store.id)}
+                          sx={{ color: 'error.main' }}
+                        >
+                          {t('common.delete')}
+                        </MenuItem>
                       </Menu>
                     </TableCell>
                   </TableRow>
@@ -300,15 +316,13 @@ export default function StoresPage(): React.JSX.Element {
         </Box>
       </Card>
       
-      {/* Edit/Create Store Modal */}
-      {isStoreModalOpen && (
-        <StoreEditModal
-          open={isStoreModalOpen}
-          onClose={() => setIsStoreModalOpen(false)}
-          onSave={handleSaveStore}
-          store={currentStore || undefined}
-        />
-      )}
+      {/* Store Edit Modal */}
+      <StoreEditModal
+        open={isStoreModalOpen}
+        onClose={() => setIsStoreModalOpen(false)}
+        store={currentStore || undefined}
+        onSave={handleSaveStore}
+      />
       
       {/* Delete Confirmation Modal */}
       <StoreDeleteModal
@@ -330,15 +344,37 @@ function StoreDeleteModal({
   onClose: () => void; 
   onConfirm: () => void; 
 }) {
+  const { t } = useTranslation('admin');
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  
+  const handleConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await onConfirm();
+    } finally {
+      setIsDeleting(false);
+      onClose();
+    }
+  };
+  
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Delete Store</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>{t('stores.delete_store')}</DialogTitle>
       <DialogContent>
-        <Typography>Are you sure you want to delete this store? This action cannot be undone.</Typography>
+        <Typography>{t('stores.confirm_delete')}</Typography>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onConfirm} color="error">Delete</Button>
+        <Button onClick={onClose} disabled={isDeleting}>
+          {t('common.cancel')}
+        </Button>
+        <Button 
+          onClick={handleConfirm} 
+          color="error" 
+          variant="contained"
+          disabled={isDeleting}
+        >
+          {isDeleting ? t('common.deleting') : t('common.delete')}
+        </Button>
       </DialogActions>
     </Dialog>
   );

@@ -22,6 +22,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import { useSnackbar } from 'notistack';
 import format from 'date-fns/format';
+import { useTranslation } from 'react-i18next';
 
 import { financialsApi, ExpenseCategory, ExpenseCategoryCreateData, ExpenseCategoryUpdateData } from '@/services/api/financials';
 import { useCurrentUser } from '@/hooks/use-auth';
@@ -66,6 +67,7 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
   const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
   const { enqueueSnackbar } = useSnackbar();
   const { currentStore } = useStore();
+  const { t } = useTranslation('admin');
   
   // State
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
@@ -121,7 +123,7 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
 
   const handleSave = async (data: Partial<ExpenseCategory>) => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected. Please select a store and try again.', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store_selected'), { variant: 'error' });
       return;
     }
     
@@ -136,7 +138,7 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
         };
         console.log('Updating category with data:', updateData);
         await financialsApi.updateExpenseCategory(currentStore.id, categoryToEdit.id, updateData);
-        enqueueSnackbar('Category updated successfully', { variant: 'success' });
+        enqueueSnackbar(t('expenses.categories.category_updated'), { variant: 'success' });
       } else {
         // Create new category
         const createData: ExpenseCategoryCreateData = {
@@ -148,7 +150,7 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
         try {
           const result = await financialsApi.createExpenseCategory(currentStore.id, createData);
           console.log('Category creation result:', result);
-          enqueueSnackbar('Category added successfully', { variant: 'success' });
+          enqueueSnackbar(t('expenses.categories.category_created'), { variant: 'success' });
         } catch (apiError: any) {
           console.error('API error when creating category:', apiError);
           if (apiError.response && apiError.response.data) {
@@ -190,7 +192,7 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
     
     try {
       await financialsApi.deleteExpenseCategory(currentStore.id, categoryToDelete);
-      enqueueSnackbar('Category deleted successfully', { variant: 'success' });
+      enqueueSnackbar(t('expenses.categories.category_deleted'), { variant: 'success' });
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);
       fetchCategories();
@@ -202,9 +204,9 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
 
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Expenses', url: paths.admin.expenses },
-    { label: 'Categories', url: paths.admin.expenseCategories },
+    { label: t('dashboard.title'), url: paths.admin.dashboard },
+    { label: t('navigation.expenses'), url: paths.admin.expenses },
+    { label: t('navigation.expense_categories'), url: paths.admin.expenseCategories },
   ];
 
   const isPageLoading = isLoading || isLoadingUser;
@@ -215,14 +217,14 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
         <BreadcrumbsPath items={breadcrumbItems} />
         
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h4">Expense Categories</Typography>
+          <Typography variant="h4">{t('expenses.categories.title')}</Typography>
           <Button
             variant="contained"
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddNew}
             disabled={!currentStore}
           >
-            Add New Category
+            {t('expenses.categories.add_category')}
           </Button>
         </Box>
         
@@ -240,7 +242,7 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
         )}
         
         <Card sx={{ mt: 3 }}>
-          <CardHeader title="All Categories" />
+          <CardHeader title={t('expenses.categories.all_categories')} />
           <Divider />
           <CardContent>
             {isLoading ? (
@@ -250,16 +252,16 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
             ) : error ? (
               <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>
             ) : categories.length === 0 ? (
-              <Alert severity="info" sx={{ my: 2 }}>No categories found. Add your first category.</Alert>
+              <Alert severity="info" sx={{ my: 2 }}>{t('expenses.categories.no_categories')}</Alert>
             ) : (
               <TableContainer>
                 <Table sx={{ minWidth: 700 }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Description</TableCell>
-                      <TableCell>Created</TableCell>
-                      <TableCell>Actions</TableCell>
+                      <TableCell>{t('common.name')}</TableCell>
+                      <TableCell>{t('common.description')}</TableCell>
+                      <TableCell>{t('common.created_at')}</TableCell>
+                      <TableCell>{t('common.actions')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -310,8 +312,8 @@ export default function ExpenseCategoriesPage(): React.JSX.Element {
           open={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
           onConfirm={handleConfirmDelete}
-          title="Delete Category"
-          message="Are you sure you want to delete this category? This action cannot be undone."
+          title={t('common.confirmation')}
+          message={t('expenses.categories.confirm_delete')}
         />
       </Container>
     </Box>

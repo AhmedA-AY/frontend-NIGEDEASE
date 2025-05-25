@@ -32,6 +32,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 import { PageHeading } from '@/components/page-heading';
 import { Season, SeasonCreateData } from '@/services/api/clothings';
@@ -40,6 +41,7 @@ import { useSeasons, useCreateSeason, useUpdateSeason, useDeleteSeason } from '@
 import { useStore } from '@/providers/store-provider';
 
 export default function SeasonsPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons(currentStore?.id || '');
   const { mutate: createSeason, isPending: isCreating } = useCreateSeason();
@@ -62,7 +64,7 @@ export default function SeasonsPage(): React.JSX.Element {
   
   const handleOpenAddDialog = () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store'), { variant: 'error' });
       return;
     }
     
@@ -93,12 +95,12 @@ export default function SeasonsPage(): React.JSX.Element {
   
   const handleAddSeason = () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store'), { variant: 'error' });
       return;
     }
     
     if (!newSeason.name) {
-      enqueueSnackbar('Season name is required', { variant: 'error' });
+      enqueueSnackbar(t('clothing.seasons.name_required'), { variant: 'error' });
       return;
     }
     
@@ -113,7 +115,7 @@ export default function SeasonsPage(): React.JSX.Element {
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
-        enqueueSnackbar('Season created successfully', { variant: 'success' });
+        enqueueSnackbar(t('clothing.seasons.season_created'), { variant: 'success' });
       }
     });
   };
@@ -122,7 +124,7 @@ export default function SeasonsPage(): React.JSX.Element {
     if (!currentSeason || !currentStore) return;
     
     if (!newSeason.name) {
-      enqueueSnackbar('Season name is required', { variant: 'error' });
+      enqueueSnackbar(t('clothing.seasons.name_required'), { variant: 'error' });
       return;
     }
     
@@ -138,7 +140,7 @@ export default function SeasonsPage(): React.JSX.Element {
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
-        enqueueSnackbar('Season updated successfully', { variant: 'success' });
+        enqueueSnackbar(t('clothing.seasons.season_updated'), { variant: 'success' });
       }
     });
   };
@@ -153,7 +155,7 @@ export default function SeasonsPage(): React.JSX.Element {
       onSuccess: () => {
         setIsDeleteDialogOpen(false);
         setCurrentSeason(null);
-        enqueueSnackbar('Season deleted successfully', { variant: 'success' });
+        enqueueSnackbar(t('clothing.seasons.season_deleted'), { variant: 'success' });
       }
     });
   };
@@ -180,8 +182,8 @@ export default function SeasonsPage(): React.JSX.Element {
       <Container maxWidth="xl">
         <Stack spacing={4}>
           <PageHeading 
-            title="Seasons Management" 
-            subtitle={currentStore ? `Store: ${currentStore.name}` : 'No store selected'}
+            title={t('clothing.seasons.title')}
+            subtitle={currentStore ? `${t('common.store')}: ${currentStore.name}` : t('common.no_store')}
             actions={
               <Button
                 startIcon={<PlusIcon />}
@@ -189,34 +191,34 @@ export default function SeasonsPage(): React.JSX.Element {
                 onClick={handleOpenAddDialog}
                 disabled={isLoading || !currentStore}
               >
-                Add Season
+                {t('clothing.seasons.add_season')}
               </Button>
             }
           />
           
           <Card>
-            <CardHeader title="Clothing Seasons" />
+            <CardHeader title={t('clothing.seasons.title')} />
             <CardContent>
               {!currentStore ? (
-                <Alert severity="warning">Please select a store to view seasons.</Alert>
+                <Alert severity="warning">{t('common.no_store_message')}</Alert>
               ) : isLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                   <CircularProgress />
                 </Box>
               ) : seasons.length === 0 ? (
                 <Alert severity="info">
-                  No seasons found for this store. Start by adding your first season.
+                  {t('clothing.seasons.no_seasons')}
                 </Alert>
               ) : (
                 <TableContainer component={Paper} elevation={0}>
                   <Table sx={{ minWidth: 650 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Description</TableCell>
-                        <TableCell>Start Date</TableCell>
-                        <TableCell>End Date</TableCell>
-                        <TableCell align="right">Actions</TableCell>
+                        <TableCell>{t('common.name')}</TableCell>
+                        <TableCell>{t('common.description')}</TableCell>
+                        <TableCell>{t('clothing.seasons.start_date')}</TableCell>
+                        <TableCell>{t('clothing.seasons.end_date')}</TableCell>
+                        <TableCell align="right">{t('common.actions')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -237,7 +239,7 @@ export default function SeasonsPage(): React.JSX.Element {
                           </TableCell>
                           <TableCell align="right">
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
-                              <Tooltip title="Edit">
+                              <Tooltip title={t('common.edit')}>
                                 <IconButton 
                                   edge="end" 
                                   size="small"
@@ -246,7 +248,7 @@ export default function SeasonsPage(): React.JSX.Element {
                                   <EditIcon />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Delete">
+                              <Tooltip title={t('common.delete')}>
                                 <IconButton 
                                   edge="end" 
                                   size="small"
@@ -270,7 +272,7 @@ export default function SeasonsPage(): React.JSX.Element {
 
       {/* Add Season Dialog */}
       <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Season</DialogTitle>
+        <DialogTitle>{t('clothing.seasons.add_season')}</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
@@ -278,7 +280,7 @@ export default function SeasonsPage(): React.JSX.Element {
               margin="dense"
               id="name"
               name="name"
-              label="Season Name"
+              label={t('clothing.seasons.season_name')}
               type="text"
               fullWidth
               value={newSeason.name}
@@ -289,7 +291,7 @@ export default function SeasonsPage(): React.JSX.Element {
               margin="dense"
               id="description"
               name="description"
-              label="Description"
+              label={t('common.description')}
               type="text"
               fullWidth
               multiline
@@ -299,13 +301,13 @@ export default function SeasonsPage(): React.JSX.Element {
             />
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
-                label="Start Date"
+                label={t('clothing.seasons.start_date')}
                 value={parseISO(newSeason.start_date)}
                 onChange={handleStartDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
               />
               <DatePicker
-                label="End Date"
+                label={t('clothing.seasons.end_date')}
                 value={parseISO(newSeason.end_date)}
                 onChange={handleEndDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
@@ -314,20 +316,20 @@ export default function SeasonsPage(): React.JSX.Element {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsAddDialogOpen(false)} disabled={isCreating}>Cancel</Button>
+          <Button onClick={() => setIsAddDialogOpen(false)} disabled={isCreating}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleAddSeason} 
             variant="contained"
             disabled={isCreating}
           >
-            {isCreating ? 'Adding...' : 'Add Season'}
+            {isCreating ? t('common.saving') : t('clothing.seasons.add_season')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Edit Season Dialog */}
       <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Season</DialogTitle>
+        <DialogTitle>{t('clothing.seasons.edit_season')}</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
@@ -335,7 +337,7 @@ export default function SeasonsPage(): React.JSX.Element {
               margin="dense"
               id="edit-name"
               name="name"
-              label="Season Name"
+              label={t('clothing.seasons.season_name')}
               type="text"
               fullWidth
               value={newSeason.name}
@@ -346,7 +348,7 @@ export default function SeasonsPage(): React.JSX.Element {
               margin="dense"
               id="edit-description"
               name="description"
-              label="Description"
+              label={t('common.description')}
               type="text"
               fullWidth
               multiline
@@ -356,13 +358,13 @@ export default function SeasonsPage(): React.JSX.Element {
             />
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
-                label="Start Date"
+                label={t('clothing.seasons.start_date')}
                 value={parseISO(newSeason.start_date)}
                 onChange={handleStartDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
               />
               <DatePicker
-                label="End Date"
+                label={t('clothing.seasons.end_date')}
                 value={parseISO(newSeason.end_date)}
                 onChange={handleEndDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
@@ -371,33 +373,33 @@ export default function SeasonsPage(): React.JSX.Element {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>Cancel</Button>
+          <Button onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleEditSeason} 
             variant="contained"
             disabled={isUpdating}
           >
-            {isUpdating ? 'Saving...' : 'Save Changes'}
+            {isUpdating ? t('common.saving') : t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Season</DialogTitle>
+        <DialogTitle>{t('clothing.seasons.delete_season')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the season "{currentSeason?.name}"? This action cannot be undone.
+            {t('clothing.seasons.confirm_delete')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>Cancel</Button>
+          <Button onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleDeleteSeason} 
             color="error"
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? t('common.deleting') : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

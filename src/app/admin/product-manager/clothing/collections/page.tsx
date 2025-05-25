@@ -36,6 +36,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 import { PageHeading } from '@/components/page-heading';
 import { Collection, CollectionCreateData, Season } from '@/services/api/clothings';
@@ -44,6 +45,7 @@ import { useCollections, useCreateCollection, useDeleteCollection, useUpdateColl
 import { useStore } from '@/providers/store-provider';
 
 export default function CollectionsPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const { isLoading: isLoadingCollections, data: collections = [] } = useCollections(currentStore?.id || '');
   const { isLoading: isLoadingSeasons, data: seasons = [] } = useSeasons(currentStore?.id || '');
@@ -67,7 +69,7 @@ export default function CollectionsPage(): React.JSX.Element {
   
   const handleOpenAddDialog = () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store'), { variant: 'error' });
       return;
     }
     
@@ -81,7 +83,7 @@ export default function CollectionsPage(): React.JSX.Element {
     
     // Show warning if no seasons available
     if (seasons.length === 0) {
-      enqueueSnackbar('Warning: No seasons available. You need to create a season first before creating a collection.', { variant: 'warning' });
+      enqueueSnackbar(t('clothing.collections.no_seasons_available'), { variant: 'warning' });
     }
     
     setIsAddDialogOpen(true);
@@ -105,12 +107,12 @@ export default function CollectionsPage(): React.JSX.Element {
   
   const handleAddCollection = () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store'), { variant: 'error' });
       return;
     }
     
     if (!newCollection.season_id) {
-      enqueueSnackbar('Season is required. Please create a season first if none are available.', { variant: 'error' });
+      enqueueSnackbar(t('clothing.collections.season_required'), { variant: 'error' });
       return;
     }
     
@@ -128,6 +130,7 @@ export default function CollectionsPage(): React.JSX.Element {
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
+        enqueueSnackbar(t('clothing.collections.collection_created'), { variant: 'success' });
       }
     });
   };
@@ -150,6 +153,7 @@ export default function CollectionsPage(): React.JSX.Element {
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
+        enqueueSnackbar(t('clothing.collections.collection_updated'), { variant: 'success' });
       }
     });
   };
@@ -164,13 +168,14 @@ export default function CollectionsPage(): React.JSX.Element {
       onSuccess: () => {
         setIsDeleteDialogOpen(false);
         setOpenCollection(null);
+        enqueueSnackbar(t('clothing.collections.collection_deleted'), { variant: 'success' });
       }
     });
   };
   
   const getSeasonName = (id: string) => {
     const season = seasons.find(s => s.id === id);
-    return season ? season.name : 'Unknown Season';
+    return season ? season.name : t('clothing.collections.unknown_season');
   };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -194,8 +199,8 @@ export default function CollectionsPage(): React.JSX.Element {
       <Container maxWidth="xl">
         <Stack spacing={4}>
           <PageHeading 
-            title="Collections Management" 
-            subtitle={currentStore ? `Store: ${currentStore.name}` : 'No store selected'}
+            title={t('clothing.collections.title')}
+            subtitle={currentStore ? `${t('common.store')}: ${currentStore.name}` : t('common.no_store')}
             actions={
               <Button
                 startIcon={<PlusIcon />}
@@ -203,34 +208,34 @@ export default function CollectionsPage(): React.JSX.Element {
                 onClick={handleOpenAddDialog}
                 disabled={isLoading || !currentStore}
               >
-                Add Collection
+                {t('clothing.collections.add_collection')}
               </Button>
             }
           />
           
           <Card>
-            <CardHeader title="Clothing Collections" />
+            <CardHeader title={t('clothing.collections.title')} />
             <CardContent>
               {!currentStore ? (
-                <Alert severity="warning">Please select a store to view collections.</Alert>
+                <Alert severity="warning">{t('common.no_store_message')}</Alert>
               ) : isLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                   <CircularProgress />
                 </Box>
               ) : collections.length === 0 ? (
                 <Alert severity="info">
-                  No collections found for this store. Start by adding your first collection.
+                  {t('clothing.collections.no_collections')}
                 </Alert>
               ) : (
                 <TableContainer component={Paper} elevation={0}>
                   <Table sx={{ minWidth: 650 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Description</TableCell>
-                        <TableCell>Season</TableCell>
-                        <TableCell>Release Date</TableCell>
-                        <TableCell align="right">Actions</TableCell>
+                        <TableCell>{t('common.name')}</TableCell>
+                        <TableCell>{t('common.description')}</TableCell>
+                        <TableCell>{t('clothing.collections.collection_season')}</TableCell>
+                        <TableCell>{t('clothing.collections.release_date')}</TableCell>
+                        <TableCell align="right">{t('common.actions')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -249,7 +254,7 @@ export default function CollectionsPage(): React.JSX.Element {
                           </TableCell>
                           <TableCell align="right">
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
-                              <Tooltip title="Edit">
+                              <Tooltip title={t('common.edit')}>
                                 <IconButton 
                                   edge="end" 
                                   size="small"
@@ -258,7 +263,7 @@ export default function CollectionsPage(): React.JSX.Element {
                                   <EditIcon />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Delete">
+                              <Tooltip title={t('common.delete')}>
                                 <IconButton 
                                   edge="end" 
                                   size="small"
@@ -282,7 +287,7 @@ export default function CollectionsPage(): React.JSX.Element {
 
       {/* Add Collection Dialog */}
       <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Collection</DialogTitle>
+        <DialogTitle>{t('clothing.collections.add_collection')}</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
@@ -290,7 +295,7 @@ export default function CollectionsPage(): React.JSX.Element {
               margin="dense"
               id="name"
               name="name"
-              label="Collection Name"
+              label={t('clothing.collections.collection_name')}
               type="text"
               fullWidth
               value={newCollection.name}
@@ -301,7 +306,7 @@ export default function CollectionsPage(): React.JSX.Element {
               margin="dense"
               id="description"
               name="description"
-              label="Description"
+              label={t('common.description')}
               type="text"
               fullWidth
               multiline
@@ -310,13 +315,13 @@ export default function CollectionsPage(): React.JSX.Element {
               onChange={handleInputChange}
             />
             <FormControl fullWidth margin="dense">
-              <InputLabel id="season-label">Season</InputLabel>
+              <InputLabel id="season-label">{t('clothing.collections.collection_season')}</InputLabel>
               <Select
                 labelId="season-label"
                 id="season_id"
                 name="season_id"
                 value={newCollection.season_id}
-                label="Season"
+                label={t('clothing.collections.collection_season')}
                 onChange={handleSelectChange}
                 required
               >
@@ -329,7 +334,7 @@ export default function CollectionsPage(): React.JSX.Element {
             </FormControl>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
-                label="Release Date"
+                label={t('clothing.collections.release_date')}
                 value={parseISO(newCollection.release_date)}
                 onChange={handleDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
@@ -338,20 +343,20 @@ export default function CollectionsPage(): React.JSX.Element {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsAddDialogOpen(false)} disabled={isCreating}>Cancel</Button>
+          <Button onClick={() => setIsAddDialogOpen(false)} disabled={isCreating}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleAddCollection} 
             variant="contained"
             disabled={isCreating}
           >
-            {isCreating ? 'Adding...' : 'Add Collection'}
+            {isCreating ? t('common.saving') : t('clothing.collections.add_collection')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Edit Collection Dialog */}
       <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Collection</DialogTitle>
+        <DialogTitle>{t('clothing.collections.edit_collection')}</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
@@ -359,7 +364,7 @@ export default function CollectionsPage(): React.JSX.Element {
               margin="dense"
               id="edit-name"
               name="name"
-              label="Collection Name"
+              label={t('clothing.collections.collection_name')}
               type="text"
               fullWidth
               value={newCollection.name}
@@ -370,7 +375,7 @@ export default function CollectionsPage(): React.JSX.Element {
               margin="dense"
               id="edit-description"
               name="description"
-              label="Description"
+              label={t('common.description')}
               type="text"
               fullWidth
               multiline
@@ -379,13 +384,13 @@ export default function CollectionsPage(): React.JSX.Element {
               onChange={handleInputChange}
             />
             <FormControl fullWidth margin="dense">
-              <InputLabel id="edit-season-label">Season</InputLabel>
+              <InputLabel id="edit-season-label">{t('clothing.collections.collection_season')}</InputLabel>
               <Select
                 labelId="edit-season-label"
                 id="edit-season_id"
                 name="season_id"
                 value={newCollection.season_id}
-                label="Season"
+                label={t('clothing.collections.collection_season')}
                 onChange={handleSelectChange}
                 required
               >
@@ -398,7 +403,7 @@ export default function CollectionsPage(): React.JSX.Element {
             </FormControl>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
-                label="Release Date"
+                label={t('clothing.collections.release_date')}
                 value={parseISO(newCollection.release_date)}
                 onChange={handleDateChange}
                 slotProps={{ textField: { fullWidth: true, margin: 'dense' } }}
@@ -407,33 +412,33 @@ export default function CollectionsPage(): React.JSX.Element {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>Cancel</Button>
+          <Button onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleEditCollection} 
             variant="contained"
             disabled={isUpdating}
           >
-            {isUpdating ? 'Saving...' : 'Save Changes'}
+            {isUpdating ? t('common.saving') : t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Collection</DialogTitle>
+        <DialogTitle>{t('clothing.collections.delete_collection')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the collection "{openCollection?.name}"? This action cannot be undone.
+            {t('clothing.collections.confirm_delete')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>Cancel</Button>
+          <Button onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleDeleteCollection} 
             color="error"
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? t('common.deleting') : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

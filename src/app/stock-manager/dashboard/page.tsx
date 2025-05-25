@@ -9,6 +9,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import { ApexOptions } from 'apexcharts';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { format as formatDate, subDays, subMonths } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 import DynamicApexChart from '@/components/dynamic-apex-chart';
 import { DashboardFilters, dashboardApi, TopSellingProduct, RecentSale, StockAlert, TopCustomer } from '@/services/api/dashboard';
@@ -24,6 +25,7 @@ import { inventoryApi, Product, Inventory } from '@/services/api/inventory';
 import { paymentsApi, Payment } from '@/services/api/payments';
 
 export default function StockManagerDashboardPage() {
+  const { t } = useTranslation('admin');
   const { userInfo } = useCurrentUser();
   const { currentStore } = useStore();
   const [isLoading, setIsLoading] = React.useState(true);
@@ -588,7 +590,7 @@ export default function StockManagerDashboardPage() {
           <Grid item xs={12}>
             <Card sx={{ p: 3 }}>
               <Box sx={{ mb: 3 }}>
-                <Typography variant="h6">Sales & Purchases Overview</Typography>
+                <Typography variant="h6">{t('dashboard.charts.sales_purchases')}</Typography>
               </Box>
               <Box sx={{ height: 375 }}>
                 <DynamicApexChart
@@ -602,15 +604,24 @@ export default function StockManagerDashboardPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <StockAlerts alerts={stats.stockAlerts} />
+            <StockAlerts 
+              alerts={stats.stockAlerts} 
+              t={t}
+            />
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <TopSellingProducts products={stats.topSellingProducts} />
+            <TopSellingProducts 
+              products={stats.topSellingProducts} 
+              t={t}
+            />
           </Grid>
           
           <Grid item xs={12}>
-            <RecentSales sales={stats.recentSales} />
+            <RecentSales 
+              sales={stats.recentSales} 
+              t={t}
+            />
           </Grid>
         </Grid>
       </Box>

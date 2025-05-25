@@ -1,14 +1,15 @@
 'use client';
 
-import React from 'react';
-import { Box, Card, Container, Grid, Stack, Typography, Button } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Card, Container, Grid, Stack, Typography, Button, CircularProgress, Alert, Paper } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import PeopleIcon from '@mui/icons-material/People';
 import { ApexOptions } from 'apexcharts';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { format as formatDate, subDays, subMonths } from 'date-fns';
+import { format as formatDate, subDays, subMonths, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 import DynamicApexChart from '@/components/dynamic-apex-chart';
 import { DashboardFilters, dashboardApi, TopSellingProduct, RecentSale, StockAlert, TopCustomer } from '@/services/api/dashboard';
@@ -22,8 +23,14 @@ import { transactionsApi } from '@/services/api/transactions';
 import { financialsApi } from '@/services/api/financials';
 import { inventoryApi, Product } from '@/services/api/inventory';
 import { paymentsApi, Payment } from '@/services/api/payments';
+import { useTransactions } from '@/hooks/salesman/use-transactions';
+import { useCustomers } from '@/hooks/salesman/use-customers';
+import { useProducts } from '@/hooks/admin/use-products';
+import { formatCurrency } from '@/utils/format-currency';
+import { StoreSelect } from '@/components/common/store-select';
 
 export default function SalesmanDashboardPage() {
+  const { t } = useTranslation('admin');
   const { userInfo } = useCurrentUser();
   const { currentStore } = useStore();
   const [isLoading, setIsLoading] = React.useState(true);
@@ -615,15 +622,24 @@ export default function SalesmanDashboardPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <TopCustomers customers={stats.topCustomers} />
+            <TopCustomers 
+              customers={stats.topCustomers} 
+              t={t}
+            />
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <TopSellingProducts products={stats.topSellingProducts} />
+            <TopSellingProducts 
+              products={stats.topSellingProducts} 
+              t={t}
+            />
           </Grid>
           
           <Grid item xs={12}>
-            <RecentSales sales={stats.recentSales} />
+            <RecentSales 
+              sales={stats.recentSales} 
+              t={t}
+            />
           </Grid>
         </Grid>
       </Box>

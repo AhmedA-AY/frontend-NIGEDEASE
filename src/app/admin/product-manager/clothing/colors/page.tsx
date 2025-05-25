@@ -30,6 +30,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import { HexColorPicker } from 'react-colorful';
 import Alert from '@mui/material/Alert';
+import { useTranslation } from 'react-i18next';
 
 import { PageHeading } from '@/components/page-heading';
 import { Color, ColorCreateData, ColorUpdateData } from '@/services/api/clothings';
@@ -38,6 +39,7 @@ import { useColors, useCreateColor, useUpdateColor, useDeleteColor } from '@/hoo
 import { useStore } from '@/providers/store-provider';
 
 export default function ColorsPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const { isLoading: isLoadingColors, data: colors = [] } = useColors(currentStore?.id || '');
   const { mutate: createColor, isPending: isCreating } = useCreateColor();
@@ -65,7 +67,7 @@ export default function ColorsPage(): React.JSX.Element {
 
   const handleOpenAddDialog = () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store'), { variant: 'error' });
       return;
     }
     
@@ -93,12 +95,12 @@ export default function ColorsPage(): React.JSX.Element {
 
   const handleAddColor = () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store'), { variant: 'error' });
       return;
     }
 
     if (!currentColor.name) {
-      enqueueSnackbar('Color name is required', { variant: 'error' });
+      enqueueSnackbar(t('clothing.colors.color_name_required'), { variant: 'error' });
       return;
     }
 
@@ -113,19 +115,19 @@ export default function ColorsPage(): React.JSX.Element {
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
-        enqueueSnackbar('Color created successfully', { variant: 'success' });
+        enqueueSnackbar(t('clothing.colors.color_created'), { variant: 'success' });
       }
     });
   };
 
   const handleEditColor = (color: Color) => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected', { variant: 'error' });
+      enqueueSnackbar(t('common.no_store'), { variant: 'error' });
       return;
     }
 
     if (!currentColor.name) {
-      enqueueSnackbar('Color name is required', { variant: 'error' });
+      enqueueSnackbar(t('clothing.colors.color_name_required'), { variant: 'error' });
       return;
     }
 
@@ -141,7 +143,7 @@ export default function ColorsPage(): React.JSX.Element {
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
-        enqueueSnackbar('Color updated successfully', { variant: 'success' });
+        enqueueSnackbar(t('clothing.colors.color_updated'), { variant: 'success' });
       }
     });
   };
@@ -156,7 +158,7 @@ export default function ColorsPage(): React.JSX.Element {
       onSuccess: () => {
         setIsDeleteDialogOpen(false);
         setColorToDelete(null);
-        enqueueSnackbar('Color deleted successfully', { variant: 'success' });
+        enqueueSnackbar(t('clothing.colors.color_deleted'), { variant: 'success' });
       }
     });
   };
@@ -182,13 +184,13 @@ export default function ColorsPage(): React.JSX.Element {
         <Stack spacing={4}>
           <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2}>
             <PageHeading 
-              title="Colors" 
-              subtitle={currentStore ? `Store: ${currentStore.name}` : 'No store selected'}
+              title={t('clothing.colors.title')} 
+              subtitle={currentStore ? `${t('common.store')}: ${currentStore.name}` : t('common.no_store')}
             />
             <Stack direction="row" spacing={2}>
               <TextField
                 size="small"
-                placeholder="Search colors"
+                placeholder={t('common.search')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 sx={{ width: { xs: '100%', sm: 240 } }}
@@ -199,7 +201,7 @@ export default function ColorsPage(): React.JSX.Element {
                 onClick={handleOpenAddDialog}
                 disabled={isLoading || !currentStore}
               >
-                Add Color
+                {t('clothing.colors.add_color')}
               </Button>
             </Stack>
           </Stack>
@@ -207,7 +209,7 @@ export default function ColorsPage(): React.JSX.Element {
           <Card>
             {!currentStore ? (
               <Alert severity="warning" sx={{ m: 2 }}>
-                Please select a store to view colors.
+                {t('common.no_store_message')}
               </Alert>
             ) : isLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -215,18 +217,18 @@ export default function ColorsPage(): React.JSX.Element {
               </Box>
             ) : filteredColors.length === 0 ? (
               <Box sx={{ p: 3 }}>
-                <Typography>No colors found for this store.</Typography>
+                <Typography>{t('clothing.colors.no_colors')}</Typography>
               </Box>
             ) : (
               <TableContainer component={Paper} elevation={0}>
                 <Table sx={{ minWidth: 650 }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Color</TableCell>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Hex Code</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell align="right">Actions</TableCell>
+                      <TableCell>{t('clothing.colors.title')}</TableCell>
+                      <TableCell>{t('common.name')}</TableCell>
+                      <TableCell>{t('clothing.colors.color_code')}</TableCell>
+                      <TableCell>{t('common.status')}</TableCell>
+                      <TableCell align="right">{t('common.actions')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -247,32 +249,19 @@ export default function ColorsPage(): React.JSX.Element {
                         <TableCell>{color.name}</TableCell>
                         <TableCell>{color.color_code}</TableCell>
                         <TableCell>
-                          {color.is_active ? (
-                            <Typography variant="body2" color="success.main">
-                              Active
-                            </Typography>
-                          ) : (
-                            <Typography variant="body2" color="error.main">
-                              Inactive
-                            </Typography>
-                          )}
+                          {color.is_active ? t('common.active') : t('common.inactive')}
                         </TableCell>
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <Tooltip title="Edit">
-                              <IconButton 
-                                edge="end" 
-                                size="small"
-                                onClick={() => handleOpenEditDialog(color)}
-                              >
+                            <Tooltip title={t('common.edit')}>
+                              <IconButton onClick={() => handleOpenEditDialog(color)}>
                                 <EditIcon />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Delete">
+                            <Tooltip title={t('common.delete')}>
                               <IconButton 
-                                edge="end" 
-                                size="small"
-                                onClick={() => handleOpenDeleteDialog(color)}
+                                onClick={() => handleOpenDeleteDialog(color)} 
+                                color="error"
                               >
                                 <DeleteIcon />
                               </IconButton>
@@ -290,133 +279,107 @@ export default function ColorsPage(): React.JSX.Element {
       </Container>
 
       {/* Add Color Dialog */}
-      <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Add New Color</DialogTitle>
+      <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)}>
+        <DialogTitle>{t('clothing.colors.add_color')}</DialogTitle>
         <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
+          <Stack spacing={3} sx={{ mt: 2 }}>
             <TextField
-              autoFocus
-              margin="dense"
-              id="name"
-              name="name"
-              label="Color Name"
-              type="text"
               fullWidth
+              label={t('clothing.colors.color_name')}
+              name="name"
               value={currentColor.name}
               onChange={handleInputChange}
-              required
             />
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <Typography variant="subtitle2">Select Color</Typography>
-              <HexColorPicker color={currentColor.color_code} onChange={handleColorChange} />
-              <TextField
-                margin="dense"
-                id="color_code"
-                name="color_code"
-                label="Color Hex Code"
-                type="text"
-                fullWidth
-                value={currentColor.color_code}
-                onChange={handleInputChange}
-                sx={{ mt: 2 }}
-              />
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                {t('clothing.colors.color_code')}: {currentColor.color_code}
+              </Typography>
+              <Box sx={{ width: '100%', height: 200 }}>
+                <HexColorPicker color={currentColor.color_code} onChange={handleColorChange} />
+              </Box>
             </Box>
             <FormControlLabel
               control={
-                <Switch
-                  checked={currentColor.is_active}
-                  onChange={handleInputChange}
-                  name="is_active"
+                <Switch 
+                  checked={currentColor.is_active} 
+                  onChange={handleInputChange} 
+                  name="is_active" 
                 />
               }
-              label="Active"
+              label={t('common.active')}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsAddDialogOpen(false)} disabled={isCreating}>Cancel</Button>
-          <Button 
-            onClick={handleAddColor} 
-            variant="contained"
-            disabled={isCreating}
-          >
-            {isCreating ? 'Adding...' : 'Add Color'}
+          <Button onClick={() => setIsAddDialogOpen(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={handleAddColor}>
+            {t('clothing.colors.add_color')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Edit Color Dialog */}
-      <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Edit Color</DialogTitle>
+      <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)}>
+        <DialogTitle>{t('clothing.colors.edit_color')}</DialogTitle>
         <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
+          <Stack spacing={3} sx={{ mt: 2 }}>
             <TextField
-              autoFocus
-              margin="dense"
-              id="name"
-              name="name"
-              label="Color Name"
-              type="text"
               fullWidth
+              label={t('clothing.colors.color_name')}
+              name="name"
               value={currentColor.name}
               onChange={handleInputChange}
-              required
             />
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <Typography variant="subtitle2">Select Color</Typography>
-              <HexColorPicker color={currentColor.color_code} onChange={handleColorChange} />
-              <TextField
-                margin="dense"
-                id="color_code"
-                name="color_code"
-                label="Color Hex Code"
-                type="text"
-                fullWidth
-                value={currentColor.color_code}
-                onChange={handleInputChange}
-                sx={{ mt: 2 }}
-              />
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                {t('clothing.colors.color_code')}: {currentColor.color_code}
+              </Typography>
+              <Box sx={{ width: '100%', height: 200 }}>
+                <HexColorPicker color={currentColor.color_code} onChange={handleColorChange} />
+              </Box>
             </Box>
             <FormControlLabel
               control={
-                <Switch
-                  checked={currentColor.is_active}
-                  onChange={handleInputChange}
-                  name="is_active"
+                <Switch 
+                  checked={currentColor.is_active} 
+                  onChange={handleInputChange} 
+                  name="is_active" 
                 />
               }
-              label="Active"
+              label={t('common.active')}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>Cancel</Button>
+          <Button onClick={() => setIsEditDialogOpen(false)}>{t('common.cancel')}</Button>
           <Button 
-            onClick={() => handleEditColor(colorToDelete!)} 
-            variant="contained"
-            disabled={isUpdating}
+            variant="contained" 
+            color="primary" 
+            onClick={() => colorToDelete && handleEditColor(colorToDelete)}
           >
-            {isUpdating ? 'Saving...' : 'Save Changes'}
+            {t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Color Dialog */}
       <Dialog open={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Color</DialogTitle>
+        <DialogTitle>{t('clothing.colors.delete_color')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the color "{colorToDelete?.name}"? This action cannot be undone.
+            {t('clothing.colors.confirm_delete')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>Cancel</Button>
+          <Button onClick={() => setIsDeleteDialogOpen(false)}>
+            {t('common.cancel')}
+          </Button>
           <Button 
             onClick={handleDeleteColor} 
-            color="error"
-            disabled={isDeleting}
+            color="error" 
+            variant="contained"
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

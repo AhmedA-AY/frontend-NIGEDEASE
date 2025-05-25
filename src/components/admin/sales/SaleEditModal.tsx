@@ -31,6 +31,7 @@ import { useStore } from '@/providers/store-provider';
 import { InputAdornment } from '@mui/material';
 import TableContainer from '@mui/material/TableContainer';
 import Paper from '@mui/material/Paper';
+import { useTranslation } from 'react-i18next';
 
 interface ProductItem {
   id: string;
@@ -129,6 +130,7 @@ export default function SaleEditModal({
   // Get current user's company
   const { userInfo, isLoading: isLoadingUser } = useCurrentUser();
   const { currentStore } = useStore();
+  const { t } = useTranslation('admin');
   
   // Fetch data when modal opens
   useEffect(() => {
@@ -456,8 +458,13 @@ export default function SaleEditModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>{isNew ? 'Create New Sale' : 'Edit Sale'}</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="md"
+    >
+      <DialogTitle>{isNew ? t('sales.add_sale') : t('sales.edit_sale')}</DialogTitle>
       <DialogContent>
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
@@ -468,7 +475,7 @@ export default function SaleEditModal({
             <Grid item xs={12} md={3}>
               <TextField
                 name="date"
-                label="Sale Date"
+                label={t('sales.sale_date')}
                 type="date"
                 fullWidth
                 value={formData.date}
@@ -481,13 +488,13 @@ export default function SaleEditModal({
             
             <Grid item xs={12} md={3}>
               <FormControl fullWidth error={!!errors.customer}>
-                <InputLabel id="customer-select-label">Customer</InputLabel>
+                <InputLabel id="customer-select-label">{t('sales.sale_customer')}</InputLabel>
                 <Select
                   labelId="customer-select-label"
                   id="customer"
                   name="customer"
                   value={formData.customer}
-                  label="Customer"
+                  label={t('sales.sale_customer')}
                   onChange={handleSelectChange}
                 >
                   {customers.map(customer => (
@@ -500,16 +507,16 @@ export default function SaleEditModal({
             
             <Grid item xs={12} md={3}>
               <FormControl fullWidth margin="normal" error={!!errors.status}>
-                <InputLabel>Status</InputLabel>
+                <InputLabel>{t('sales.sale_status')}</InputLabel>
                 <Select
                   name="is_credit"
                   value={String(formData.is_credit)}
                   onChange={handleSelectChange}
-                  label="Status"
+                  label={t('sales.sale_status')}
                 >
                   {statusOptions.map(option => (
                     <MenuItem key={option.value} value={option.value}>
-                      {option.label}
+                      {option.value === 'false' ? t('sales.confirmed') : t('sales.credit')}
                     </MenuItem>
                   ))}
                 </Select>
@@ -520,7 +527,7 @@ export default function SaleEditModal({
             <Grid item xs={12} md={3}>
               <TextField
                 name="reference"
-                label="Reference (Optional)"
+                label={t('sales.reference_number')}
                 type="text"
                 fullWidth
                 value={formData.reference || ''}
@@ -530,13 +537,13 @@ export default function SaleEditModal({
             
             <Grid item xs={12} md={3}>
               <FormControl fullWidth error={!!errors.company_id} disabled>
-                <InputLabel id="company-select-label">Company</InputLabel>
+                <InputLabel id="company-select-label">{t('common.company')}</InputLabel>
                 <Select
                   labelId="company-select-label"
                   id="company_id"
                   name="company_id"
                   value={formData.company_id}
-                  label="Company"
+                  label={t('common.company')}
                   onChange={handleSelectChange}
                   disabled={!!userInfo?.company_id} // Disable when we have a user company
                 >
@@ -556,13 +563,13 @@ export default function SaleEditModal({
             
             <Grid item xs={12} md={3}>
               <FormControl fullWidth error={!!errors.store_id}>
-                <InputLabel id="store-select-label">Store</InputLabel>
+                <InputLabel id="store-select-label">{t('common.store')}</InputLabel>
                 <Select
                   labelId="store-select-label"
                   id="store_id"
                   name="store_id"
                   value={formData.store_id}
-                  label="Store"
+                  label={t('common.store')}
                   onChange={handleSelectChange}
                 >
                   {filteredStores.length > 0 ? (
@@ -587,13 +594,13 @@ export default function SaleEditModal({
             
             <Grid item xs={12} md={3}>
               <FormControl fullWidth error={!!errors.currency_id}>
-                <InputLabel id="currency-select-label">Currency</InputLabel>
+                <InputLabel id="currency-select-label">{t('common.currency')}</InputLabel>
                 <Select
                   labelId="currency-select-label"
                   id="currency_id"
                   name="currency_id"
                   value={formData.currency_id}
-                  label="Currency"
+                  label={t('common.currency')}
                   onChange={handleSelectChange}
                 >
                   {currencies.map(currency => (
@@ -606,13 +613,13 @@ export default function SaleEditModal({
             
             <Grid item xs={12} md={3}>
               <FormControl fullWidth error={!!errors.payment_mode_id}>
-                <InputLabel id="payment-mode-label">Payment Mode</InputLabel>
+                <InputLabel id="payment-mode-label">{t('sales.payment_method')}</InputLabel>
                 <Select
                   labelId="payment-mode-label"
                   id="payment_mode_id"
                   name="payment_mode_id"
                   value={formData.payment_mode_id}
-                  label="Payment Mode"
+                  label={t('sales.payment_method')}
                   onChange={handleSelectChange}
                 >
                   {paymentModes.map(mode => (
@@ -626,7 +633,7 @@ export default function SaleEditModal({
             <Grid item xs={12} md={3}>
               <TextField
                 name="tax"
-                label="Tax Percentage"
+                label={t('sales.tax')}
                 type="number"
                 value={formData.tax || '0'}
                 onChange={handleChange}
@@ -635,7 +642,7 @@ export default function SaleEditModal({
                   inputProps: { min: 0, step: 0.01 },
                   endAdornment: <InputAdornment position="end">%</InputAdornment>,
                 }}
-                helperText="Tax percentage to apply to the sale"
+                helperText={t('sales.tax')}
               />
             </Grid>
             
@@ -644,13 +651,13 @@ export default function SaleEditModal({
                 <Typography variant="subtitle1">Products</Typography>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <FormControl sx={{ minWidth: 200 }}>
-                    <InputLabel id="product-select-label">Select Product</InputLabel>
+                    <InputLabel id="product-select-label">{t('sales.select_product')}</InputLabel>
                     <Select
                       labelId="product-select-label"
                       id="selectedProduct"
                       name="selectedProduct"
                       value={selectedProduct}
-                      label="Select Product"
+                      label={t('sales.select_product')}
                       onChange={(e) => setSelectedProduct(e.target.value as string)}
                       size="small"
                     >
@@ -666,7 +673,7 @@ export default function SaleEditModal({
                     sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
                     size="small"
                   >
-                    Add
+                    {t('sales.add_item')}
                   </Button>
                 </Box>
               </Box>
@@ -682,12 +689,12 @@ export default function SaleEditModal({
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Product</TableCell>
-                        <TableCell align="right">Quantity</TableCell>
-                        <TableCell align="right">Unit Price</TableCell>
-                        <TableCell align="right">Discount</TableCell>
-                        <TableCell align="right">Subtotal</TableCell>
-                        <TableCell align="center">Actions</TableCell>
+                        <TableCell>{t('products.product_name')}</TableCell>
+                        <TableCell align="right">{t('sales.quantity')}</TableCell>
+                        <TableCell align="right">{t('sales.price')}</TableCell>
+                        <TableCell align="right">{t('sales.discount')}</TableCell>
+                        <TableCell align="right">{t('sales.subtotal')}</TableCell>
+                        <TableCell align="center">{t('common.actions')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -741,7 +748,7 @@ export default function SaleEditModal({
                       
                       {/* Calculate subtotal, tax, and total */}
                       <TableRow>
-                        <TableCell colSpan={4} align="right"><strong>Subtotal:</strong></TableCell>
+                        <TableCell colSpan={4} align="right"><strong>{t('sales.subtotal')}:</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
                           <strong>
                             ${(formData.subtotal || formData.products.reduce((sum, product) => sum + ((product.quantity * product.unitPrice) - product.discount), 0)).toFixed(2)}
@@ -749,7 +756,7 @@ export default function SaleEditModal({
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell colSpan={4} align="right"><strong>Tax ({formData.tax || 0}%):</strong></TableCell>
+                        <TableCell colSpan={4} align="right"><strong>{t('sales.tax')} ({formData.tax || 0}%):</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
                           <strong>
                             ${(formData.taxAmount || ((parseFloat(formData.tax) / 100) * (formData.subtotal || formData.products.reduce((sum, product) => sum + ((product.quantity * product.unitPrice) - product.discount), 0)))).toFixed(2)}
@@ -757,7 +764,7 @@ export default function SaleEditModal({
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell colSpan={4} align="right"><strong>Total:</strong></TableCell>
+                        <TableCell colSpan={4} align="right"><strong>{t('sales.total')}:</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
                           <strong>${(formData.totalAmount || ((formData.subtotal || 0) + (formData.taxAmount || 0))).toFixed(2)}</strong>
                         </TableCell>
@@ -771,7 +778,7 @@ export default function SaleEditModal({
             <Grid item xs={12}>
               <TextField
                 name="note"
-                label="Note (Optional)"
+                label={t('sales.purchase_notes')}
                 multiline
                 rows={2}
                 fullWidth
@@ -789,11 +796,11 @@ export default function SaleEditModal({
                 mt: 2
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>Total Amount:</Typography>
+                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>{t('sales.total')}:</Typography>
                   <Typography variant="subtitle1">${formData.totalAmount.toFixed(2)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>Paid Amount:</Typography>
+                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>{t('sales.paid')}:</Typography>
                   <TextField
                     name="paidAmount"
                     type="number"
@@ -805,13 +812,13 @@ export default function SaleEditModal({
                   />
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>Due Amount:</Typography>
+                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>{t('common.due_amount')}:</Typography>
                   <Typography variant="subtitle1" color={(formData.dueAmount || 0) > 0 ? 'error' : 'success'}>
                     ${(formData.dueAmount || 0).toFixed(2)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>Payment Status:</Typography>
+                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>{t('sales.payment_status')}:</Typography>
                   <Typography variant="subtitle1" 
                     color={
                       formData.paymentStatus === 'Paid' 
@@ -830,8 +837,8 @@ export default function SaleEditModal({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} variant="outlined">Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={isLoading}>Save</Button>
+        <Button onClick={onClose} variant="outlined">{t('common.cancel')}</Button>
+        <Button onClick={handleSubmit} variant="contained" disabled={isLoading}>{t('common.save')}</Button>
       </DialogActions>
     </Dialog>
   );

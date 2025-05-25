@@ -17,10 +17,16 @@ export interface ReportData {
   [key: string]: any; // For report-specific fields
 }
 
+export interface ReportsResponse {
+  store: string;
+  store_name: string;
+  available_reports: ReportType[];
+}
+
 export const reportsApi = {
-  getAvailableReports: async (storeId: string): Promise<{ store: string; store_name: string; available_reports: ReportType[] }> => {
+  getAvailableReports: async (storeId: string): Promise<ReportsResponse> => {
     const response = await coreApiClient.get(`/reports/stores/${storeId}/reports/`);
-    return response.data;
+    return response.data as ReportsResponse;
   },
 
   getReport: async (
@@ -53,6 +59,6 @@ export const reportsApi = {
     }
 
     const response = await coreApiClient.get(url);
-    return response.data;
+    return response.data as ReportData;
   }
 }; 

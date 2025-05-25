@@ -40,8 +40,10 @@ import { useCurrentUser } from '@/hooks/use-auth';
 import { financialsApi } from '@/services/api/financials';
 import { useSnackbar } from 'notistack';
 import { useStore, STORE_CHANGED_EVENT } from '@/providers/store-provider';
+import { useTranslation } from 'react-i18next';
 
 export default function SalesPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const { enqueueSnackbar } = useSnackbar();
   const [tabValue, setTabValue] = React.useState(0);
@@ -69,7 +71,7 @@ export default function SalesPage(): React.JSX.Element {
   // Fetch sales and customers
   const fetchData = useCallback(async () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
+      enqueueSnackbar(t('common.no_store_selected'), { variant: 'warning' });
       setIsLoading(false);
       return;
     }
@@ -109,11 +111,11 @@ export default function SalesPage(): React.JSX.Element {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      enqueueSnackbar('Failed to load data', { variant: 'error' });
+      enqueueSnackbar(t('common.error'), { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [enqueueSnackbar, currentStore, userInfo]);
+  }, [enqueueSnackbar, currentStore, userInfo, t]);
 
   useEffect(() => {
     if (!isLoadingUser && currentStore) {
@@ -238,7 +240,7 @@ export default function SalesPage(): React.JSX.Element {
 
   const handleEditSale = async (saleId: string) => {
     if (!currentStore) {
-      enqueueSnackbar('Please select a store first to edit sales', { variant: 'warning' });
+      enqueueSnackbar(t('common.no_store_selected'), { variant: 'warning' });
       return;
     }
     
@@ -279,7 +281,7 @@ export default function SalesPage(): React.JSX.Element {
       setIsSaleModalOpen(true);
     } catch (error) {
       console.error('Error fetching sale details:', error);
-      enqueueSnackbar('Failed to load sale details', { variant: 'error' });
+      enqueueSnackbar(t('sales.error_loading_sale'), { variant: 'error' });
     } finally {
       setEditModalLoading(false);
     }
@@ -292,7 +294,7 @@ export default function SalesPage(): React.JSX.Element {
 
   const handleConfirmDelete = async () => {
     if (!saleToDelete || !currentStore) {
-      enqueueSnackbar('No sale selected or no store selected', { variant: 'error' });
+      enqueueSnackbar(t('sales.no_sale_selected'), { variant: 'error' });
       return;
     }
     
@@ -303,12 +305,12 @@ export default function SalesPage(): React.JSX.Element {
       // Remove the deleted sale from the state
       setSales(sales.filter(sale => sale.id !== saleToDelete));
       
-      enqueueSnackbar('Sale deleted successfully', { variant: 'success' });
+      enqueueSnackbar(t('sales.sale_deleted'), { variant: 'success' });
       setIsDeleteModalOpen(false);
       setSaleToDelete(null);
     } catch (error) {
       console.error('Error deleting sale:', error);
-      enqueueSnackbar('Failed to delete sale', { variant: 'error' });
+      enqueueSnackbar(t('sales.error_deleting'), { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -316,7 +318,7 @@ export default function SalesPage(): React.JSX.Element {
 
   const handleSaveSale = async (saleData: any) => {
     if (!currentStore) {
-      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      enqueueSnackbar(t('common.no_store_selected'), { variant: 'warning' });
       return;
     }
     
@@ -342,12 +344,12 @@ export default function SalesPage(): React.JSX.Element {
         // Update existing sale
         await transactionsApi.updateSale(currentStore.id, saleData.id, formattedData);
         saleId = saleData.id;
-        enqueueSnackbar('Sale updated successfully', { variant: 'success' });
+        enqueueSnackbar(t('sales.sale_updated'), { variant: 'success' });
       } else {
         // Create new sale
         const newSale = await transactionsApi.createSale(currentStore.id, formattedData);
         saleId = newSale.id;
-        enqueueSnackbar('Sale created successfully', { variant: 'success' });
+        enqueueSnackbar(t('sales.sale_created'), { variant: 'success' });
       }
       
       // If this is a credit sale, create a receivable record
@@ -363,10 +365,10 @@ export default function SalesPage(): React.JSX.Element {
           
           await financialsApi.createReceivable(currentStore.id, receivableData);
           console.log('Receivable created successfully for credit sale:', saleId);
-          enqueueSnackbar('Receivable record created for credit sale', { variant: 'info' });
+          enqueueSnackbar(t('sales.receivable_created'), { variant: 'info' });
         } catch (receivableError) {
           console.error('Error creating receivable:', receivableError);
-          enqueueSnackbar('Sale saved but failed to create receivable record', { variant: 'warning' });
+          enqueueSnackbar(t('sales.receivable_error'), { variant: 'warning' });
         }
       }
       
@@ -374,7 +376,7 @@ export default function SalesPage(): React.JSX.Element {
       fetchData();
     } catch (error) {
       console.error('Error saving sale:', error);
-      enqueueSnackbar('Failed to save sale', { variant: 'error' });
+      enqueueSnackbar(t('sales.error_saving'), { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -398,15 +400,15 @@ export default function SalesPage(): React.JSX.Element {
 
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Sales', url: paths.admin.sales },
+    { label: t('dashboard.title'), url: paths.admin.dashboard },
+    { label: t('sales.title'), url: paths.admin.sales },
   ];
 
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
       {/* Header and Breadcrumbs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>Sales</Typography>
+        <Typography variant="h4" sx={{ mb: 1 }}>{t('sales.title')}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
           {breadcrumbItems.map((item, index) => (
             <React.Fragment key={index}>
@@ -434,12 +436,12 @@ export default function SalesPage(): React.JSX.Element {
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddNewSale}
           >
-            Add New Sales
+            {t('sales.add_sale')}
           </Button>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <TextField
-            placeholder="Search By Invoice..."
+            placeholder={t('sales.search_invoice')}
             size="small"
             InputProps={{
               startAdornment: (
@@ -457,14 +459,14 @@ export default function SalesPage(): React.JSX.Element {
             input={<OutlinedInput size="small" />}
             renderValue={(selected) => {
               if (!selected) {
-                return <Typography color="text.secondary">Select Customer...</Typography>;
+                return <Typography color="text.secondary">{t('sales.select_customer')}</Typography>;
               }
               const customer = customers.find(c => c.id === selected);
               return customer ? customer.name : "";
             }}
             sx={{ minWidth: 200 }}
           >
-            <MenuItem value="">All Customers</MenuItem>
+            <MenuItem value="">{t('sales.all_customers')}</MenuItem>
             {customers.map(customer => (
               <MenuItem key={customer.id} value={customer.id}>{customer.name}</MenuItem>
             ))}
@@ -478,7 +480,7 @@ export default function SalesPage(): React.JSX.Element {
           }}>
             <input 
               type="text" 
-              placeholder="Start Date"
+              placeholder={t('sales.start_date')}
               style={{ 
                 border: 'none', 
                 padding: '8px 12px',
@@ -489,7 +491,7 @@ export default function SalesPage(): React.JSX.Element {
             <Box sx={{ display: 'flex', alignItems: 'center', px: 1 }}>→</Box>
             <input 
               type="text" 
-              placeholder="End Date"
+              placeholder={t('sales.end_date')}
               style={{ 
                 border: 'none', 
                 padding: '8px 12px',
@@ -505,7 +507,7 @@ export default function SalesPage(): React.JSX.Element {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="sale type tabs">
           <Tab 
-            label="All Sales" 
+            label={t('sales.all_sales')}
             sx={{ 
               textTransform: 'none',
               minHeight: 48,
@@ -515,7 +517,7 @@ export default function SalesPage(): React.JSX.Element {
             }} 
           />
           <Tab 
-            label="Unpaid" 
+            label={t('sales.unpaid')}
             sx={{ 
               textTransform: 'none',
               minHeight: 48,
@@ -524,7 +526,7 @@ export default function SalesPage(): React.JSX.Element {
             }} 
           />
           <Tab 
-            label="Paid" 
+            label={t('sales.paid')}
             sx={{ 
               textTransform: 'none',
               minHeight: 48,
@@ -534,7 +536,7 @@ export default function SalesPage(): React.JSX.Element {
           />
           {selectedSaleDetails && (
             <Tab 
-              label="Sale Details" 
+              label={t('sales.sale_details')}
               sx={{ 
                 textTransform: 'none',
                 minHeight: 48,
@@ -549,15 +551,15 @@ export default function SalesPage(): React.JSX.Element {
       {/* Sales Table or Sale Details */}
       {tabValue === 3 && selectedSaleDetails ? (
         <Card sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Sale Details</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>{t('sales.sale_details')}</Typography>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Invoice Number</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('sales.invoice_number')}</Typography>
                 <Typography variant="body1">{selectedSaleDetails.id}</Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Sale Date</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('sales.sale_date')}</Typography>
                 <Typography variant="body1">
                   {new Date(selectedSaleDetails.created_at).toLocaleDateString('en-US', {
                     day: '2-digit',
@@ -567,9 +569,9 @@ export default function SalesPage(): React.JSX.Element {
                 </Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Status</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('sales.sale_status')}</Typography>
                 <Chip 
-                  label={selectedSaleDetails.is_credit ? 'Credit' : 'Confirmed'} 
+                  label={selectedSaleDetails.is_credit ? t('sales.credit') : t('sales.confirmed')} 
                   size="small"
                   sx={{ 
                     bgcolor: selectedSaleDetails.is_credit ? 'warning.100' : 'success.100',
@@ -581,16 +583,16 @@ export default function SalesPage(): React.JSX.Element {
             </Grid>
             <Grid item xs={12} md={6}>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Customer</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('sales.sale_customer')}</Typography>
                 <Typography variant="body1">{selectedSaleDetails.customer.name}</Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Contact Info</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('common.contact_info')}</Typography>
                 <Typography variant="body1">{selectedSaleDetails.customer.email}</Typography>
                 <Typography variant="body1">{selectedSaleDetails.customer.phone}</Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">Total Amount</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('sales.total')}</Typography>
                 <Typography variant="body1">${parseFloat(selectedSaleDetails.total_amount).toFixed(2)}</Typography>
               </Box>
             </Grid>
@@ -602,14 +604,14 @@ export default function SalesPage(): React.JSX.Element {
               onClick={() => setTabValue(0)}
               sx={{ mr: 1 }}
             >
-              Back to Sales
+              {t('common.back')}
             </Button>
             <Button 
               variant="contained" 
               onClick={() => handleEditSale(selectedSaleDetails.id)}
               sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             >
-              Edit Sale
+              {t('common.edit')}
             </Button>
           </Box>
         </Card>
@@ -620,20 +622,19 @@ export default function SalesPage(): React.JSX.Element {
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={companySales.length > 0 && selectedSales.length === companySales.length}
-                    indeterminate={selectedSales.length > 0 && selectedSales.length < companySales.length}
+                    checked={selectedSales.length === companySales.length}
                     onChange={handleSelectAll}
                   />
                 </TableCell>
-                <TableCell>Invoice Number</TableCell>
-                <TableCell>Sales Date</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Sales Status</TableCell>
-                <TableCell>Total Amount</TableCell>
-                <TableCell>Paid Amount</TableCell>
-                <TableCell>Due Amount</TableCell>
-                <TableCell>Payment Status</TableCell>
-                <TableCell>Action</TableCell>
+                <TableCell>{t('sales.invoice_number')}</TableCell>
+                <TableCell>{t('sales.sale_date')}</TableCell>
+                <TableCell>{t('sales.sale_customer')}</TableCell>
+                <TableCell>{t('sales.sale_status')}</TableCell>
+                <TableCell>{t('sales.total')}</TableCell>
+                <TableCell>{t('sales.paid')}</TableCell>
+                <TableCell>{t('common.due_amount')}</TableCell>
+                <TableCell>{t('sales.payment_status')}</TableCell>
+                <TableCell>{t('common.action')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -641,13 +642,13 @@ export default function SalesPage(): React.JSX.Element {
                 <TableRow>
                   <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
                     <CircularProgress size={24} />
-                    <Typography sx={{ ml: 2 }}>Loading sales...</Typography>
+                    <Typography sx={{ ml: 2 }}>{t('sales.loading_sales')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : companySales.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
-                    <Typography>No sales found</Typography>
+                    <Typography>{t('sales.no_sales')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -720,8 +721,8 @@ export default function SalesPage(): React.JSX.Element {
                           open={isMenuOpen}
                           onClose={() => handleMenuClose(sale.id)}
                         >
-                          <MenuItem onClick={() => handleEditSale(sale.id)}>Edit</MenuItem>
-                          <MenuItem onClick={() => handleDeleteSale(sale.id)}>Delete</MenuItem>
+                          <MenuItem onClick={() => handleEditSale(sale.id)}>{t('common.edit')}</MenuItem>
+                          <MenuItem onClick={() => handleDeleteSale(sale.id)}>{t('common.delete')}</MenuItem>
                         </Menu>
                       </TableCell>
                     </TableRow>
@@ -748,8 +749,8 @@ export default function SalesPage(): React.JSX.Element {
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        title="Confirm Delete"
-        message={`Are you sure you want to delete this sale?`}
+        title={t('common.confirmation')}
+        message={t('sales.confirm_delete')}
       />
     </Box>
   );

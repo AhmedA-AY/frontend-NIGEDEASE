@@ -18,6 +18,7 @@ import { Tote as CollectionIcon } from '@phosphor-icons/react/dist/ssr/Tote';
 import { Ruler as SizeIcon } from '@phosphor-icons/react/dist/ssr/Ruler';
 import { TShirt as MaterialIcon } from '@phosphor-icons/react/dist/ssr/TShirt';
 import CircularProgress from '@mui/material/CircularProgress';
+import { useTranslation } from 'react-i18next';
 
 import { paths } from '@/paths';
 import { clothingsApi } from '@/services/api/clothings';
@@ -30,14 +31,29 @@ interface PageHeadingProps {
   actions?: React.ReactNode;
 }
 
-const PageHeading = ({ title, actions }: PageHeadingProps) => (
-  <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-    <Typography variant="h4">{title}</Typography>
-    {actions}
-  </Stack>
-);
+function PageHeading({ title, actions }: PageHeadingProps): React.JSX.Element {
+  return (
+    <Stack
+      direction="row"
+      justifyContent="space-between"
+      spacing={4}
+    >
+      <div>
+        <Typography variant="h4">
+          {title}
+        </Typography>
+      </div>
+      {actions && (
+        <div>
+          {actions}
+        </div>
+      )}
+    </Stack>
+  );
+}
 
 export default function ClothingPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
   const { userInfo } = useCurrentUser();
@@ -113,22 +129,22 @@ export default function ClothingPage(): React.JSX.Element {
 
   const clothingAttributes = [
     {
-      title: 'Colors',
-      description: 'Manage clothing colors',
+      title: t('clothing.colors.title'),
+      description: t('clothing.colors.description'),
       icon: <ColorIcon size={32} />,
       href: paths.admin.clothingColors,
       count: counts.colors,
     },
     {
-      title: 'Seasons',
-      description: 'Manage clothing seasons',
+      title: t('clothing.seasons.title'),
+      description: t('clothing.seasons.description'),
       icon: <SeasonIcon size={32} />,
       href: paths.admin.clothingSeasons,
       count: counts.seasons,
     },
     {
-      title: 'Collections',
-      description: 'Manage clothing collections',
+      title: t('clothing.collections.title'),
+      description: t('clothing.collections.description'),
       icon: <CollectionIcon size={32} />,
       href: paths.admin.clothingCollections,
       count: counts.collections,
@@ -139,12 +155,12 @@ export default function ClothingPage(): React.JSX.Element {
     <Box component="main" sx={{ flexGrow: 1, py: 4 }}>
       <Container maxWidth="xl">
         <Stack spacing={4}>
-          <PageHeading title="Clothing Management" />
+          <PageHeading title={t('clothing.title')} />
           
           {!currentStoreId ? (
             <Box display="flex" justifyContent="center" alignItems="center" height="200px">
               <CircularProgress />
-              <Typography variant="body1" sx={{ ml: 2 }}>Loading store information...</Typography>
+              <Typography variant="body1" sx={{ ml: 2 }}>{t('clothing.loading_store')}</Typography>
             </Box>
           ) : (
             <Grid container spacing={3}>
@@ -229,7 +245,7 @@ export default function ClothingPage(): React.JSX.Element {
                           router.push(attribute.href);
                         }}
                       >
-                        Manage
+                        {t('clothing.colors.manage')}
                       </Button>
                     </CardContent>
                   </Card>

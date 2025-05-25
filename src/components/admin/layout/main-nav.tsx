@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -13,6 +14,12 @@ import StoreSelector from '@/components/admin/store-selector';
 
 import { MobileNav } from './mobile-nav';
 import { UserPopover } from '@/components/dashboard/layout/user-popover';
+
+// Dynamically import the LanguageSwitcher with SSR disabled to prevent hydration errors
+const LanguageSwitcher = dynamic(
+  () => import('@/components/core/language-switcher').then(mod => mod.LanguageSwitcher),
+  { ssr: false }
+);
 
 export function MainNav(): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
@@ -81,20 +88,27 @@ export function MainNav(): React.JSX.Element {
             sx={{ alignItems: 'center', flex: '1 1 auto', justifyContent: 'space-between' }}
           >
             <StoreSelector />
-            <Box ref={userPopover.anchorRef}>
-              <Avatar
-                onClick={userPopover.handleOpen}
-                ref={userPopover.anchorRef}
-                src={userInfo?.profile_image || undefined}
-                sx={{
-                  cursor: 'pointer',
-                  height: 40,
-                  width: 40
-                }}
-              >
-                {userInitials}
-              </Avatar>
-            </Box>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+            >
+              <LanguageSwitcher />
+              <Box ref={userPopover.anchorRef}>
+                <Avatar
+                  onClick={userPopover.handleOpen}
+                  ref={userPopover.anchorRef}
+                  src={userInfo?.profile_image || undefined}
+                  sx={{
+                    cursor: 'pointer',
+                    height: 40,
+                    width: 40
+                  }}
+                >
+                  {userInitials}
+                </Avatar>
+              </Box>
+            </Stack>
           </Stack>
         </Stack>
       </Box>

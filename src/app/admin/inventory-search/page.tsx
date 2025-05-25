@@ -10,6 +10,7 @@ import Grid from '@mui/material/Grid';
 import CircularProgress from '@mui/material/CircularProgress';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { paths } from '@/paths';
+import { useTranslation } from 'react-i18next';
 
 interface InventoryItem {
   store_id: string;
@@ -53,6 +54,7 @@ interface Product {
 }
 
 export default function InventorySearchPage(): React.JSX.Element {
+  const { t } = useTranslation('admin');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -68,12 +70,12 @@ export default function InventorySearchPage(): React.JSX.Element {
     try {
       const response = await fetch(`http://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io/inventory/companies/d27c0519-58c3-4ec4-a6af-59dc6666b401/product-search/${encodeURIComponent(searchTerm)}/`);
       if (!response.ok) {
-        throw new Error('Failed to fetch search results');
+        throw new Error(t('inventory_search.fetch_error'));
       }
       const data = await response.json();
       setProducts(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while searching');
+      setError(err instanceof Error ? err.message : t('inventory_search.error_occurred'));
       setProducts([]);
     } finally {
       setLoading(false);
@@ -83,7 +85,7 @@ export default function InventorySearchPage(): React.JSX.Element {
   return (
     <Box>
       <Typography variant="h4" sx={{ mb: 3 }}>
-        Inventory Search
+        {t('inventory_search.title')}
       </Typography>
 
       <Card sx={{ mb: 4 }}>
@@ -91,7 +93,7 @@ export default function InventorySearchPage(): React.JSX.Element {
           <form onSubmit={handleSearch}>
             <TextField
               fullWidth
-              placeholder="Search products across all stores..."
+              placeholder={t('inventory_search.search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
@@ -153,31 +155,31 @@ export default function InventorySearchPage(): React.JSX.Element {
                   </Typography>
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2" color="primary">
-                      Category: {product.product_category.name}
+                      {t('products.product_category')}: {product.product_category.name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Unit: {product.product_unit.name}
+                      {t('products.product_unit')}: {product.product_unit.name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Purchase Price: {product.purchase_price}
+                      {t('products.product_cost')}: {product.purchase_price}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Sale Price: {product.sale_price}
+                      {t('products.product_price')}: {product.sale_price}
                     </Typography>
                     
                     <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
-                      Inventory Locations:
+                      {t('inventory_search.inventory_locations')}:
                     </Typography>
                     {product.inventory.map((item, index) => (
                       <Box key={item.store_id} sx={{ mt: 1, pl: 2, borderLeft: '2px solid #e0e0e0' }}>
                         <Typography variant="body2" color="text.secondary">
-                          Store: {item.store_name}
+                          {t('common.store')}: {item.store_name}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Location: {item.store_location}
+                          {t('stores.store_address')}: {item.store_location}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Quantity: {item.quantity}
+                          {t('overview.quantity')}: {item.quantity}
                         </Typography>
                       </Box>
                     ))}
@@ -193,7 +195,7 @@ export default function InventorySearchPage(): React.JSX.Element {
         <Card>
           <CardContent>
             <Typography align="center" color="text.secondary">
-              No products found matching your search criteria
+              {t('inventory_search.no_products')}
             </Typography>
           </CardContent>
         </Card>

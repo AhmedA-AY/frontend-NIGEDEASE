@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { Viewport } from 'next';
 import { SnackbarProvider } from 'notistack';
+import { useTranslation } from 'react-i18next';
 
 import '@/styles/global.css';
 
@@ -22,29 +23,46 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps): React.JSX.Element {
   return (
-    <html lang="en">
+    <I18nProvider>
+      <LanguageAwarePage>
+        <LocalizationProvider>
+          <AuthProvider>
+            <QueryProvider>
+              <StoreProvider>
+                <UserProvider>
+                  <ThemeProvider>
+                    <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
+                      {children}
+                    </SnackbarProvider>
+                  </ThemeProvider>
+                </UserProvider>
+              </StoreProvider>
+            </QueryProvider>
+          </AuthProvider>
+        </LocalizationProvider>
+      </LanguageAwarePage>
+    </I18nProvider>
+  );
+}
+
+// Component to set the correct language on the html element
+function LanguageAwarePage({ children }: { children: React.ReactNode }) {
+  const { i18n } = useTranslation();
+  
+  // Set the language on the html tag
+  React.useEffect(() => {
+    document.documentElement.lang = i18n.language;
+    console.log('Setting document language to:', i18n.language);
+  }, [i18n.language]);
+  
+  return (
+    <html lang={i18n.language}>
       <head>
         <title>NIGED-EASE | Business Management</title>
         <meta name="description" content="Modern business management solution for Ethiopian businesses" />
       </head>
       <body>
-        <I18nProvider>
-          <LocalizationProvider>
-            <AuthProvider>
-              <QueryProvider>
-                <StoreProvider>
-                  <UserProvider>
-                    <ThemeProvider>
-                      <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
-                        {children}
-                      </SnackbarProvider>
-                    </ThemeProvider>
-                  </UserProvider>
-                </StoreProvider>
-              </QueryProvider>
-            </AuthProvider>
-          </LocalizationProvider>
-        </I18nProvider>
+        {children}
       </body>
     </html>
   );
