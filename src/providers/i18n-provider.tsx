@@ -14,10 +14,26 @@ export interface I18nProviderProps {
 // Enable more verbose debugging
 const isDevMode = process.env.NODE_ENV === 'development';
 
-// Import translations directly
+// Import English translations
 import enAdmin from '../../public/locales/en/admin.json';
+import enCommon from '../../public/locales/en/common.json';
+import enFeatures from '../../public/locales/en/features.json';
+import enContact from '../../public/locales/en/contact.json';
+import enAuth from '../../public/locales/en/auth.json';
+
+// Import Amharic translations
 import amAdmin from '../../public/locales/am/admin.json';
+import amCommon from '../../public/locales/am/common.json';
+import amFeatures from '../../public/locales/am/features.json';
+import amContact from '../../public/locales/am/contact.json';
+import amAuth from '../../public/locales/am/auth.json';
+
+// Import Oromo translations
 import omAdmin from '../../public/locales/om/admin.json';
+import omCommon from '../../public/locales/om/common.json';
+import omFeatures from '../../public/locales/om/features.json';
+import omContact from '../../public/locales/om/contact.json';
+import omAuth from '../../public/locales/om/auth.json';
 
 // Initialize with resources already loaded
 i18n
@@ -32,15 +48,27 @@ i18n
       escapeValue: false,
     },
     resources: {
-      // Pre-load all translations
+      // Pre-load all translations for all languages
       en: {
-        admin: enAdmin
+        admin: enAdmin,
+        common: enCommon,
+        features: enFeatures,
+        contact: enContact,
+        auth: enAuth
       },
       am: {
-        admin: amAdmin
+        admin: amAdmin,
+        common: amCommon,
+        features: amFeatures,
+        contact: amContact,
+        auth: amAuth
       },
       om: {
-        admin: omAdmin
+        admin: omAdmin,
+        common: omCommon,
+        features: omFeatures,
+        contact: omContact,
+        auth: omAuth
       }
     },
     backend: {
@@ -54,8 +82,8 @@ i18n
     react: {
       useSuspense: false,
     },
-    defaultNS: 'admin',
-    ns: ['admin'],
+    defaultNS: 'common',
+    ns: ['admin', 'common', 'features', 'contact', 'auth'],
   }).then(() => {
     if (isDevMode) {
       console.log('i18next initialized with language:', i18n.language);
@@ -82,22 +110,23 @@ export function I18nProvider({ children }: I18nProviderProps): JSX.Element {
       console.log('Initial language:', i18n.language);
       console.log('Initial resources:', i18n.services.resourceStore.data);
       
-      // Check availability of translations for all languages
-      console.log('English admin available:', i18n.hasResourceBundle('en', 'admin'));
-      console.log('Amharic admin available:', i18n.hasResourceBundle('am', 'admin'));
-      console.log('Oromo admin available:', i18n.hasResourceBundle('om', 'admin'));
+      // Check availability of translations for all languages and namespaces
+      const languages = ['en', 'am', 'om'];
+      const namespaces = ['admin', 'common', 'features', 'contact', 'auth'];
+      
+      languages.forEach(lang => {
+        namespaces.forEach(ns => {
+          console.log(`${lang} ${ns} available:`, i18n.hasResourceBundle(lang, ns));
+        });
+      });
     }
 
     i18n.on('languageChanged', handleLanguageChange);
 
-    // Force a reload of the admin namespace for the current language
-    i18n.loadNamespaces('admin').then(() => {
+    // Force a reload of all namespaces to ensure they're loaded for all languages
+    i18n.loadNamespaces(['admin', 'common', 'features', 'contact', 'auth']).then(() => {
       if (isDevMode) {
-        console.log('Admin namespace loaded');
-        // Verify all translations are available
-        console.log('Current language resources:', 
-          i18n.getResourceBundle(i18n.language, 'admin')
-        );
+        console.log('All namespaces loaded');
       }
     });
 

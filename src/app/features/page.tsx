@@ -40,8 +40,15 @@ const LanguageSwitcher = dynamic(
 );
 
 export default function FeaturesPage(): React.JSX.Element {
-  const { t } = useTranslation('features');
+  const { t, i18n } = useTranslation('features');
   
+  // Helper function to safely get translations with fallbacks
+  const safeTranslate = (key: string, fallback: string): string => {
+    const result = t(key);
+    // If the result is the same as the key, it means translation failed
+    return result === key ? fallback : result;
+  };
+
   return (
     <Box sx={{ 
       bgcolor: 'background.default', 

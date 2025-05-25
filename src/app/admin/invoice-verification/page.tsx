@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -27,7 +27,6 @@ import { useSnackbar } from 'notistack';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { QrCode as QrCodeIcon } from '@phosphor-icons/react/dist/ssr/QrCode';
 import { useRouter } from 'next/navigation';
-import jsQR from 'jsqr';
 
 export default function InvoiceVerificationPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -40,6 +39,17 @@ export default function InvoiceVerificationPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [jsQRLoaded, setJsQRLoaded] = useState(false);
+  const [jsQRModule, setJsQRModule] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('jsqr').then((module) => {
+        setJsQRModule(module.default);
+        setJsQRLoaded(true);
+      });
+    }
+  }, []);
 
   const handleBack = () => {
     router.push('/admin/dashboard');
@@ -114,7 +124,7 @@ export default function InvoiceVerificationPage() {
   };
 
   const scanQrCode = () => {
-    if (!showQrScanner || !videoRef.current || !canvasRef.current) return;
+    if (!showQrScanner || !videoRef.current || !canvasRef.current || !jsQRLoaded || !jsQRModule) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -125,7 +135,7 @@ export default function InvoiceVerificationPage() {
       canvas.width = video.videoWidth;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      const code = jsQRModule(imageData.data, imageData.width, imageData.height);
 
       if (code) {
         setUrl(code.data);

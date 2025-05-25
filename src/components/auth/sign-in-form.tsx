@@ -28,7 +28,14 @@ import { useAuth } from '@/providers/auth-provider';
 import OtpVerificationForm from './otp-verification-form';
 
 export function SignInForm(): React.JSX.Element {
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation('auth');
+  
+  // Helper function to safely get translations with fallbacks
+  const safeTranslate = (key: string, fallback: string): string => {
+    const result = t(key);
+    // If the result is the same as the key, it means translation failed
+    return result === key ? fallback : result;
+  };
   
   const schema = zod.object({
     email: zod.string().min(1, { message: 'Email is required' }).email({ message: 'Invalid email address' }),
@@ -136,7 +143,7 @@ export function SignInForm(): React.JSX.Element {
             mb: 1
           }}
         >
-          {t('welcome_back')}
+          {safeTranslate('welcome_back', 'Welcome Back')}
         </Typography>
         <Typography 
           color="text.secondary" 
@@ -150,7 +157,7 @@ export function SignInForm(): React.JSX.Element {
             fontSize: { xs: '0.875rem', sm: '1rem' }
           }}
         >
-          {t('sign_in_subtitle')}
+          {safeTranslate('sign_in_subtitle', 'Sign in to your account to continue')}
         </Typography>
       </Stack>
 
@@ -168,11 +175,11 @@ export function SignInForm(): React.JSX.Element {
                     } 
                   }}
                 >
-                  {t('email_address')}
+                  {safeTranslate('email_address', 'Email Address')}
                 </InputLabel>
                 <OutlinedInput 
                   {...field} 
-                  label={t('email_address')} 
+                  label={safeTranslate('email_address', 'Email Address')} 
                   type="email" 
                   startAdornment={
                     <Envelope 

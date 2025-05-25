@@ -18,8 +18,8 @@ import {
   TelegramLogo, 
   LinkedinLogo, 
   TwitterLogo, 
-  SnapchatLogo,
-  List as ListIcon
+  List as ListIcon,
+  ArrowRight
 } from '@phosphor-icons/react/dist/ssr';
 import { useTranslation } from 'react-i18next';
 import Chatbot from '@/components/chat/Chatbot';
@@ -33,9 +33,16 @@ const LanguageSwitcher = dynamic(
 );
 
 export default function LandingPage(): React.JSX.Element {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const [mobileMenuAnchor, setMobileMenuAnchor] = React.useState<null | HTMLElement>(null);
   const isMobileMenuOpen = Boolean(mobileMenuAnchor);
+  
+  // Helper function to safely get translations with fallbacks
+  const safeTranslate = (key: string, fallback: string): string => {
+    const result = t(key);
+    // If the result is the same as the key, it means translation failed
+    return result === key ? fallback : result;
+  };
   
   const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setMobileMenuAnchor(event.currentTarget);
@@ -134,7 +141,7 @@ export default function LandingPage(): React.JSX.Element {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  {t('app_name')}
+                  {safeTranslate('app_name', 'NIGED-EASE')}
                 </Typography>
               </Link>
               <Box sx={{ 
@@ -163,7 +170,7 @@ export default function LandingPage(): React.JSX.Element {
                       }
                     }}
                   >
-                    {t('home')}
+                    {safeTranslate('home', 'Home')}
                   </Typography>
                 </Link>
                 <Link href="/features" style={{ textDecoration: 'none' }}>
@@ -194,7 +201,7 @@ export default function LandingPage(): React.JSX.Element {
                       }
                     }}
                   >
-                    {t('features')}
+                    {safeTranslate('features', 'Features')}
                   </Typography>
                 </Link>
                 <Link href="/contact" style={{ textDecoration: 'none' }}>
@@ -306,12 +313,12 @@ export default function LandingPage(): React.JSX.Element {
                     fontWeight: 600,
                     color: 'primary.main',
                   }}>
-                    {t('home')}
+                    {safeTranslate('home', 'Home')}
                   </Typography>
                 </MenuItem>
                 <MenuItem onClick={handleMobileMenuClose} component={Link} href="/features">
                   <Typography sx={{ fontWeight: 500 }}>
-                    {t('features')}
+                    {safeTranslate('features', 'Features')}
                   </Typography>
                 </MenuItem>
                 <MenuItem onClick={handleMobileMenuClose} component={Link} href="/contact">
@@ -398,73 +405,82 @@ export default function LandingPage(): React.JSX.Element {
               }
             }}
           >
-                <Typography
-                  variant="h1"
-                  sx={{
-                fontSize: { xs: '2.5rem', md: '3.5rem' },
+                <Typography variant="h1" color="text.primary" sx={{ 
+                    maxWidth: '15ch',
+                    fontSize: { xs: '2.5rem', sm: '3.5rem', md: '3.75rem', lg: '4rem' },
                     fontWeight: 800,
-                    lineHeight: 1.2,
-                    mb: 3,
-                background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
-                backgroundClip: 'text',
-                textFillColor: 'transparent',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textShadow: '0 10px 30px rgba(99, 102, 241, 0.1)',
-              }}
-            >
-              {t('hero_title')}
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1.1,
+                    mb: 4,
+                    background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textAlign: { xs: 'center', md: 'left' },
+                  }}>
+                  {safeTranslate('hero_title', 'Business Management Solution for Ethiopia')}
                 </Typography>
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
-                    color: 'text.secondary', 
-                mb: 5,
-                fontSize: { xs: '1.1rem', md: '1.25rem' },
-                    lineHeight: 1.6,
-                maxWidth: '85%',
-                mx: 'auto',
-                opacity: 0.9,
-                  }}
-                >
-              {t('hero_subtitle')}
+                
+                <Typography variant="body1" color="text.secondary" sx={{ 
+                  fontSize: { xs: '1rem', md: '1.125rem' },
+                  maxWidth: '45ch',
+                  mb: 6,
+                  textAlign: { xs: 'center', md: 'left' },
+                  lineHeight: 1.6,
+                }}>
+                  {safeTranslate('hero_description', 'NIGED-EASE is a powerful inventory management and POS system designed specifically for Ethiopian businesses, supporting multiple languages including Amharic.')}
                 </Typography>
-                <Button
-                  variant="contained"
-                  size="large"
-                  sx={{ 
-                borderRadius: 2.5, 
-                    px: 4, 
-                    py: 1.5,
-                    fontWeight: 600,
-                background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
-                boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)',
-                transition: 'all 0.3s ease',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: '-100%',
-                  width: '100%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                  transition: 'all 0.6s ease',
-                },
-                    '&:hover': {
-                  boxShadow: '0 10px 20px rgba(99, 102, 241, 0.3)',
-                  transform: 'translateY(-2px)',
-                  '&::before': {
-                    left: '100%',
-                  }
-                }
-              }}
-              component={Link}
-              href={paths.auth.signIn}
-            >
-              {t('get_started')}
-                </Button>
+                
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ 
+                  justifyContent: { xs: 'center', md: 'flex-start' } 
+                }}>
+                  <Button 
+                    component={Link}
+                    href="/auth/sign-in"
+                    variant="contained" 
+                    size="large"
+                    sx={{
+                      py: 1.2,
+                      px: 4,
+                      borderRadius: '10px',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      textTransform: 'none',
+                      boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)',
+                      background: 'linear-gradient(90deg, #14B8A6 0%, #6366F1 100%)',
+                      '&:hover': {
+                        boxShadow: '0 15px 20px -3px rgba(99, 102, 241, 0.4)',
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    {safeTranslate('get_started', 'Get Started')}
+                  </Button>
+                  <Button 
+                    component={Link}
+                    href="/features"
+                    variant="outlined" 
+                    size="large"
+                    endIcon={<ArrowRight />}
+                    sx={{
+                      py: 1.2,
+                      px: 3,
+                      borderRadius: '10px',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      textTransform: 'none',
+                      borderColor: '#6366F1',
+                      color: '#6366F1',
+                      '&:hover': {
+                        borderColor: '#6366F1',
+                        bgcolor: 'rgba(99, 102, 241, 0.04)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    {safeTranslate('learn_more', 'Learn More')}
+                  </Button>
+                </Stack>
               </Box>
         </Container>
       </Box>
@@ -1159,7 +1175,7 @@ export default function LandingPage(): React.JSX.Element {
                       display: 'inline-block'
                     }}
                   >
-                    {t('home')}
+                    {safeTranslate('home', 'Home')}
                   </Typography>
                 </Link>
                 <Link href="/features" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -1175,7 +1191,7 @@ export default function LandingPage(): React.JSX.Element {
                       display: 'inline-block'
                     }}
                   >
-                    {t('features')}
+                    {safeTranslate('features', 'Features')}
                   </Typography>
                 </Link>
                 <Link href="/contact" style={{ textDecoration: 'none', color: 'inherit' }}>

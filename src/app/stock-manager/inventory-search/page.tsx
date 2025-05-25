@@ -16,12 +16,12 @@ import { inventoryApi, InventorySearchResult } from '@/services/api/inventory';
 import { StockManagerGuard } from '@/components/auth/stock-manager-guard';
 
 export default function StockManagerInventorySearchPage(): React.JSX.Element {
-  const { t } = useTranslation('admin');
   const { userInfo } = useCurrentUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<InventorySearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -34,6 +34,7 @@ export default function StockManagerInventorySearchPage(): React.JSX.Element {
       const data = await inventoryApi.searchProducts(userInfo.company_id, searchTerm);
       setProducts(data);
     } catch (err) {
+      setError(err instanceof Error ? err.message : t('inventory_search.error_occurred'));
       setError(err instanceof Error ? err.message : t('inventory_search.error_occurred'));
       setProducts([]);
     } finally {
