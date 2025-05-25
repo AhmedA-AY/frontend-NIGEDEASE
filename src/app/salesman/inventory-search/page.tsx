@@ -10,6 +10,7 @@ import Grid from '@mui/material/Grid';
 import CircularProgress from '@mui/material/CircularProgress';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { paths } from '@/paths';
+import { useTranslation } from 'react-i18next';
 
 interface InventoryItem {
   store_id: string;
@@ -57,6 +58,7 @@ export default function SalesInventorySearchPage(): React.JSX.Element {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -66,14 +68,14 @@ export default function SalesInventorySearchPage(): React.JSX.Element {
     setError(null);
 
     try {
-      const response = await fetch(`http://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io/inventory/companies/d27c0519-58c3-4ec4-a6af-59dc6666b401/product-search/${encodeURIComponent(searchTerm)}/`);
+      const response = await fetch(`https://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io/inventory/companies/d27c0519-58c3-4ec4-a6af-59dc6666b401/product-search/${encodeURIComponent(searchTerm)}/`);
       if (!response.ok) {
-        throw new Error('Failed to fetch search results');
+        throw new Error(t('inventory_search.fetch_error'));
       }
       const data = await response.json();
       setProducts(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while searching');
+      setError(err instanceof Error ? err.message : t('inventory_search.error_occurred'));
       setProducts([]);
     } finally {
       setLoading(false);
