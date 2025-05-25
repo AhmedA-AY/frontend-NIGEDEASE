@@ -45,6 +45,7 @@ import { useSnackbar } from 'notistack';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useStore } from '@/providers/store-provider';
 import { useCheckCompanySubscription } from '@/hooks/use-companies';
+import { useTranslation } from 'react-i18next';
 
 // User type definition for form data
 type UserRole = 'super_admin' | 'admin' | 'sales' | 'stock_manager' | string;
@@ -68,6 +69,7 @@ function UserFormDialog({
   companyId: string; 
   onSave: (userData: UserFormData) => Promise<void>; 
 }) {
+  const { t } = useTranslation('admin');
   const [formData, setFormData] = React.useState<UserFormData & { assigned_store_id?: string }>({
     company_id: companyId,
     email: '',
@@ -115,28 +117,28 @@ function UserFormDialog({
     const newErrors: Record<string, string> = {};
     
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('users.email_invalid');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = t('users.email_invalid');
     }
     
     if (!formData.id && !formData.password) {
-      newErrors.password = 'Password is required for new users';
+      newErrors.password = t('users.password_requirements');
     } else if (!formData.id && formData.password && formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = t('users.password_requirements');
     }
     
     if (!formData.first_name) {
-      newErrors.first_name = 'First name is required';
+      newErrors.first_name = `${t('users.first_name')} ${t('common.is_required')}`;
     }
     
     if (!formData.last_name) {
-      newErrors.last_name = 'Last name is required';
+      newErrors.last_name = `${t('users.last_name')} ${t('common.is_required')}`;
     }
 
     // Validate assigned store for stock manager and sales
     if ((formData.role === 'stock_manager' || formData.role === 'sales') && !formData.assigned_store_id) {
-      newErrors.assigned_store_id = 'Assigned store is required for this role';
+      newErrors.assigned_store_id = t('users.assigned_store_required');
     }
     
     setErrors(newErrors);
@@ -165,7 +167,7 @@ function UserFormDialog({
       onClose();
     } catch (error) {
       console.error('Error saving user:', error);
-      enqueueSnackbar('Failed to save user. Please try again.', { variant: 'error' });
+      enqueueSnackbar(t('users.error_saving'), { variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -176,7 +178,7 @@ function UserFormDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{user?.id ? 'Edit User' : 'Add New User'}</DialogTitle>
+      <DialogTitle>{user?.id ? t('users.edit_user') : t('users.add_user')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
@@ -194,7 +196,7 @@ function UserFormDialog({
           </Box>
           
           <TextField
-            label="Email"
+            label={t('users.user_email')}
             name="email"
             value={formData.email}
             onChange={handleTextChange}
@@ -205,7 +207,7 @@ function UserFormDialog({
           />
           
           <TextField
-            label="Password"
+            label={t('users.password')}
             name="password"
             type="password"
             value={formData.password}
@@ -213,13 +215,13 @@ function UserFormDialog({
             fullWidth
             required={!user?.id}
             error={!!errors.password}
-            helperText={errors.password || (user?.id ? 'Leave blank to keep current password' : '')}
+            helperText={errors.password || (user?.id ? t('users.password_leave_blank') : '')}
           />
           
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="First Name"
+                label={t('users.first_name')}
                 name="first_name"
                 value={formData.first_name}
                 onChange={handleTextChange}
@@ -231,7 +233,7 @@ function UserFormDialog({
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Last Name"
+                label={t('users.last_name')}
                 name="last_name"
                 value={formData.last_name}
                 onChange={handleTextChange}
@@ -244,42 +246,36 @@ function UserFormDialog({
           </Grid>
           
           <FormControl fullWidth>
-            <InputLabel id="role-label">Role</InputLabel>
+            <InputLabel id="role-label">{t('common.role')}</InputLabel>
             <Select
               labelId="role-label"
-              name="role"
+              id="role"
               value={formData.role}
               onChange={handleRoleChange}
-              label="Role"
+              label={t('common.role')}
             >
-              <MenuItem value="stock_manager">Stock Manager</MenuItem>
-              <MenuItem value="sales">Sales</MenuItem>
+              <MenuItem value="admin">{t('users.admin')}</MenuItem>
+              <MenuItem value="sales">{t('users.salesman')}</MenuItem>
+              <MenuItem value="stock_manager">{t('common.stock_manager')}</MenuItem>
             </Select>
           </FormControl>
           
           {/* Store selector - only visible for stock manager and sales */}
           {requiresAssignedStore && (
             <FormControl fullWidth error={!!errors.assigned_store_id}>
-              <InputLabel id="store-label">Assigned Store</InputLabel>
+              <InputLabel id="store-label">{t('common.store')}</InputLabel>
               <Select
                 labelId="store-label"
-                name="assigned_store_id"
+                id="assigned_store_id"
                 value={formData.assigned_store_id}
                 onChange={handleStoreChange}
-                label="Assigned Store"
-                required
+                label={t('common.store')}
               >
-                {stores.length === 0 ? (
-                  <MenuItem disabled value="">
-                    <em>No stores available</em>
+                {stores.map((store) => (
+                  <MenuItem key={store.id} value={store.id}>
+                    {store.name}
                   </MenuItem>
-                ) : (
-                  stores.map(store => (
-                    <MenuItem key={store.id} value={store.id}>
-                      {store.name}
-                    </MenuItem>
-                  ))
-                )}
+                ))}
               </Select>
               {errors.assigned_store_id && (
                 <FormHelperText>{errors.assigned_store_id}</FormHelperText>
@@ -288,7 +284,7 @@ function UserFormDialog({
           )}
           
           <TextField
-            label="Profile Image URL"
+            label={t('users.profile_image')}
             name="profile_image"
             value={formData.profile_image}
             onChange={handleTextChange}
@@ -298,14 +294,14 @@ function UserFormDialog({
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
+          color="primary"
           disabled={saving}
-          startIcon={saving ? <CircularProgress size={20} /> : null}
         >
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('common.saving') : t('common.save')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -324,42 +320,38 @@ function DeleteUserDialog({
   userId: string | null;
   onDelete: () => Promise<void>; 
 }) {
-  const [deleting, setDeleting] = React.useState(false);
-  const { enqueueSnackbar } = useSnackbar();
-
+  const { t } = useTranslation('admin');
+  const [deleting, setDeleting] = useState(false);
+  
   const handleDelete = async () => {
-    if (!userId) return;
-    
     setDeleting(true);
     try {
       await onDelete();
-      enqueueSnackbar('User deleted successfully', { variant: 'success' });
       onClose();
     } catch (error) {
       console.error('Error deleting user:', error);
-      enqueueSnackbar('Failed to delete user', { variant: 'error' });
     } finally {
       setDeleting(false);
     }
   };
-
+  
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Delete User</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>{t('users.delete_user')}</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          Are you sure you want to delete this user? This action cannot be undone.
+          {t('users.confirm_delete')}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} disabled={deleting}>{t('common.cancel')}</Button>
         <Button 
           onClick={handleDelete} 
           color="error" 
+          variant="contained"
           disabled={deleting}
-          startIcon={deleting ? <CircularProgress size={20} /> : null}
         >
-          {deleting ? 'Deleting...' : 'Delete'}
+          {deleting ? t('common.deleting') : t('common.delete')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -367,6 +359,7 @@ function DeleteUserDialog({
 }
 
 export default function UsersPage() {
+  const { t } = useTranslation('admin');
   const [users, setUsers] = React.useState<ExtendedUserResponse[]>([]);
   const [filteredUsers, setFilteredUsers] = React.useState<ExtendedUserResponse[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -401,7 +394,7 @@ export default function UsersPage() {
 
     if (!userInfo.company_id) {
       // Only show error if we have userInfo but no company_id
-      enqueueSnackbar('Company information not available. Please log in again.', { variant: 'error' });
+      enqueueSnackbar(t('common.no_company_error'), { variant: 'error' });
       setIsLoading(false);
       return;
     }
@@ -461,13 +454,13 @@ export default function UsersPage() {
       // The filter effect will run after this to update filteredUsers
     } catch (error) {
       console.error('Error fetching users:', error);
-      enqueueSnackbar('Failed to load users. Please try again.', { variant: 'error' });
+      enqueueSnackbar(t('users.loading_error'), { variant: 'error' });
       setUsers([]);
       setFilteredUsers([]);
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo, enqueueSnackbar]);
+  }, [userInfo, enqueueSnackbar, t]);
 
   useEffect(() => {
     fetchUsers();
@@ -558,7 +551,7 @@ export default function UsersPage() {
       const { current_users_count, max_customers } = subscriptionData;
       
       if (current_users_count >= max_customers) {
-        enqueueSnackbar(`You've reached the maximum number of users (${max_customers}) allowed by your subscription plan. Please upgrade your plan to add more users.`, { 
+        enqueueSnackbar(t('users.subscription_limit', { max: max_customers }), { 
           variant: 'error', 
           autoHideDuration: 6000 
         });
@@ -607,7 +600,7 @@ export default function UsersPage() {
       // Add assigned_store if role requires it (stock_manager or sales)
       if (userData.role === 'stock_manager' || userData.role === 'sales') {
         if (!userData.assigned_store_id) {
-          enqueueSnackbar('Assigned store is required for this role', { variant: 'error' });
+          enqueueSnackbar(t('users.assigned_store_required'), { variant: 'error' });
           throw new Error('Assigned store is required');
         }
         
@@ -627,11 +620,11 @@ export default function UsersPage() {
         } else {
           await usersApi.updateUser(id as string, dataToUpdate);
         }
-        enqueueSnackbar('User updated successfully', { variant: 'success' });
+        enqueueSnackbar(t('users.user_updated'), { variant: 'success' });
       } else {
         // Create user
         await authApi.createUser(userDataWithCompany as CreateUserData);
-        enqueueSnackbar('User created successfully', { variant: 'success' });
+        enqueueSnackbar(t('users.user_created'), { variant: 'success' });
       }
       fetchUsers();
     } catch (error) {
@@ -655,23 +648,23 @@ export default function UsersPage() {
   // Get role display name
   const getRoleDisplay = (role: string) => {
     switch(role) {
-      case 'stock_manager': return 'Stock Manager';
-      case 'sales': return 'Sales';
+      case 'stock_manager': return t('users.stock_manager');
+      case 'sales': return t('users.salesman');
       default: return role;
     }
   };
 
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: 'Dashboard', url: paths.admin.dashboard },
-    { label: 'Users', url: paths.admin.users },
+    { label: t('dashboard.title'), url: paths.admin.dashboard },
+    { label: t('users.title'), url: paths.admin.users },
   ];
 
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
       {/* Header and Breadcrumbs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>Users</Typography>
+        <Typography variant="h4" sx={{ mb: 1 }}>{t('users.title')}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
           {breadcrumbItems.map((item, index) => (
             <React.Fragment key={index}>
@@ -698,12 +691,12 @@ export default function UsersPage() {
             startIcon={<PlusIcon />}
             sx={{ alignSelf: 'flex-start' }}
           >
-            Add User
+            {t('users.add_user')}
           </Button>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
             <OutlinedInput
-              placeholder="Search users..."
+              placeholder={t('common.search')}
               startAdornment={
                 <InputAdornment position="start">
                   <MagnifyingGlassIcon />
@@ -715,28 +708,28 @@ export default function UsersPage() {
             />
             
             <FormControl sx={{ minWidth: 120 }}>
-              <InputLabel id="role-filter-label">Role</InputLabel>
+              <InputLabel id="role-filter-label">{t('common.role')}</InputLabel>
               <Select
                 labelId="role-filter-label"
                 value={roleFilter}
                 onChange={handleRoleFilterChange}
-                label="Role"
+                label={t('common.role')}
               >
-                <MenuItem value="all">All Roles</MenuItem>
-                <MenuItem value="stock_manager">Stock Manager</MenuItem>
-                <MenuItem value="sales">Sales</MenuItem>
+                <MenuItem value="all">{t('users.all_roles')}</MenuItem>
+                <MenuItem value="stock_manager">{t('users.stock_manager')}</MenuItem>
+                <MenuItem value="sales">{t('users.salesman')}</MenuItem>
               </Select>
             </FormControl>
 
             <FormControl sx={{ minWidth: 150 }}>
-              <InputLabel id="store-filter-label">Store</InputLabel>
+              <InputLabel id="store-filter-label">{t('common.store')}</InputLabel>
               <Select
                 labelId="store-filter-label"
                 value={storeFilter}
                 onChange={handleStoreFilterChange}
-                label="Store"
+                label={t('common.store')}
               >
-                <MenuItem value="all">All Stores</MenuItem>
+                <MenuItem value="all">{t('common.all_stores')}</MenuItem>
                 {stores.map(store => (
                   <MenuItem key={store.id} value={store.id}>
                     {store.name}
@@ -764,12 +757,12 @@ export default function UsersPage() {
                     onChange={handleSelectAll}
                   />
                 </TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Assigned Store</TableCell>
-                <TableCell>Created At</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>{t('common.name')}</TableCell>
+                <TableCell>{t('users.user_email')}</TableCell>
+                <TableCell>{t('common.role')}</TableCell>
+                <TableCell>{t('users.assigned_store')}</TableCell>
+                <TableCell>{t('common.created_at')}</TableCell>
+                <TableCell align="right">{t('common.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -777,7 +770,7 @@ export default function UsersPage() {
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                     <Typography variant="body1" color="text.secondary">
-                      No users found
+                      {t('users.no_users')}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -812,7 +805,7 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{getRoleDisplay(user.role)}</TableCell>
-                    <TableCell>{user.assigned_store ? user.assigned_store.name : 'N/A'}</TableCell>
+                    <TableCell>{user.assigned_store ? user.assigned_store.name : t('common.not_available')}</TableCell>
                     <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                     <TableCell align="right">
                       <IconButton onClick={() => handleEditUser(user)}>

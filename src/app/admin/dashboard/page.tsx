@@ -371,6 +371,8 @@ interface StatCardProps {
 }
 
 function StatCard({ title, value, change, positive, icon }: StatCardProps) {
+  const { t } = useTranslation('admin');
+  
   return (
     <Card sx={{ 
       p: 3, 

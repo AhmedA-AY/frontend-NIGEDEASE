@@ -369,7 +369,7 @@ export default function ExpensesPage(): React.JSX.Element {
             variant="outlined"
             href={paths.admin.expenseCategories}
           >
-            Manage Categories
+            {t('expenses.categories.title')}
           </Button>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -379,13 +379,13 @@ export default function ExpensesPage(): React.JSX.Element {
             input={<OutlinedInput size="small" />}
             renderValue={(selected) => {
               if (!selected) {
-                return <Typography color="text.secondary">Select Category...</Typography>;
+                return <Typography color="text.secondary">{t('expenses.categories.all_categories')}</Typography>;
               }
               return selected;
             }}
             sx={{ minWidth: 200 }}
           >
-            <MenuItem value="">All Categories</MenuItem>
+            <MenuItem value="">{t('expenses.categories.all_categories')}</MenuItem>
             {categories.map(category => (
               <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
             ))}
@@ -399,7 +399,7 @@ export default function ExpensesPage(): React.JSX.Element {
           }}>
             <input 
               type="text" 
-              placeholder="Start Date"
+              placeholder={t('expenses.start_date')}
               style={{ 
                 border: 'none', 
                 padding: '8px 12px',
@@ -410,7 +410,7 @@ export default function ExpensesPage(): React.JSX.Element {
             <Box sx={{ display: 'flex', alignItems: 'center', px: 1 }}>→</Box>
             <input 
               type="text" 
-              placeholder="End Date"
+              placeholder={t('expenses.end_date')}
               style={{ 
                 border: 'none', 
                 padding: '8px 12px',
@@ -434,13 +434,13 @@ export default function ExpensesPage(): React.JSX.Element {
                   onChange={handleSelectAll}
                 />
               </TableCell>
-              <TableCell>Expense Category</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Currency</TableCell>
-              <TableCell>Payment Mode</TableCell>
-              <TableCell>Action</TableCell>
+              <TableCell>{t('expenses.expense_category')}</TableCell>
+              <TableCell>{t('expenses.expense_amount')}</TableCell>
+              <TableCell>{t('expenses.expense_date')}</TableCell>
+              <TableCell>{t('expenses.expense_description')}</TableCell>
+              <TableCell>{t('expenses.expense_currency')}</TableCell>
+              <TableCell>{t('expenses.expense_payment_mode')}</TableCell>
+              <TableCell>{t('common.action')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -448,13 +448,13 @@ export default function ExpensesPage(): React.JSX.Element {
               <TableRow>
                 <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                   <CircularProgress size={24} />
-                  <Typography sx={{ ml: 2 }}>Loading expenses...</Typography>
+                  <Typography sx={{ ml: 2 }}>{t('expenses.loading_expenses')}</Typography>
                 </TableCell>
               </TableRow>
             ) : expenses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
-                  <Typography>No expenses found</Typography>
+                  <Typography>{t('expenses.no_expenses')}</Typography>
                 </TableCell>
               </TableRow>
             ) : (
@@ -508,7 +508,7 @@ export default function ExpensesPage(): React.JSX.Element {
             )}
             <TableRow>
               <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>
-                Total
+                {t('common.total')}
               </TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>${totalAmount.toLocaleString()}</TableCell>
               <TableCell colSpan={5}></TableCell>
@@ -534,8 +534,8 @@ export default function ExpensesPage(): React.JSX.Element {
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        title="Delete Expense"
-        message="Are you sure you want to delete this expense? This action cannot be undone."
+        title={t('common.confirmation')}
+        message={t('expenses.confirm_delete')}
       />
     </Box>
   );

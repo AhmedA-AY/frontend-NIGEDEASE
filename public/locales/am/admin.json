@@ -110,7 +110,10 @@
     "view": "እይ",
     "store": "መደብር",
     "no_store": "ምንም መደብር አልተመረጠም",
-    "no_store_selected": "ምንም መደብር አልተመረጠም። እባክዎ መደብር ይምረጡ እና እንደገና ይሞክሩ።"
+    "no_store_selected": "ምንም መደብር አልተመረጠም። እባክዎ መደብር ይምረጡ እና እንደገና ይሞክሩ።",
+    "stock_manager": "የእቃ ክምችት አስተዳዳሪ",
+    "all": "ሁሉም",
+    "no_results": "ምንም ውጤቶች አልተገኙም"
   },
   "store_selector": {
     "select_store": "መደብር ይምረጡ",
@@ -418,16 +421,16 @@
     "payment_mode_required": "እባክዎ የክፍያ ዘዴ ይምረጡ"
   },
   "stores": {
-    "title": "መደብሮች",
+    "title": "የመደብር አስተዳደር",
     "all_stores": "ሁሉም መደብሮች",
     "add_store": "መደብር አክል",
     "edit_store": "መደብር አስተካክል",
     "delete_store": "መደብር አጥፋ",
     "store_details": "የመደብር ዝርዝሮች",
     "store_name": "የመደብር ስም",
-    "store_address": "የመደብር አድራሻ",
-    "store_phone": "የመደብር ስልክ",
-    "store_email": "የመደብር ኢሜይል",
+    "store_address": "አድራሻ",
+    "store_phone": "ስልክ",
+    "store_email": "ኢሜይል",
     "store_manager": "የመደብር ሃላፊ",
     "store_status": "የመደብር ሁኔታ",
     "no_stores": "ምንም መደብር አልተገኘም። የመጀመሪያውን መደብርዎን ይፍጠሩ።",
@@ -441,7 +444,13 @@
     "city": "ከተማ",
     "country": "ሀገር",
     "postal_code": "የፖስታ ኮድ",
-    "select_manager": "ሃላፊ ይምረጡ"
+    "select_manager": "ሃላፊ ይምረጡ",
+    "loading_error": "መደብሮችን ማምጣት አልተሳካም",
+    "save_error": "መደብር ማስቀመጥ አልተሳካም",
+    "delete_error": "መደብር መሰረዝ አልተሳካም",
+    "company_required": "መደብር ለመፍጠር የኩባንያ መታወቂያ ያስፈልጋል",
+    "subscription_limit": "በደንበኝነት ዕቅድዎ የተፈቀደውን ከፍተኛ የመደብሮች ብዛት ({{max}}) ደርሰዋል። እባክዎ ተጨማሪ መደብሮችን ለመጨመር የእርስዎን ዕቅድ ያሻሽሉ።",
+    "no_results": "ምንም መደብሮች ከፍለጋዎ ጋር አይዛመዱም"
   },
   "users": {
     "title": "ተጠቃሚዎች",
@@ -476,6 +485,15 @@
     "password_mismatch": "የይለፍ ቃሎች አይመሳሰሉም",
     "password_requirements": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች ሊኖረው ይገባል",
     "email_invalid": "እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ",
-    "phone_invalid": "እባክዎ ትክክለኛ የስልክ ቁጥር ያስገቡ"
+    "phone_invalid": "እባክዎ ትክክለኛ የስልክ ቁጥር ያስገቡ",
+    "password_leave_blank": "ያሁኑን የይለፍ ቃል ለመጠበቅ ባዶ ይተዉት",
+    "error_saving": "ተጠቃሚን ማስቀመጥ አልተሳካም",
+    "error_deleting": "ተጠቃሚን መሰረዝ አልተሳካም",
+    "error_loading": "ተጠቃሚዎችን መጫን አልተሳካም",
+    "company_required": "የኩባንያ መታወቂያ ያስፈልጋል",
+    "subscription_limit": "በደንበኝነት ዕቅድዎ የተፈቀደውን ከፍተኛ የተጠቃሚዎች ብዛት ({{max}}) ደርሰዋል። እባክዎ ተጨማሪ ተጠቃሚዎችን ለመጨመር የእርስዎን ዕቅድ ያሻሽሉ።",
+    "subtitle": "የሲስተም ተጠቃሚዎችን እና የእነሱን መዳረሻ ያስተዳድሩ",
+    "profile_image": "የመገለጫ ምስል URL",
+    "assigned_store_required": "የተመደበ መደብር ያስፈልጋል"
   }
 } 

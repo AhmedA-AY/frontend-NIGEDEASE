@@ -131,7 +131,10 @@
     "loading": "Fe'ama jira...",
     "store": "Suuqii",
     "no_store": "Suuqii hin filatamne",
-    "no_store_selected": "Suuqiin hin filatamne. Maaloo suuqii filadhu itti fufuuf."
+    "no_store_selected": "Suuqiin hin filatamne. Maaloo suuqii filadhu itti fufuuf.",
+    "stock_manager": "Bulchaa Kuusaa",
+    "all": "Hunda",
+    "no_results": "Bu'aawwan hin argamne"
   },
   "store_selector": {
     "change_store": "Suuqii jijjiiri",
@@ -436,16 +439,16 @@
     "payment_mode_required": "Maaloo mala kaffaltii filadhu"
   },
   "stores": {
-    "title": "Suuqiwwan",
+    "title": "Bulchiinsa Suuqiwwanii",
     "all_stores": "Suuqiwwan Hunda",
     "add_store": "Suuqii Ida'i",
     "edit_store": "Suuqii Gulaali",
     "delete_store": "Suuqii Haqi",
     "store_details": "Ibsa Suuqii",
     "store_name": "Maqaa Suuqii",
-    "store_address": "Teessoo Suuqii",
-    "store_phone": "Bilbila Suuqii",
-    "store_email": "Imeelii Suuqii",
+    "store_address": "Teessoo",
+    "store_phone": "Bilbila",
+    "store_email": "Imeelii",
     "store_manager": "Bulchaa Suuqii",
     "store_status": "Haala Suuqii",
     "no_stores": "Suuqiin hin argamne. Suuqii jalqabaa keessan uumaa.",
@@ -459,7 +462,13 @@
     "city": "Magaalaa",
     "country": "Biyya",
     "postal_code": "Koodii Poostaa",
-    "select_manager": "Bulchaa Filadhu"
+    "select_manager": "Bulchaa Filadhu",
+    "loading_error": "Suuqiiwwan fiduu hin danda'amne",
+    "save_error": "Suuqii olkaa'uu hin danda'amne",
+    "delete_error": "Suuqii haquu hin danda'amne",
+    "company_required": "Suuqii uumuuf ID Dhaabbataa barbaachisaa dha",
+    "subscription_limit": "Hanga suuqiwwanii karaa karoora tajaajilaa keessanii hayyamame ({{max}}) gahaniirtu. Maaloo suuqiwwan dabalaa ida'uuf karoora keessan fooyyessaa.",
+    "no_results": "Suuqiiwwan barbaacha keessan waliin wal hin simu"
   },
   "users": {
     "title": "Fayyadamtoota",
@@ -494,6 +503,15 @@
     "password_mismatch": "Jechoota iccitii wal hin fakkaatan",
     "password_requirements": "Jecha iccitii yoo xiqqaate qubeewwan 8 qabaachuu qaba",
     "email_invalid": "Maaloo teessoo imeelii sirrii galchaa",
-    "phone_invalid": "Maaloo lakkoofsa bilbilaa sirrii galchaa"
+    "phone_invalid": "Maaloo lakkoofsa bilbilaa sirrii galchaa",
+    "password_leave_blank": "Jecha iccitii ammaa eeguf duwwaa dhiisi",
+    "error_saving": "Fayyadamaa olkaa'uu hin danda'amne",
+    "error_deleting": "Fayyadamaa haquu hin danda'amne",
+    "error_loading": "Fayyadamtoota fe'uu hin danda'amne",
+    "company_required": "ID Dhaabbataa barbaachisaa dha",
+    "subscription_limit": "Hanga fayyadamtoota karaa karoora tajaajilaa keessanii hayyamame ({{max}}) gahaniirtu. Maaloo fayyadamtoota dabalaa ida'uuf karoora keessan fooyyessaa.",
+    "subtitle": "Fayyadamtoota siistimaa fi itti dhiyaannaa isaanii bulchaa",
+    "profile_image": "URL Suuraa Profaayilii",
+    "assigned_store_required": "Suuqii ramadamaa barbaachisaa dha"
   }
 } 
