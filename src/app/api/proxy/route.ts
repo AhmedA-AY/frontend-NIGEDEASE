@@ -8,15 +8,17 @@ async function forwardRequest(
   targetUrl: string,
   originalPath: string
 ) {
-  // Extract the path after /api/proxy
-  const pathSegments = originalPath.split('/');
-  const apiPathIndex = pathSegments.findIndex(segment => segment === 'api') + 2;
-  const remainingPath = pathSegments.slice(apiPathIndex).join('/');
-
-  // Create the full URL for the backend
-  const url = `${targetUrl}/${remainingPath}${req.nextUrl.search || ''}`;
-
   try {
+    // Extract the path after /api/proxy
+    const pathSegments = originalPath.split('/');
+    const apiPathIndex = pathSegments.findIndex(segment => segment === 'api') + 2;
+    const remainingPath = pathSegments.slice(apiPathIndex).join('/');
+
+    // Create the full URL for the backend
+    const url = `${targetUrl}/${remainingPath}${req.nextUrl.search || ''}`;
+    
+    console.log(`Proxying request to: ${url}`);
+
     // Get request method and create headers
     const method = req.method;
     const headers = new Headers();
@@ -29,6 +31,11 @@ async function forwardRequest(
       }
     });
 
+    // Ensure content type is set correctly
+    if (!headers.has('Content-Type') && ['POST', 'PUT', 'PATCH'].includes(method)) {
+      headers.append('Content-Type', 'application/json');
+    }
+
     // Handle request body for methods that support it
     let requestOptions: RequestInit = {
       method,
@@ -36,28 +43,71 @@ async function forwardRequest(
       redirect: 'follow',
     };
 
-    // Add body for methods that support it
-    if (['POST', 'PUT', 'PATCH'].includes(method)) {
-      const contentType = req.headers.get('content-type') || '';
-      
-      if (contentType.includes('application/json')) {
-        const body = await req.json();
+    // Special handling for auth/login endpoint
+    if (remainingPath === 'auth/login' && method === 'POST') {
+      try {
+        let body;
+        const contentType = req.headers.get('content-type') || '';
+        
+        if (contentType.includes('application/json')) {
+          body = await req.clone().json(); // clone the request to avoid consuming it
+          console.log('Forwarding JSON login request');
+        } else {
+          body = await req.clone().text();
+          try {
+            // Try to parse as JSON in case Content-Type is wrong
+            body = JSON.parse(body);
+            console.log('Parsed body as JSON despite content type');
+          } catch (e) {
+            console.log('Body is not JSON format');
+          }
+        }
+        
         requestOptions.body = JSON.stringify(body);
-      } else if (contentType.includes('multipart/form-data')) {
-        // Handle form data
-        requestOptions.body = await req.formData();
-      } else {
-        // For other content types, use raw body
-        requestOptions.body = await req.text();
+      } catch (error) {
+        console.error('Error processing login request body:', error);
+        return NextResponse.json(
+          { error: 'Failed to process login request' },
+          { status: 400 }
+        );
+      }
+    } 
+    // General handling for other POST/PUT/PATCH requests
+    else if (['POST', 'PUT', 'PATCH'].includes(method)) {
+      try {
+        const contentType = req.headers.get('content-type') || '';
+        
+        if (contentType.includes('application/json')) {
+          const body = await req.clone().json();
+          requestOptions.body = JSON.stringify(body);
+        } else if (contentType.includes('multipart/form-data')) {
+          requestOptions.body = await req.formData();
+        } else {
+          requestOptions.body = await req.text();
+        }
+      } catch (error) {
+        console.error('Error processing request body:', error);
+        return NextResponse.json(
+          { error: 'Failed to process request body' },
+          { status: 400 }
+        );
       }
     }
 
     // Forward the request to the backend
     const response = await fetch(url, requestOptions);
     
+    // Debug information
+    console.log(`Backend responded with status: ${response.status}`);
+    
     // Create the response to send back to the client
     const responseData = await response.text();
     const contentType = response.headers.get('content-type') || 'application/json';
+    
+    // Log response data for debugging
+    if (remainingPath === 'auth/login') {
+      console.log('Login response:', responseData.substring(0, 100) + '...');
+    }
     
     // Create the response with appropriate status and headers
     return new NextResponse(responseData, {
@@ -70,10 +120,10 @@ async function forwardRequest(
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Proxy error:', error);
     return NextResponse.json(
-      { error: 'Failed to proxy request to backend' },
+      { error: 'Failed to proxy request to backend', details: error.message },
       { status: 500 }
     );
   }
@@ -100,10 +150,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const { pathname } = req.nextUrl;
   
+  // Debug information
+  console.log(`POST request to path: ${pathname}`);
+  
   if (pathname.includes('/auth/')) {
+    console.log('Routing to USER_SERVICE');
     return forwardRequest(req, USER_SERVICE, pathname);
   }
   
+  console.log('Routing to CORE_SERVICE');
   return forwardRequest(req, CORE_SERVICE, pathname);
 }
 
@@ -130,13 +185,16 @@ export async function DELETE(req: NextRequest) {
 }
 
 // Handle OPTIONS requests for CORS
-export async function OPTIONS() {
+export async function OPTIONS(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  console.log(`OPTIONS request to: ${pathname}`);
+  
   return new NextResponse(null, {
     status: 204,
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
       'Access-Control-Max-Age': '86400',
     },
   });
