@@ -31,10 +31,14 @@ export default function StockManagerInventorySearchPage(): React.JSX.Element {
     setError(null);
 
     try {
-      const data = await inventoryApi.searchProducts(userInfo.company_id, searchTerm);
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const response = await fetch(`${baseUrl}/api/proxy/inventory/companies/d27c0519-58c3-4ec4-a6af-59dc6666b401/product-search/${encodeURIComponent(searchTerm)}/`);
+      if (!response.ok) {
+        throw new Error(t('inventory_search.fetch_error'));
+      }
+      const data = await response.json();
       setProducts(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('inventory_search.error_occurred'));
       setError(err instanceof Error ? err.message : t('inventory_search.error_occurred'));
       setProducts([]);
     } finally {

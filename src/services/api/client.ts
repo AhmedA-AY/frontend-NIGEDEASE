@@ -2,9 +2,10 @@ import axios from 'axios';
 import tokenStorage from '@/utils/token-storage';
 import { paths } from '@/paths';
 
-// API Base URLs
-export const USER_MANAGEMENT_API = 'https://evergreen-technologies-ngedease-userservice.147.79.115.12.sslip.io';
-export const CORE_API = 'https://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io';
+// API Base URLs - Now using our proxy instead of direct HTTP URLs
+export const BASE_URL = typeof window !== 'undefined' ? window.location.origin : '';
+export const USER_MANAGEMENT_API = `${BASE_URL}/api/proxy`;
+export const CORE_API = `${BASE_URL}/api/proxy`;
 
 // Create axios instance for the user management service
 export const userManagementApiClient = axios.create({

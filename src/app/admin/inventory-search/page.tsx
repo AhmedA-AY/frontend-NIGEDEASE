@@ -68,7 +68,8 @@ export default function InventorySearchPage(): React.JSX.Element {
     setError(null);
 
     try {
-      const response = await fetch(`https://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io/inventory/companies/d27c0519-58c3-4ec4-a6af-59dc6666b401/product-search/${encodeURIComponent(searchTerm)}/`);
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const response = await fetch(`${baseUrl}/api/proxy/inventory/companies/d27c0519-58c3-4ec4-a6af-59dc6666b401/product-search/${encodeURIComponent(searchTerm)}/`);
       if (!response.ok) {
         throw new Error(t('inventory_search.fetch_error'));
       }
