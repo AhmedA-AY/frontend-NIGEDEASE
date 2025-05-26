@@ -26,6 +26,9 @@ interface StockAlertsProps {
 }
 
 export function StockAlerts({ alerts, t }: StockAlertsProps) {
+  // Ensure we have a valid array of alerts
+  const validAlerts = Array.isArray(alerts) ? alerts : [];
+  
   // Get stock status based on quantity vs alertThreshold
   const getStockStatus = (quantity: number, alertThreshold: number) => {
     const ratio = quantity / alertThreshold;
@@ -65,7 +68,7 @@ export function StockAlerts({ alerts, t }: StockAlertsProps) {
       />
       <Divider />
       <CardContent sx={{ p: 0 }}>
-        {alerts.length > 0 ? (
+        {validAlerts.length > 0 ? (
           <Table>
             <TableHead>
               <TableRow>
@@ -75,19 +78,26 @@ export function StockAlerts({ alerts, t }: StockAlertsProps) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {alerts.map((alert) => {
-                const status = getStockStatus(alert.quantity, alert.alertThreshold);
+              {validAlerts.map((alert, index) => {
+                // Safely extract values
+                const alertId = alert.id || `alert-${index}`;
+                const productName = alert.product?.name || 'Unknown Product';
+                const quantity = typeof alert.quantity === 'number' ? alert.quantity : 0;
+                const alertThreshold = typeof alert.alertThreshold === 'number' ? alert.alertThreshold : 10;
+                
+                const status = getStockStatus(quantity, alertThreshold);
+                
                 return (
                   <TableRow
-                    key={alert.id}
+                    key={alertId}
                     sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                   >
                     <TableCell component="th" scope="row">
                       <Typography variant="body2" fontWeight="medium">
-                        {alert.product.name}
+                        {productName}
                       </Typography>
                     </TableCell>
-                    <TableCell align="right">{alert.quantity} pcs</TableCell>
+                    <TableCell align="right">{quantity} pcs</TableCell>
                     <TableCell align="right">
                       <Chip
                         label={status.label}

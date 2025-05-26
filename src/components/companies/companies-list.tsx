@@ -30,7 +30,7 @@ interface CompaniesListProps {
 }
 
 export const CompaniesList = ({ companies }: CompaniesListProps) => {
-  const { t } = useTranslation('super-admin');
+  const { t } = useTranslation('superAdmin');
   const router = useRouter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);

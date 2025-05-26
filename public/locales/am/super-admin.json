@@ -6,6 +6,27 @@
   "login": "ግባ",
   "sign_up": "ይመዝገቡ",
   
+  "navigation": {
+    "dashboard": "ዳሽቦርድ",
+    "companies": "ኩባንያዎች",
+    "subscription_plans": "የምዝገባ ዕቅዶች",
+    "currencies": "ገንዘቦች"
+  },
+  
+  "page_titles": {
+    "dashboard": "ዳሽቦርድ",
+    "companies": "ኩባንያዎች",
+    "subscription_plans": "የምዝገባ ዕቅዶች",
+    "currencies": "ገንዘቦች"
+  },
+  
+  "page_descriptions": {
+    "dashboard": "የሱፐር አድሚን ዳሽቦርድ አጠቃላይ እይታ",
+    "companies": "በሲስተሙ ውስጥ ያሉ ሁሉንም ኩባንያዎች ያስተዳድሩ",
+    "subscription_plans": "የምዝገባ ዕቅዶችን ያስተዳድሩ",
+    "currencies": "የሲስተም ገንዘቦችን ያስተዳድሩ"
+  },
+  
   "common": {
     "role": "ሚና",
     "super_admin": "ዋና አስተዳዳሪ",
@@ -216,66 +237,35 @@
     "name": "ስም",
     "code": "ኮድ",
     "symbol": "ምልክት",
+    "status": "ሁኔታ",
+    "description": "የሲስተም ገንዘቦችን ያስተዳድሩ",
+    "search_placeholder": "ገንዘቦችን ይፈልጉ...",
+    "create_title": "ገንዘብ ፍጠር",
+    "edit_title": "ገንዘብ አርትዕ",
+    "delete_title": "ገንዘብ ሰርዝ",
+    "delete_confirmation": "ገንዘቡን \"{name}\" መሰረዝ መፈለግዎ እርግጠኛ ነዎት? ይህ እርምጃ ሊቀለበስ አይችልም።",
+    "no_results": "ከፍለጋዎ ጋር የሚዛመዱ ገንዘቦች አልተገኙም",
     "no_currencies": "ምንም ገንዘቦች አልተገኙም",
-    "description": "የሲስተም ምንዛሬዎችን ያስተዳድሩ",
-    "search_placeholder": "ምንዛሬዎችን ይፈልጉ...",
-    "create_title": "ምንዛሬ ፍጠር",
-    "edit_title": "ምንዛሬ አርትዕ",
-    "delete_title": "ምንዛሬ ሰርዝ",
-    "delete_confirmation": "ምንዛሬውን \"{name}\" መሰረዝ መፈለግዎ እርግጠኛ ነዎት? ይህ እርምጃ ሊቀለበስ አይችልም።",
-    "no_results": "ከፍለጋዎ ጋር የሚዛመዱ ምንዛሬዎች አልተገኙም",
     "columns": {
       "name": "ስም",
       "code": "ኮድ",
       "symbol": "ምልክት",
-      "rate": "የምንዛሬ ምጣኔ",
+      "rate": "የምንዛሬ ተመን",
       "is_default": "ነባሪ",
       "status": "ሁኔታ"
     },
     "form": {
-      "name": "የምንዛሬ ስም",
-      "code": "የምንዛሬ ኮድ",
+      "name": "የገንዘብ ስም",
+      "code": "የገንዘብ ኮድ",
       "symbol": "ምልክት",
-      "rate": "የምንዛሬ ምጣኔ",
-      "is_default": "ነባሪ ምንዛሬ",
-      "is_active": "ንቁ"
+      "rate": "የምንዛሬ ተመን",
+      "is_default": "ነባሪ ገንዘብ"
     },
     "error": {
-      "load": "ምንዛሬዎችን መጫን አልተሳካም",
-      "create": "ምንዛሬ መፍጠር አልተሳካም",
-      "update": "ምንዛሬ ማዘመን አልተሳካም",
-      "delete": "ምንዛሬ መሰረዝ አልተሳካም"
-    }
-  },
-  
-  "profile": {
-    "title": "የኔ መገለጫ",
-    "personal_info": "የግል መረጃ",
-    "first_name": "መጠሪያ ስም",
-    "last_name": "የአባት ስም",
-    "email": "ኢሜይል",
-    "phone": "ስልክ",
-    "password": {
-      "title": "የይለፍ ቃል",
-      "current": "የአሁኑ የይለፍ ቃል",
-      "new": "አዲስ የይለፍ ቃል",
-      "confirm": "የይለፍ ቃል አረጋግጥ"
-    },
-    "update": "አዘምን",
-    "change_password": "የይለፍ ቃል ቀይር",
-    "profile_picture": "የመገለጫ ፎቶ",
-    "upload_new": "አዲስ ፎቶ ስቀል",
-    "remove": "አስወግድ",
-    "update_profile": "መገለጫ አዘምን",
-    "current_password": "የአሁኑ የይለፍ ቃል",
-    "new_password": "አዲስ የይለፍ ቃል",
-    "confirm_password": "አዲስ የይለፍ ቃል አረጋግጥ",
-    "password_requirements": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን እና ከፍተኛ፣ ትንሽ፣ ቁጥር እና ልዩ ቁምፊ መያዝ አለበት",
-    "update_password": "የይለፍ ቃል አዘምን",
-    "error": {
-      "load": "መገለጫ መጫን አልተሳካም",
-      "update": "መገለጫ ማዘመን አልተሳካም",
-      "password": "የይለፍ ቃል ማዘመን አልተሳካም"
+      "load": "ገንዘቦችን መጫን አልተሳካም",
+      "create": "ገንዘብ መፍጠር አልተሳካም",
+      "update": "ገንዘብ ማዘመን አልተሳካም",
+      "delete": "ገንዘብ መሰረዝ አልተሳካም"
     }
   }
 } 

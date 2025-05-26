@@ -143,7 +143,7 @@ const StatCard = ({
 
 export default function SuperAdminDashboard(): React.JSX.Element {
   const router = useRouter();
-  const { t } = useTranslation('super-admin');
+  const { t } = useTranslation('superAdmin');
   const { data: companies, isLoading: isLoadingCompanies, error: companiesError } = useCompanies();
   const { data: currencies, isLoading: isLoadingCurrencies, error: currenciesError } = useCurrencies();
   const { data: subscriptionPlans, isLoading: isLoadingPlans, error: plansError } = useSubscriptionPlans();
@@ -198,11 +198,11 @@ export default function SuperAdminDashboard(): React.JSX.Element {
           <Stack direction="row" justifyContent="space-between" spacing={4}>
             <Stack spacing={1}>
               <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                {t('dashboard.title')}
+                {t('page_titles.dashboard')}
               </Typography>
               <Stack direction="row" spacing={1}>
                 <Typography color="text.secondary" variant="body2">
-                  {t('dashboard.overview')}
+                  {t('page_descriptions.dashboard')}
                 </Typography>
               </Stack>
             </Stack>
@@ -261,7 +261,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
           
           <Card sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.04)', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.05)' }}>
             <CardHeader 
-              title={t('companies.title')} 
+              title={t('page_titles.companies')} 
               subheader={t('dashboard.recent_companies')} 
               action={
                 <Button
@@ -350,7 +350,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
             <Grid item xs={12} md={6}>
               <Card sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.04)', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.05)' }}>
                 <CardHeader 
-                  title={t('subscription_plans.title')} 
+                  title={t('page_titles.subscription_plans')} 
                   action={
                     <Button
                       color="inherit"
@@ -427,7 +427,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
             <Grid item xs={12} md={6}>
               <Card sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.04)', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.05)' }}>
                 <CardHeader 
-                  title={t('currencies.title')} 
+                  title={t('page_titles.currencies')} 
                   action={
                     <Button
                       color="inherit"

@@ -27,8 +27,13 @@ interface TopCustomersProps {
 }
 
 export function TopCustomers({ customers, t }: TopCustomersProps) {
+  // Ensure customers is a valid array
+  const validCustomers = Array.isArray(customers) ? customers : [];
+  
   // Generate initials from customer name
-  const getInitials = (name: string): string => {
+  const getInitials = (name: string | undefined): string => {
+    if (!name) return 'N/A';
+    
     return name
       .split(' ')
       .map((part) => part[0])
@@ -38,7 +43,7 @@ export function TopCustomers({ customers, t }: TopCustomersProps) {
   };
 
   // Generate random color based on customer id
-  const getAvatarColor = (id: string) => {
+  const getAvatarColor = (id: string | undefined) => {
     const colors = [
       'primary.light',
       'secondary.light',
@@ -48,6 +53,10 @@ export function TopCustomers({ customers, t }: TopCustomersProps) {
       'success.light',
     ];
     // Use the customer ID to pick a color (just for consistent coloring)
+    // Safe check for null/undefined id
+    if (!id) {
+      return colors[0]; // Default to first color if id is missing
+    }
     const colorIndex = id.charCodeAt(0) % colors.length;
     return colors[colorIndex];
   };
@@ -69,7 +78,7 @@ export function TopCustomers({ customers, t }: TopCustomersProps) {
       />
       <Divider />
       <CardContent sx={{ p: 0 }}>
-        {customers.length > 0 ? (
+        {validCustomers.length > 0 ? (
           <Table>
             <TableHead>
               <TableRow>
@@ -79,9 +88,9 @@ export function TopCustomers({ customers, t }: TopCustomersProps) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {customers.map((customer) => (
+              {validCustomers.map((customer, index) => (
                 <TableRow
-                  key={customer.id}
+                  key={customer.id || `customer-${index}`}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >
                   <TableCell>
@@ -97,18 +106,18 @@ export function TopCustomers({ customers, t }: TopCustomersProps) {
                         {getInitials(customer.name)}
                       </Avatar>
                       <Typography variant="body2" fontWeight="medium">
-                        {customer.name}
+                        {customer.name || t('common.unnamed_customer', 'Unnamed Customer')}
                       </Typography>
                     </Stack>
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" fontWeight="medium">
-                      ${customer.amount.toFixed(2)}
+                      ${(customer.amount || 0).toFixed(2)}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2">
-                      {customer.salesCount} {customer.salesCount === 1 ? 'sale' : 'sales'}
+                      {customer.salesCount || 0} {(customer.salesCount || 0) === 1 ? 'sale' : 'sales'}
                     </Typography>
                   </TableCell>
                 </TableRow>

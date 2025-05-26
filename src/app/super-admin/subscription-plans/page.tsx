@@ -70,7 +70,7 @@ const subscriptionPlanSchema = zod.object({
 type SubscriptionPlanFormValues = zod.infer<typeof subscriptionPlanSchema>;
 
 export default function SubscriptionPlansPage(): React.JSX.Element {
-  const { t } = useTranslation('super-admin');
+  const { t } = useTranslation('superAdmin');
   const { data: subscriptionPlans, isLoading: isLoadingPlans, error: plansError } = useSubscriptionPlans();
   const createPlanMutation = useCreateSubscriptionPlan();
   const updatePlanMutation = useUpdateSubscriptionPlan();
@@ -331,10 +331,10 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
           >
             <Stack spacing={1}>
               <Typography variant="h4">
-                {t('subscription_plans.title')}
+                {t('page_titles.subscription_plans')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t('subscription_plans.description')}
+                {t('page_descriptions.subscription_plans')}
               </Typography>
             </Stack>
             <Button

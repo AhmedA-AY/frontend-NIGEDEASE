@@ -276,22 +276,23 @@ export default function CustomersPage(): React.JSX.Element {
               </TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Created At</TableCell>
-              <TableCell>Balance</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Action</TableCell>
+              <TableCell>Phone</TableCell>
+              <TableCell>Address</TableCell>
+              <TableCell align="right">Credit Limit</TableCell>
+              <TableCell>Created Date</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">Loading customers...</Typography>
                 </TableCell>
               </TableRow>
             ) : customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">No customers found</Typography>
                 </TableCell>
               </TableRow>
@@ -330,19 +331,21 @@ export default function CustomersPage(): React.JSX.Element {
                         {customer.name}
                       </Box>
                     </TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.phone}</TableCell>
+                    <TableCell>{customer.email || '-'}</TableCell>
+                    <TableCell>{customer.phone || '-'}</TableCell>
+                    <TableCell>{customer.address || '-'}</TableCell>
+                    <TableCell align="right">
+                      {customer.credit_limit ? 
+                        `${parseFloat(customer.credit_limit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB` : 
+                        '-'}
+                    </TableCell>
                     <TableCell>{new Date(customer.created_at).toLocaleDateString('en-US', { 
                       day: '2-digit', 
                       month: '2-digit', 
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true
-                    }).replace(/\//g, '-')}</TableCell>
-                    <TableCell align="right">${parseFloat(customer.credit_limit || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell align="right">
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      year: 'numeric'
+                    })}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
                         <IconButton 
                           size="small" 
                           onClick={() => handleOpenEditModal(customer)}
@@ -364,10 +367,12 @@ export default function CustomersPage(): React.JSX.Element {
               })
             )}
             <TableRow>
-              <TableCell colSpan={4} sx={{ fontWeight: 'bold' }}>
-                Total
+              <TableCell colSpan={5} sx={{ fontWeight: 'bold' }}>
+                Total Credit Limit
               </TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>${totalBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                {totalBalance.toLocaleString('en-US', {minimumFractionDigits: 2})} ETB
+              </TableCell>
               <TableCell colSpan={2}></TableCell>
             </TableRow>
           </TableBody>

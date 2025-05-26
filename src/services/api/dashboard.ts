@@ -13,11 +13,15 @@ export interface DashboardStats {
 }
 
 export interface TopSellingProduct {
-  id: string;
-  name: string;
-  quantity: number;
-  amount: number;
-  percentage: number;
+  id?: string;
+  product_id?: string;
+  name?: string;
+  product_name?: string;
+  quantity?: number;
+  total_quantity?: number;
+  amount?: number;
+  total_sales?: number;
+  percentage?: number;
 }
 
 export interface RecentSale {

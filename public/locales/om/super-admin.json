@@ -6,6 +6,27 @@
   "login": "Seeni",
   "sign_up": "Galmaa'i",
   
+  "navigation": {
+    "dashboard": "Daashboordii",
+    "companies": "Dhaabbilee",
+    "subscription_plans": "Karoora Sanbskiripshini",
+    "currencies": "Mallaqoota"
+  },
+  
+  "page_titles": {
+    "dashboard": "Daashboordii",
+    "companies": "Dhaabbilee",
+    "subscription_plans": "Karoora Sanbskiripshini",
+    "currencies": "Mallaqoota"
+  },
+  
+  "page_descriptions": {
+    "dashboard": "Ilaalcha Daashboordii Super Admin",
+    "companies": "Dhaabbilee siistemii keessa jiran hunda bulchi",
+    "subscription_plans": "Karoora sanbskiripshini bulchi",
+    "currencies": "Mallaqoota siistemii bulchi"
+  },
+  
   "common": {
     "role": "Gahee",
     "super_admin": "Super Admin",
@@ -198,12 +219,6 @@
     "delete_confirmation": "Maallaqa \"{name}\" haquu barbaaddu mirkaneeffadhu? Kuni deebi'ee hin dhufu.",
     "no_results": "Mallaqoota barbaaddu hin argamne",
     "no_currencies": "Mallaqoonni hin argamne",
-    "loading": {
-      "creating": "Maallaqa uumaa jira...",
-      "updating": "Maallaqa haaromsaa jira...",
-      "deleting": "Maallaqa haqaa jira...",
-      "updating_code": "Koodii maallaqa haaromsaa jira..."
-    },
     "columns": {
       "name": "Maqaa",
       "code": "Koodii",
@@ -217,8 +232,7 @@
       "code": "Koodii Mallaqaa",
       "symbol": "Mallattoo",
       "rate": "Gatii Jijjiiraa",
-      "is_default": "Maallaqa Durtii",
-      "is_active": "Hojjataa"
+      "is_default": "Maallaqa Durtii"
     },
     "error": {
       "load": "Mallaqoota fe'uu hin danda'amne",

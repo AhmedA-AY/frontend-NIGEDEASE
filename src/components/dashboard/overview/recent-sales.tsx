@@ -28,8 +28,13 @@ interface RecentSalesProps {
 }
 
 export function RecentSales({ sales, t }: RecentSalesProps) {
+  // Ensure we have a valid array of sales
+  const validSales = Array.isArray(sales) ? sales : [];
+
   // Generate initials from customer name
-  const getInitials = (name: string): string => {
+  const getInitials = (name: string | undefined): string => {
+    if (!name) return 'N/A';
+    
     return name
       .split(' ')
       .map((part) => part[0])
@@ -81,7 +86,7 @@ export function RecentSales({ sales, t }: RecentSalesProps) {
       />
       <Divider />
       <CardContent sx={{ p: 0 }}>
-        {sales.length > 0 ? (
+        {validSales.length > 0 ? (
           <Table>
             <TableHead>
               <TableRow>
@@ -93,30 +98,39 @@ export function RecentSales({ sales, t }: RecentSalesProps) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {sales.map((sale) => {
-                const statusProps = getStatusChipProps(sale.status);
+              {validSales.map((sale, index) => {
+                // Safely extract values
+                const saleId = sale.id || `sale-${index}`;
+                const customerName = sale.customer?.name || 'Unknown Customer';
+                const saleDate = sale.date || 'N/A';
+                const saleStatus = sale.status || 'Unknown';
+                const saleAmount = typeof sale.amount === 'number' ? sale.amount : 0;
+                const salePaid = typeof sale.paid === 'number' ? sale.paid : 0;
+                
+                const statusProps = getStatusChipProps(saleStatus);
+                
                 return (
                   <TableRow
-                    key={sale.id}
+                    key={saleId}
                     sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                   >
                     <TableCell component="th" scope="row">
                       <Typography variant="body2" fontWeight="medium">
-                        {sale.id}
+                        {saleId}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={2} alignItems="center">
                         <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.light', fontSize: '0.875rem' }}>
-                          {getInitials(sale.customer.name)}
+                          {getInitials(customerName)}
                         </Avatar>
-                        <Typography variant="body2">{sale.customer.name}</Typography>
+                        <Typography variant="body2">{customerName}</Typography>
                       </Stack>
                     </TableCell>
-                    <TableCell>{sale.date}</TableCell>
+                    <TableCell>{saleDate}</TableCell>
                     <TableCell>
                       <Chip
-                        label={sale.status}
+                        label={saleStatus}
                         size="small"
                         color={statusProps.color}
                         variant={statusProps.variant}
@@ -124,11 +138,11 @@ export function RecentSales({ sales, t }: RecentSalesProps) {
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" fontWeight="medium">
-                        ${sale.amount.toFixed(2)}
+                        ${saleAmount.toFixed(2)}
                       </Typography>
-                      {sale.paid < sale.amount && (
+                      {salePaid < saleAmount && (
                         <Typography variant="caption" color="text.secondary">
-                          {t('overview.paid')}: ${sale.paid.toFixed(2)}
+                          {t('overview.paid')}: ${salePaid.toFixed(2)}
                         </Typography>
                       )}
                     </TableCell>

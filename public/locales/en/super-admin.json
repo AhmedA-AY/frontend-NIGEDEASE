@@ -6,6 +6,27 @@
   "login": "Login",
   "sign_up": "Sign Up",
   
+  "navigation": {
+    "dashboard": "Dashboard",
+    "companies": "Companies",
+    "subscription_plans": "Subscription Plans",
+    "currencies": "Currencies"
+  },
+  
+  "page_titles": {
+    "dashboard": "Dashboard",
+    "companies": "Companies",
+    "subscription_plans": "Subscription Plans",
+    "currencies": "Currencies"
+  },
+  
+  "page_descriptions": {
+    "dashboard": "Superadmin Dashboard Overview",
+    "companies": "Manage all companies in the system",
+    "subscription_plans": "Manage subscription plans",
+    "currencies": "Manage system currencies"
+  },
+  
   "common": {
     "role": "Role",
     "super_admin": "Super Admin",
@@ -247,8 +268,7 @@
       "code": "Currency Code",
       "symbol": "Symbol",
       "rate": "Exchange Rate",
-      "is_default": "Default Currency",
-      "is_active": "Active"
+      "is_default": "Default Currency"
     },
     "error": {
       "load": "Failed to load currencies",

@@ -29,6 +29,7 @@ export const reportsApi = {
     return response.data as ReportsResponse;
   },
 
+  // Generic report fetching function
   getReport: async (
     storeId: string,
     reportType: string,
@@ -56,6 +57,127 @@ export const reportsApi = {
     // Add query parameters if they exist
     if (filters?.start_date && filters?.end_date) {
       url += `?start_date=${filters.start_date}&end_date=${filters.end_date}`;
+    }
+
+    const response = await coreApiClient.get(url);
+    return response.data as ReportData;
+  },
+
+  // Specific endpoints for each report type
+  getCustomerReport: async (
+    storeId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ReportData> => {
+    let url = `/reports/stores/${storeId}/reports/customers/`;
+    
+    // Add date range if provided
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+
+    const response = await coreApiClient.get(url);
+    return response.data as ReportData;
+  },
+
+  getFinancialReport: async (
+    storeId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ReportData> => {
+    let url = `/reports/stores/${storeId}/reports/financials/`;
+    
+    // Add date range if provided
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+
+    const response = await coreApiClient.get(url);
+    return response.data as ReportData;
+  },
+
+  getInventoryReport: async (
+    storeId: string
+  ): Promise<ReportData> => {
+    const url = `/reports/stores/${storeId}/reports/inventory/`;
+    const response = await coreApiClient.get(url);
+    return response.data as ReportData;
+  },
+
+  getProductReport: async (
+    storeId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ReportData> => {
+    let url = `/reports/stores/${storeId}/reports/products/`;
+    
+    // Add date range if provided
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+
+    const response = await coreApiClient.get(url);
+    return response.data as ReportData;
+  },
+
+  getProfitReport: async (
+    storeId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ReportData> => {
+    let url = `/reports/stores/${storeId}/reports/profit/`;
+    
+    // Add date range if provided
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+
+    const response = await coreApiClient.get(url);
+    return response.data as ReportData;
+  },
+
+  getPurchaseReport: async (
+    storeId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ReportData> => {
+    let url = `/reports/stores/${storeId}/reports/purchases/`;
+    
+    // Add date range if provided
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+
+    const response = await coreApiClient.get(url);
+    return response.data as ReportData;
+  },
+
+  getRevenueReport: async (
+    storeId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ReportData> => {
+    let url = `/reports/stores/${storeId}/reports/revenue/`;
+    
+    // Add date range if provided
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+
+    const response = await coreApiClient.get(url);
+    return response.data as ReportData;
+  },
+
+  getSalesReport: async (
+    storeId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ReportData> => {
+    let url = `/reports/stores/${storeId}/reports/sales/`;
+    
+    // Add date range if provided
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
     }
 
     const response = await coreApiClient.get(url);

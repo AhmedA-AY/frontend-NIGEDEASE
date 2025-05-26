@@ -29,7 +29,7 @@ export interface UserPopoverProps {
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
   const { userInfo, userRole, logout } = useAuth();
   const router = useRouter();
-  const { t } = useTranslation('super-admin');
+  const { t } = useTranslation('superAdmin');
 
   // Generate display name from email if available
   const displayName = React.useMemo(() => {

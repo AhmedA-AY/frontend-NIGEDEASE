@@ -109,11 +109,10 @@ export default function ExpenseEditModal({
   // Reset form data when modal opens with new expense data
   useEffect(() => {
     if (open) {
-      console.log('Modal opened, userInfo:', userInfo);
-      console.log('Companies:', companies);
+      console.log('Modal opened, setting form data with:', expense);
       
       // Use the current store ID or keep the existing one from the expense
-      const storeId = currentStoreId || formData.store_id || '';
+      const storeId = expense.store_id || currentStoreId || '';
       
       setFormData({
         ...expense,
@@ -122,7 +121,7 @@ export default function ExpenseEditModal({
       
       setErrors({});
     }
-  }, [expense, open, userInfo, companies, currentStoreId]);
+  }, [expense, open, currentStoreId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -152,59 +151,46 @@ export default function ExpenseEditModal({
     }
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    console.log('Validating form with data:', formData);
+  const handleSubmit = () => {
+    console.log('handleSubmit called, validating form');
     
+    // Create a new errors object for validation
+    const newErrors: Record<string, string> = {};
+    
+    // Validate required fields
     if (!formData.expense_category) {
-      console.log('Validation failed: expense_category is missing');
       newErrors.expense_category = 'Category is required';
     }
     
     if (!formData.amount) {
-      console.log('Validation failed: amount is missing or zero');
       newErrors.amount = 'Amount is required';
-    } else if (parseFloat(formData.amount) <= 0) {
-      console.log('Validation failed: amount is not greater than zero', formData.amount);
+    } else if (parseFloat(formData.amount.toString()) <= 0) {
       newErrors.amount = 'Amount must be greater than zero';
     }
     
     if (!formData.description) {
-      console.log('Validation failed: description is missing');
       newErrors.description = 'Description is required';
     }
     
     if (!formData.currency) {
-      console.log('Validation failed: currency is missing');
       newErrors.currency = 'Currency is required';
     }
     
     if (!formData.payment_mode) {
-      console.log('Validation failed: payment_mode is missing');
       newErrors.payment_mode = 'Payment method is required';
     }
     
-    if (!formData.store_id && !currentStoreId) {
-      console.log('Validation failed: store_id is missing');
-      newErrors.store_id = 'Store is required';
-    }
-    
+    // Update the errors state
     setErrors(newErrors);
-    const isValid = Object.keys(newErrors).length === 0;
-    console.log('Validation result:', isValid ? 'PASSED' : 'FAILED', newErrors);
-    return isValid;
-  };
-
-  const handleSubmit = () => {
-    console.log('handleSubmit called, validating form');
-    if (validateForm()) {
+    
+    // Check if there are any errors
+    if (Object.keys(newErrors).length === 0) {
       console.log('Form validation passed');
       
       // Use the current store ID if available
       const storeId = formData.store_id || currentStoreId;
       
       if (!storeId) {
-        console.log('Store ID missing');
         setErrors(prev => ({
           ...prev,
           store_id: "Unable to determine store ID. Please try again later."
@@ -216,16 +202,17 @@ export default function ExpenseEditModal({
       const completeData: ExpenseCreateData & { id?: string } = {
         store_id: storeId,
         expense_category: formData.expense_category || '',
-        amount: formData.amount || '',
+        amount: formData.amount?.toString() || '',
         description: formData.description || '',
         currency: formData.currency || '',
         payment_mode: formData.payment_mode || '',
         ...(formData.id ? { id: formData.id } : {})
       };
+      
       console.log('Submitting complete data:', completeData);
       onSave(completeData);
     } else {
-      console.log('Form validation failed, errors:', errors);
+      console.log('Form validation failed, errors:', newErrors);
     }
   };
 

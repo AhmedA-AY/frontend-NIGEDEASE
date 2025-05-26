@@ -26,6 +26,9 @@ interface TopSellingProductsProps {
 }
 
 export function TopSellingProducts({ products, t }: TopSellingProductsProps) {
+  // Ensure we have a valid array of products
+  const validProducts = Array.isArray(products) ? products : [];
+  
   return (
     <Card>
       <CardHeader 
@@ -43,7 +46,7 @@ export function TopSellingProducts({ products, t }: TopSellingProductsProps) {
       />
       <Divider />
       <CardContent sx={{ p: 0 }}>
-        {products.length > 0 ? (
+        {validProducts.length > 0 ? (
           <Table>
             <TableHead>
               <TableRow>
@@ -54,46 +57,58 @@ export function TopSellingProducts({ products, t }: TopSellingProductsProps) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {products.map((product) => (
-                <TableRow
-                  key={product.id}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
-                  <TableCell component="th" scope="row">
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {product.name}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell align="right">{product.quantity}</TableCell>
-                  <TableCell align="right">${product.amount.toFixed(2)}</TableCell>
-                  <TableCell align="right">
-                    <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-                      <Typography variant="body2">{product.percentage}%</Typography>
-                      <Box sx={{ width: '100%', mt: 1 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={product.percentage}
-                          sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            bgcolor: 'background.neutral',
-                            '& .MuiLinearProgress-bar': {
-                              borderRadius: 4,
-                              bgcolor: (theme) => {
-                                if (product.percentage >= 60) return theme.palette.success.main;
-                                if (product.percentage >= 30) return theme.palette.warning.main;
-                                return theme.palette.error.main;
-                              },
-                            },
-                          }}
-                        />
+              {validProducts.map((product, index) => {
+                // Extract data safely
+                const id = product.id || product.product_id || `product-${index}`;
+                const name = product.name || product.product_name || 'Unknown Product';
+                const quantity = typeof product.quantity === 'number' ? product.quantity : 
+                                (typeof product.total_quantity === 'number' ? product.total_quantity : 0);
+                const amount = typeof product.amount === 'number' ? product.amount : 
+                              (typeof product.total_sales === 'number' ? product.total_sales : 0);
+                const percentage = typeof product.percentage === 'number' ? product.percentage : 
+                                  (Math.min(Math.round((amount / 100) * 100), 100) || 0);
+                
+                return (
+                  <TableRow
+                    key={id}
+                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                  >
+                    <TableCell component="th" scope="row">
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                          {name}
+                        </Typography>
                       </Box>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell align="right">{quantity}</TableCell>
+                    <TableCell align="right">${amount.toFixed(2)}</TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
+                        <Typography variant="body2">{percentage}%</Typography>
+                        <Box sx={{ width: '100%', mt: 1 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={percentage}
+                            sx={{
+                              height: 8,
+                              borderRadius: 4,
+                              bgcolor: 'background.neutral',
+                              '& .MuiLinearProgress-bar': {
+                                borderRadius: 4,
+                                bgcolor: (theme) => {
+                                  if (percentage >= 60) return theme.palette.success.main;
+                                  if (percentage >= 30) return theme.palette.warning.main;
+                                  return theme.palette.error.main;
+                                },
+                              },
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         ) : (

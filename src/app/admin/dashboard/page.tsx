@@ -1,15 +1,24 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Card, CardHeader, Container, Grid, Stack, Typography, Button, Paper } from '@mui/material';
+import { Box, Card, CardHeader, Container, Grid, Stack, Typography, Button, Paper, 
+  CircularProgress, TableContainer, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import PeopleIcon from '@mui/icons-material/People';
 import { ApexOptions } from 'apexcharts';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { format as formatDate, subDays, subMonths } from 'date-fns';
+import { format, format as formatDate, subDays, subMonths } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { useAvailableReports, useReport, ReportType } from '@/hooks/admin/use-reports';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import DynamicApexChart from '@/components/dynamic-apex-chart';
 import { TopSellingProduct, RecentSale, StockAlert, TopCustomer } from '@/services/api/dashboard';
@@ -133,7 +142,7 @@ export default function AdminDashboardPage() {
   };
 
   // Create the options for the charts
-  const dailySalesChartOptions = {
+  const dailySalesChartOptions: ApexOptions = {
     chart: {
       background: 'transparent',
       toolbar: {
@@ -180,7 +189,10 @@ export default function AdminDashboardPage() {
       axisTicks: {
         show: true,
       },
-      categories: dashboardData?.dailySales.map((item: any) => item.day) || [],
+      // Ensure we have valid categories for the chart
+      categories: dashboardData?.dailySales?.length 
+        ? dashboardData.dailySales.map((item: any) => item?.day || '')
+        : Array(7).fill(0).map((_, i) => formatDate(subDays(new Date(), 6-i), 'yyyy-MM-dd')),
       labels: {
         style: {
           colors: '#637381',
@@ -195,19 +207,47 @@ export default function AdminDashboardPage() {
         },
       },
     }],
-  } as ApexOptions;
+  };
 
   // Create the chart series based on the data
   const dailySalesChartSeries = [
     {
       name: safeTranslate('dashboard.charts.sales', 'Sales'),
-      data: dashboardData?.dailySales.map((item: any) => item.sales) || [],
+      // Add default empty array if dailySales is missing
+      data: dashboardData?.dailySales?.length
+        ? dashboardData.dailySales.map((item: any) => item?.sales || 0)
+        : Array(7).fill(0),
     },
     {
       name: safeTranslate('dashboard.charts.expenses', 'Expenses'),
-      data: dashboardData?.dailySales.map((item: any) => item.expenses) || [],
+      // Add default empty array if dailySales is missing
+      data: dashboardData?.dailySales?.length
+        ? dashboardData.dailySales.map((item: any) => item?.expenses || 0)
+        : Array(7).fill(0),
     },
   ];
+
+  // Ensure both series have the same length
+  if (dailySalesChartSeries[0].data.length !== dailySalesChartSeries[1].data.length) {
+    console.warn('Sales and expenses data arrays have different lengths');
+    // Make both arrays the same length using the longer one
+    const maxLength = Math.max(dailySalesChartSeries[0].data.length, dailySalesChartSeries[1].data.length);
+    dailySalesChartSeries[0].data = dailySalesChartSeries[0].data.concat(Array(maxLength - dailySalesChartSeries[0].data.length).fill(0));
+    dailySalesChartSeries[1].data = dailySalesChartSeries[1].data.concat(Array(maxLength - dailySalesChartSeries[1].data.length).fill(0));
+  }
+
+  // Ensure the category array length matches the data array length
+  if (dailySalesChartOptions.xaxis?.categories?.length !== dailySalesChartSeries[0].data.length) {
+    console.warn('Categories and data arrays have different lengths');
+    // Adjust categories to match data length
+    const dataLength = dailySalesChartSeries[0].data.length;
+    const today = new Date();
+    if (dailySalesChartOptions.xaxis) {
+      dailySalesChartOptions.xaxis.categories = Array(dataLength).fill(0).map((_, i) => 
+        formatDate(subDays(today, dataLength - 1 - i), 'yyyy-MM-dd')
+      );
+    }
+  }
 
   if (isLoading) {
     return (
@@ -292,17 +332,17 @@ export default function AdminDashboardPage() {
     salesGrowth,
     paymentReceived,
     paymentSent,
-    topSellingProducts,
-    recentSales,
-    stockAlerts,
-    topCustomers
+    topSellingProducts = [],
+    recentSales = [],
+    stockAlerts = [],
+    topCustomers = []
   } = dashboardData || {};
 
-  // Format values for display
-  const formattedTotalSales = totalSales ? `$${totalSales.toFixed(2)}` : '$0.00';
-  const formattedTotalExpenses = totalExpenses ? `$${totalExpenses.toFixed(2)}` : '$0.00';
-  const formattedPaymentReceived = paymentReceived ? `$${paymentReceived.toFixed(2)}` : '$0.00';
-  const formattedTotalCustomers = totalCustomers ? totalCustomers.toString() : '0';
+  // Format values for display - handle potentially different data structures from reports API
+  const formattedTotalSales = totalSales ? `$${typeof totalSales === 'string' ? parseFloat(totalSales).toFixed(2) : totalSales.toFixed(2)}` : '$0.00';
+  const formattedTotalExpenses = totalExpenses ? `$${typeof totalExpenses === 'string' ? parseFloat(totalExpenses).toFixed(2) : totalExpenses.toFixed(2)}` : '$0.00';
+  const formattedPaymentReceived = paymentReceived ? `$${typeof paymentReceived === 'string' ? parseFloat(paymentReceived).toFixed(2) : paymentReceived.toFixed(2)}` : '$0.00';
+  const formattedTotalCustomers = totalCustomers ? (typeof totalCustomers === 'string' ? totalCustomers : totalCustomers.toString()) : '0';
 
   // Calculate growth percentages
   const salesGrowthFormatted = salesGrowth ? `${salesGrowth >= 0 ? '+' : ''}${salesGrowth.toFixed(1)}%` : '0%';
@@ -412,29 +452,32 @@ export default function AdminDashboardPage() {
           </Box>
         </Card>
 
+        {/* Reports Section */}
+        <ReportsSection storeId={currentStore?.id} />
+
         {/* Overview Sections */}
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <TopSellingProducts 
-              products={topSellingProducts || []} 
+              products={Array.isArray(topSellingProducts) ? topSellingProducts : []} 
               t={t} 
             />
           </Grid>
           <Grid item xs={12} md={6}>
             <RecentSales 
-              sales={recentSales || []} 
+              sales={Array.isArray(recentSales) ? recentSales : []} 
               t={t}  
             />
           </Grid>
           <Grid item xs={12} md={6}>
             <StockAlerts 
-              alerts={stockAlerts || []} 
+              alerts={Array.isArray(stockAlerts) ? stockAlerts : []} 
               t={t}  
             />
           </Grid>
           <Grid item xs={12} md={6}>
             <TopCustomers 
-              customers={topCustomers || []} 
+              customers={Array.isArray(topCustomers) ? topCustomers : []} 
               t={t}  
             />
           </Grid>
@@ -531,6 +574,341 @@ function StatCard({ title, value, change, positive, icon }: StatCardProps) {
         >
           {change}
         </Typography>
+      </Box>
+    </Card>
+  );
+}
+
+// Reports Section Component
+function ReportsSection({ storeId }: { storeId: string | undefined }) {
+  const { t } = useTranslation('admin');
+  const [selectedReportType, setSelectedReportType] = useState<ReportType>('sales');
+  const [startDate, setStartDate] = useState<Date | null>(subDays(new Date(), 30));
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  
+  // Format dates for API
+  const formattedStartDate = startDate ? format(startDate, 'yyyy-MM-dd') : undefined;
+  const formattedEndDate = endDate ? format(endDate, 'yyyy-MM-dd') : undefined;
+  
+  // Fetch available reports
+  const { data: availableReports, isLoading: isLoadingReports } = useAvailableReports(storeId);
+  
+  // Fetch selected report
+  const { 
+    data: reportData, 
+    isLoading: isLoadingReport,
+    error: reportError,
+    refetch: refetchReport
+  } = useReport(storeId, selectedReportType, {
+    startDate: formattedStartDate,
+    endDate: formattedEndDate
+  });
+  
+  // Reset active section when report type changes
+  useEffect(() => {
+    setActiveSection(null);
+  }, [selectedReportType]);
+  
+  const handleReportTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    setSelectedReportType(event.target.value as ReportType);
+    setActiveSection(null); // Reset active section when changing report type
+  };
+  
+  // Handle displaying the report data based on its format
+  const renderReportData = () => {
+    if (isLoadingReport) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+    
+    if (reportError) {
+      return (
+        <Box sx={{ p: 3, bgcolor: '#fff8f8', color: 'error.main', borderRadius: 1 }}>
+          <Typography variant="body1">
+            {reportError instanceof Error ? reportError.message : 'Error loading report'}
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            startIcon={<RefreshIcon />}
+            onClick={() => refetchReport()}
+            sx={{ mt: 2 }}
+          >
+            {t('common.retry', 'Retry')}
+          </Button>
+        </Box>
+      );
+    }
+    
+    if (!reportData) {
+      return (
+        <Box sx={{ p: 3 }}>
+          <Typography variant="body1" color="text.secondary">
+            {t('dashboard.reports.select_prompt', 'Select a report type and date range to view data')}
+          </Typography>
+        </Box>
+      );
+    }
+    
+    try {
+      // Extract report data for rendering
+      const tableData: Record<string, any>[] = [];
+      const tableColumns: string[] = [];
+      
+      // Special handling for specific report sections
+      // These are arrays with complex objects that need special rendering
+      const specialSections = [
+        'top_selling_products', 'daily_sales_breakdown', 'payment_mode_breakdown', 
+        'top_customers', 'low_stock_products', 'out_of_stock_products', 'overstocked_products',
+        'top_performing_products', 'worst_performing_products', 'product_category_breakdown',
+        'seasonal_product_trends', 'profit_by_product_category', 'profit_trend', 'revenue_by_payment_mode',
+        'revenue_by_product_category', 'daily_revenue', 'monthly_revenue'
+      ];
+      
+      // Use the active section if set, otherwise find the first available section
+      const sectionToShow = activeSection || specialSections.find(section => 
+        reportData[section] && Array.isArray(reportData[section]) && reportData[section].length > 0
+      );
+      
+      console.log('Current active section:', activeSection);
+      console.log('Section being shown:', sectionToShow);
+      console.log('Available sections:', specialSections.filter(section => 
+        reportData[section] && Array.isArray(reportData[section]) && reportData[section].length > 0
+      ));
+            
+      if (sectionToShow && reportData[sectionToShow] && Array.isArray(reportData[sectionToShow])) {
+        // Show a specific data section as a table
+        if (reportData[sectionToShow].length > 0) {
+          reportData[sectionToShow].forEach(item => {
+            if (item && typeof item === 'object') {
+              // Handle special case for seasonal_product_trends with product_breakdown
+              if (item.product_breakdown && typeof item.product_breakdown === 'object') {
+                // Convert product_breakdown object to string
+                const productBreakdownStr = Object.entries(item.product_breakdown)
+                  .map(([product, quantity]) => `${product}: ${quantity}`)
+                  .join(', ');
+                
+                // Create a copy without the original object
+                const itemCopy = { ...item };
+                itemCopy.product_breakdown = productBreakdownStr;
+                tableData.push(itemCopy);
+              } else {
+                tableData.push(item);
+              }
+            }
+          });
+          
+          if (tableData.length > 0 && tableData[0]) {
+            Object.keys(tableData[0]).forEach(key => {
+              if (key) tableColumns.push(key);
+            });
+          }
+        }
+      } else {
+        // Default handling for general report properties
+        // Filter out array properties and nested objects that we don't want to display directly
+        const excludedKeys = [
+          'title', 'description', 'store', 'date_range_start', 'date_range_end',
+          ...specialSections
+        ];
+        
+        Object.keys(reportData || {}).forEach(key => {
+          if (key && !excludedKeys.includes(key) && typeof reportData[key] !== 'object') {
+            tableColumns.push(key);
+          }
+        });
+        
+        if (tableColumns.length > 0) {
+          // Create a single row with the data
+          const rowData: Record<string, any> = {};
+          tableColumns.forEach(key => {
+            rowData[key] = reportData[key];
+          });
+          tableData.push(rowData);
+        }
+      }
+      
+      // Render based on report type
+      return (
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            {reportData?.title || `${selectedReportType.charAt(0).toUpperCase() + selectedReportType.slice(1)} Report`}
+          </Typography>
+          {reportData?.description && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {typeof reportData.description === 'object' 
+                ? JSON.stringify(reportData.description) 
+                : reportData.description}
+            </Typography>
+          )}
+          
+          {/* Show section name if we're displaying a special section */}
+          {sectionToShow && (
+            <Typography variant="subtitle1" sx={{ mb: 2, mt: 2 }}>
+              {sectionToShow.replace(/_/g, ' ').toUpperCase()}
+            </Typography>
+          )}
+          
+          {tableData.length > 0 ? (
+            <TableContainer component={Paper} sx={{ mt: 2, boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)' }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: 'primary.light' }}>
+                  <TableRow>
+                    {tableColumns.map((key, idx) => (
+                      <TableCell key={`header-${idx}-${key}`} sx={{ fontWeight: 'bold', color: 'primary.contrastText' }}>
+                        {key ? key.replace(/_/g, ' ').toUpperCase() : ''}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {tableData.map((item, index) => (
+                    <TableRow key={`row-${index}`} sx={{ '&:nth-of-type(even)': { bgcolor: 'action.hover' } }}>
+                      {tableColumns.map((key, keyIdx) => {
+                        const cellValue = item && key ? item[key] : null;
+                        return (
+                          <TableCell key={`cell-${index}-${keyIdx}-${key}`}>
+                            {typeof cellValue === 'number' 
+                              ? cellValue.toLocaleString('en-US', { 
+                                  minimumFractionDigits: 2, 
+                                  maximumFractionDigits: 2,
+                                  style: key.includes('price') || key.includes('amount') || key.includes('total') || key.includes('revenue') || key.includes('profit') || key.includes('margin') || key.includes('value') || key.includes('spent') ? 'currency' : 'decimal',
+                                  currency: 'ETB'
+                                })
+                              : typeof cellValue === 'boolean'
+                                ? cellValue ? '✓' : '✗'
+                                : typeof cellValue === 'object' && cellValue !== null
+                                  ? JSON.stringify(cellValue)
+                                  : cellValue || '-'}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 1, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                {t('dashboard.reports.no_data', 'No report data available for the selected period')}
+              </Typography>
+            </Box>
+          )}
+          
+          {/* Display additional data sections buttons if available */}
+          {specialSections.filter(section => 
+            reportData[section] && 
+            Array.isArray(reportData[section]) && 
+            reportData[section].length > 0
+          ).length > 0 && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                View report sections:
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {specialSections.filter(section => 
+                  reportData[section] && 
+                  Array.isArray(reportData[section]) && 
+                  reportData[section].length > 0
+                ).map(section => (
+                  <Button 
+                    key={section} 
+                    variant={activeSection === section ? "contained" : "outlined"}
+                    size="small"
+                    sx={{ mb: 1 }}
+                    onClick={() => setActiveSection(section)}
+                  >
+                    {section.replace(/_/g, ' ')}
+                  </Button>
+                ))}
+              </Stack>
+            </Box>
+          )}
+        </Box>
+      );
+    } catch (err) {
+      console.error('Error rendering report data:', err);
+      return (
+        <Box sx={{ p: 3, bgcolor: '#fff8f8', color: 'error.main', borderRadius: 1 }}>
+          <Typography variant="body1">
+            Error rendering report data. Please try a different report type or date range.
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            startIcon={<RefreshIcon />}
+            onClick={() => refetchReport()}
+            sx={{ mt: 2 }}
+          >
+            {t('common.retry', 'Retry')}
+          </Button>
+        </Box>
+      );
+    }
+  };
+  
+  return (
+    <Card sx={{ mb: { xs: 2, sm: 4 } }}>
+      <CardHeader
+        title={t('dashboard.reports.title', 'Reports')}
+        subheader={t('dashboard.reports.subtitle', 'Analytical reports from your store data')}
+        titleTypographyProps={{ variant: 'h6' }}
+        subheaderTypographyProps={{ variant: 'body2' }}
+      />
+      <Box sx={{ p: 2 }}>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={selectedReportType}
+                onChange={handleReportTypeChange as any}
+                displayEmpty
+                variant="outlined"
+              >
+                <MenuItem value="sales">{t('dashboard.reports.types.sales', 'Sales Report')}</MenuItem>
+                <MenuItem value="customer">{t('dashboard.reports.types.customer', 'Customer Report')}</MenuItem>
+                <MenuItem value="financial">{t('dashboard.reports.types.financial', 'Financial Report')}</MenuItem>
+                <MenuItem value="inventory">{t('dashboard.reports.types.inventory', 'Inventory Report')}</MenuItem>
+                <MenuItem value="product">{t('dashboard.reports.types.product', 'Product Report')}</MenuItem>
+                <MenuItem value="profit">{t('dashboard.reports.types.profit', 'Profit Report')}</MenuItem>
+                <MenuItem value="purchase">{t('dashboard.reports.types.purchase', 'Purchase Report')}</MenuItem>
+                <MenuItem value="revenue">{t('dashboard.reports.types.revenue', 'Revenue Report')}</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={8}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DatePicker
+                  label={t('dashboard.reports.start_date', 'Start Date')}
+                  value={startDate}
+                  onChange={(newValue) => setStartDate(newValue)}
+                  slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                />
+                <DatePicker
+                  label={t('dashboard.reports.end_date', 'End Date')}
+                  value={endDate}
+                  onChange={(newValue) => setEndDate(newValue)}
+                  slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                />
+              </LocalizationProvider>
+              <Button 
+                variant="contained" 
+                onClick={() => refetchReport()}
+                startIcon={<RefreshIcon />}
+              >
+                {t('dashboard.reports.refresh', 'Refresh')}
+              </Button>
+            </Box>
+          </Grid>
+        </Grid>
+        
+        {renderReportData()}
       </Box>
     </Card>
   );

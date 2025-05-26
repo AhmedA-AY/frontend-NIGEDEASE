@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { transactionsApi } from '@/services/api/transactions';
-import { financialsApi } from '@/services/api/financials';
-import { inventoryApi } from '@/services/api/inventory';
-import { format as formatDate, subDays, subMonths } from 'date-fns';
+import { format as formatDate, subDays } from 'date-fns';
 import { TopSellingProduct, RecentSale, StockAlert, TopCustomer } from '@/services/api/dashboard';
+import { reportsApi } from '@/services/api/reports';
 
 export type DashboardPeriod = 'today' | 'week' | 'month' | 'year';
 
@@ -30,288 +28,157 @@ export function useDashboardData(storeId: string | undefined, period: DashboardP
         throw new Error('Store ID is required');
       }
 
-      // Fetch data in parallel from different APIs
-      const [sales, expenses, customers, products, inventories] = await Promise.all([
-        transactionsApi.getSales(storeId),
-        financialsApi.getExpenses(storeId),
-        transactionsApi.getCustomers(storeId),
-        inventoryApi.getProducts(storeId),
-        inventoryApi.getInventories(storeId)
-      ]);
+      // Calculate date ranges based on selected period
+      const today = new Date();
+      let startDate: string;
+      const endDate = formatDate(today, 'yyyy-MM-dd');
       
-      // Calculate total sales amount
-      const totalSales = sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount || '0'), 0);
-      
-      // Calculate total expenses amount
-      const totalExpenses = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount || '0'), 0);
-      
-      // Process sales data for chart
-      const dailySales = processRecentSalesData(sales, expenses, period);
-      const monthlySales = processMonthlySalesData(sales, expenses);
-      
-      // Generate top selling products
-      const topSellingProducts = generateTopSellingProducts(sales, products);
-      
-      // Generate recent sales
-      const recentSales = generateRecentSales(sales);
-      
-      // Generate stock alerts (products with low inventory)
-      const stockAlerts = generateStockAlerts(products, inventories);
-      
-      // Generate top customers
-      const topCustomers = generateTopCustomers(sales, customers);
-      
-      // Calculate sales growth
-      const salesGrowth = calculateGrowth(monthlySales);
+      switch (period) {
+        case 'today':
+          startDate = endDate;
+          break;
+        case 'week':
+          startDate = formatDate(subDays(today, 7), 'yyyy-MM-dd');
+          break;
+        case 'month':
+          startDate = formatDate(subDays(today, 30), 'yyyy-MM-dd');
+          break;
+        case 'year':
+          startDate = formatDate(subDays(today, 365), 'yyyy-MM-dd');
+          break;
+        default:
+          startDate = formatDate(subDays(today, 30), 'yyyy-MM-dd');
+      }
+
+      console.log(`Fetching dashboard data for store ${storeId} from ${startDate} to ${endDate}`);
+
+      try {
+        // Fetch data in parallel from reports API
+        const [
+          salesReport, 
+          financialsReport, 
+          customerReport, 
+          inventoryReport,
+          productReport, 
+          profitReport, 
+          revenueReport
+        ] = await Promise.all([
+          reportsApi.getSalesReport(storeId, startDate, endDate),
+          reportsApi.getFinancialReport(storeId, startDate, endDate),
+          reportsApi.getCustomerReport(storeId, startDate, endDate),
+          reportsApi.getInventoryReport(storeId),
+          reportsApi.getProductReport(storeId, startDate, endDate),
+          reportsApi.getProfitReport(storeId, startDate, endDate),
+          reportsApi.getRevenueReport(storeId, startDate, endDate)
+        ]);
+        
+        // Log the responses for debugging
+        console.log('Sales Report:', salesReport);
+        console.log('Revenue Report:', revenueReport);
+        console.log('Daily sales breakdown:', salesReport.daily_sales_breakdown);
+        console.log('Top selling products:', salesReport.top_selling_products);
+        
+        // Extract data from reports
+        const totalSales = salesReport.total_amount_received || salesReport.total_sales || 0;
+        const totalExpenses = financialsReport.total_costs || financialsReport.total_expenses || 0;
+        const totalCustomers = customerReport.total_customers || 0;
+        const paymentReceived = revenueReport.total_revenue || salesReport.total_amount_received || 0;
+        const salesGrowth = profitReport.growth_percentage || profitReport.profit_margin_percentage || 0;
+        
+        // Daily sales data for chart
+        let dailySales = [];
+        
+        // Check if daily_sales_breakdown exists and is an array
+        if (salesReport.daily_sales_breakdown && Array.isArray(salesReport.daily_sales_breakdown)) {
+          dailySales = salesReport.daily_sales_breakdown.map((item: any) => ({
+            day: item.date,
+            sales: item.amount_received || item.amount_expected || 0,
+            expenses: financialsReport.daily_expenses?.find((expense: any) => expense.date === item.date)?.amount || 0
+          }));
+        } else if (revenueReport.daily_revenue && Array.isArray(revenueReport.daily_revenue)) {
+          // Alternative: use revenue report for daily data
+          dailySales = revenueReport.daily_revenue.map((item: any) => ({
+            day: item.date,
+            sales: item.amount || 0,
+            expenses: financialsReport.daily_expenses?.find((expense: any) => expense.date === item.date)?.amount || 0
+          }));
+        } else {
+          // Fallback option: create dummy data
+          const daysInPeriod = period === 'today' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 12;
+          for (let i = 0; i < daysInPeriod; i++) {
+            const date = formatDate(subDays(today, daysInPeriod - i - 1), 'yyyy-MM-dd');
+            dailySales.push({
+              day: date,
+              sales: 0,
+              expenses: 0
+            });
+          }
+        }
+
+        const monthlySales = revenueReport.monthly_revenue || [];
+        
+        // Top selling products - Use data from sales or product report
+        const topSellingProducts = (salesReport.top_selling_products || productReport.top_performing_products || []).map((product: any) => ({
+          id: product.product_id,
+          name: product.product_name,
+          quantity: product.total_quantity || 0,
+          amount: product.total_sales || 0,
+          percentage: Math.min(Math.round((product.total_sales / (totalSales || 1)) * 100), 100)
+        }));
+        
+        // Recent sales - Might not be available in the standard reports
+        const recentSales = (salesReport.recent_transactions || []).map((sale: any) => ({
+          id: sale.transaction_id || '',
+          date: sale.date || '',
+          customer: {
+            id: sale.customer_id || '',
+            name: sale.customer_name || 'Unknown Customer'
+          },
+          amount: sale.amount || 0,
+          status: sale.status || 'Completed',
+          paid: sale.paid_amount || 0
+        }));
+        
+        // Stock alerts - Use inventory report data
+        const stockAlerts = (inventoryReport.low_stock_products || []).map((item: any) => ({
+          id: item.product_id,
+          product: {
+            id: item.product_id,
+            name: item.product_name
+          },
+          quantity: item.current_quantity || 0,
+          alertThreshold: item.threshold || 10
+        }));
+        
+        // Top customers - Use customer report data
+        const topCustomers = (customerReport.top_customers || []).map((customer: any) => ({
+          id: customer.customer_id,
+          name: customer.customer_name,
+          amount: customer.total_spent || 0,
+          salesCount: customer.purchase_count || 0
+        }));
 
       return {
         totalSales,
         totalExpenses,
-        totalCustomers: customers.length,
+          totalCustomers,
         salesGrowth,
-        paymentReceived: 0, // These would be from payment APIs if available
-        paymentSent: 0,
+          paymentReceived,
+          paymentSent: 0, // Not included in current reports
         topSellingProducts,
         recentSales,
         stockAlerts,
         topCustomers,
         dailySales,
-        monthlySales,
+          monthlySales
       };
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        throw error;
+      }
     },
     enabled: !!storeId,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-}
-
-// Process sales and expenses data into daily points for chart
-function processRecentSalesData(sales: any[], expenses: any[], period: string) {
-  const days = period === 'today' ? 1 : 
-              period === 'week' ? 7 : 
-              period === 'month' ? 30 : 365;
-  
-  const result = [];
-  const today = new Date();
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = subDays(today, i);
-    const dateStr = formatDate(date, 'yyyy-MM-dd');
-    const dayLabel = formatDate(date, 'MMM dd');
-    
-    // Filter sales for this day
-    const daySales = sales.filter(sale => 
-      sale.created_at.substring(0, 10) === dateStr
-    );
-    
-    // Calculate total sales for the day
-    const daySalesTotal = daySales.reduce((sum, sale) => 
-      sum + parseFloat(sale.total_amount || '0'), 0
-    );
-    
-    // Filter expenses for this day
-    const dayExpenses = expenses.filter(expense => 
-      expense.created_at.substring(0, 10) === dateStr
-    );
-    
-    // Calculate total expenses for the day
-    const dayExpensesTotal = dayExpenses.reduce((sum, expense) => 
-      sum + parseFloat(expense.amount || '0'), 0
-    );
-    
-    result.push({
-      day: dayLabel,
-      sales: daySalesTotal,
-      expenses: dayExpensesTotal,
-    });
-  }
-  
-  return result;
-}
-
-// Process sales data into monthly points for chart and growth calculation
-function processMonthlySalesData(sales: any[], expenses: any[]) {
-  const result = [];
-  const today = new Date();
-  
-  for (let i = 11; i >= 0; i--) {
-    const date = subMonths(today, i);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const monthLabel = formatDate(date, 'MMM yy');
-    
-    // Filter sales for this month
-    const monthSales = sales.filter(sale => {
-      const saleDate = new Date(sale.created_at);
-      return saleDate.getFullYear() === year && saleDate.getMonth() + 1 === month;
-    });
-    
-    // Calculate total sales for the month
-    const monthSalesTotal = monthSales.reduce((sum, sale) => 
-      sum + parseFloat(sale.total_amount || '0'), 0
-    );
-    
-    // Filter expenses for this month
-    const monthExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.created_at);
-      return expenseDate.getFullYear() === year && expenseDate.getMonth() + 1 === month;
-    });
-    
-    // Calculate total expenses for the month
-    const monthExpensesTotal = monthExpenses.reduce((sum, expense) => 
-      sum + parseFloat(expense.amount || '0'), 0
-    );
-    
-    result.push({
-      month: monthLabel,
-      sales: monthSalesTotal,
-      expenses: monthExpensesTotal,
-    });
-  }
-  
-  return result;
-}
-
-// Generate top selling products based on sales data
-function generateTopSellingProducts(sales: any[], products: any[]): TopSellingProduct[] {
-  // This is a simplified version, assuming we have access to sales items
-  const productMap = new Map();
-  
-  // If available, tally up the quantities sold for each product
-  const productSales = products.map(product => {
-    const randomQuantity = Math.floor(Math.random() * 50) + 1; // For demo purposes
-    const randomAmount = parseFloat(product.sale_price || '0') * randomQuantity;
-    
-    return {
-      id: product.id,
-      name: product.name,
-      quantity: randomQuantity,
-      amount: randomAmount,
-      percentage: 0, // Will calculate after getting total
-    };
-  });
-  
-  // Sort by amount in descending order
-  productSales.sort((a, b) => b.amount - a.amount);
-  
-  // Take top 5
-  const top5 = productSales.slice(0, 5);
-  
-  // Calculate percentages
-  const totalAmount = top5.reduce((sum, product) => sum + product.amount, 0);
-  top5.forEach(product => {
-    product.percentage = totalAmount > 0 
-      ? (product.amount / totalAmount) * 100 
-      : 0;
-  });
-  
-  return top5;
-}
-
-// Generate recent sales
-function generateRecentSales(sales: any[]): RecentSale[] {
-  // Sort sales by date (newest first)
-  const sortedSales = [...sales].sort((a, b) => {
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
-  
-  // Take the most recent 5 sales
-  return sortedSales.slice(0, 5).map(sale => ({
-    id: sale.id,
-    date: new Date(sale.created_at).toISOString(),
-    customer: {
-      id: sale.customer?.id || 'unknown',
-      name: sale.customer?.name || 'Unknown Customer',
-    },
-    status: sale.is_credit ? 'credit' : 'paid',
-    amount: parseFloat(sale.total_amount || '0'),
-    paid: sale.is_credit ? 0 : parseFloat(sale.total_amount || '0'),
-  }));
-}
-
-// Generate stock alerts
-function generateStockAlerts(products: any[], inventories: any[]): StockAlert[] {
-  const alerts: StockAlert[] = [];
-  
-  // Create a map of inventories for quick lookup
-  const inventoryMap = new Map();
-  inventories.forEach(inventory => {
-    inventoryMap.set(inventory.product_id, inventory.quantity);
-  });
-  
-  // Find products with low inventory (below alert threshold)
-  products.forEach(product => {
-    const quantity = inventoryMap.get(product.id) || 0;
-    const alertThreshold = 10; // This would ideally come from the product settings
-    
-    if (quantity < alertThreshold) {
-      alerts.push({
-        id: product.id,
-        product: {
-          id: product.id,
-          name: product.name,
-        },
-        quantity: quantity,
-        alertThreshold: alertThreshold,
-      });
-    }
-  });
-  
-  // Sort by quantity ascending (lowest stock first)
-  alerts.sort((a, b) => a.quantity - b.quantity);
-  
-  return alerts.slice(0, 5);
-}
-
-// Generate top customers
-function generateTopCustomers(sales: any[], customers: any[]): TopCustomer[] {
-  const customerMap = new Map<string, { id: string; name: string; amount: number; salesCount: number }>();
-  
-  // Process each sale to calculate customer totals
-  sales.forEach(sale => {
-    const customerId = sale.customer?.id;
-    if (!customerId) return;
-    
-    const amount = parseFloat(sale.total_amount || '0');
-    
-    if (customerMap.has(customerId)) {
-      const customer = customerMap.get(customerId)!;
-      customer.amount += amount;
-      customer.salesCount += 1;
-    } else {
-      const customerName = sale.customer?.name || 'Unknown';
-      customerMap.set(customerId, {
-        id: customerId,
-        name: customerName,
-        amount: amount,
-        salesCount: 1,
-      });
-    }
-  });
-  
-  // Convert map to array and sort by amount
-  const topCustomers = Array.from(customerMap.values())
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
-  
-  return topCustomers;
-}
-
-// Calculate sales growth percentage
-function calculateGrowth(monthlySales: any[]): number {
-  // Need at least 2 months of data
-  if (monthlySales.length < 2) {
-    return 0;
-  }
-  
-  // Get sales from current and previous month
-  const currentMonth = monthlySales[monthlySales.length - 1]?.sales || 0;
-  const previousMonth = monthlySales[monthlySales.length - 2]?.sales || 0;
-  
-  // Calculate growth percentage
-  if (previousMonth === 0) {
-    return currentMonth > 0 ? 100 : 0;
-  }
-  
-  return ((currentMonth - previousMonth) / previousMonth) * 100;
 } 

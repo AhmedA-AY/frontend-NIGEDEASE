@@ -12,8 +12,6 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
 import Menu from '@mui/material/Menu';
@@ -46,7 +44,6 @@ export default function SalesPage(): React.JSX.Element {
   const { t } = useTranslation('admin');
   const { currentStore } = useStore();
   const { enqueueSnackbar } = useSnackbar();
-  const [tabValue, setTabValue] = React.useState(0);
   const [selectedSales, setSelectedSales] = React.useState<string[]>([]);
   const [anchorElMap, setAnchorElMap] = React.useState<{ [key: string]: HTMLElement | null }>({});
   const [isSaleModalOpen, setIsSaleModalOpen] = React.useState(false);
@@ -179,11 +176,6 @@ export default function SalesPage(): React.JSX.Element {
   const totalPaid = 0; // Not available in the API directly
   const totalDue = totalAmount - totalPaid;
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-    setSelectedSaleDetails(null); // Reset selected sale details when changing tabs
-  };
-
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
       setSelectedSales(companySales.map(sale => sale.id));
@@ -214,7 +206,6 @@ export default function SalesPage(): React.JSX.Element {
 
   const handleRowClick = (sale: Sale) => {
     setSelectedSaleDetails(sale);
-    setTabValue(3); // Switch to a new tab for viewing sale details
   };
 
   const handleAddNewSale = () => {
@@ -503,53 +494,8 @@ export default function SalesPage(): React.JSX.Element {
         </Box>
       </Box>
 
-      {/* Sale Type Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="sale type tabs">
-          <Tab 
-            label={t('sales.all_sales')}
-            sx={{ 
-              textTransform: 'none',
-              minHeight: 48,
-              color: tabValue === 0 ? '#0ea5e9' : 'text.primary',
-              '&.Mui-selected': { color: '#0ea5e9' },
-              borderBottom: tabValue === 0 ? '2px solid #0ea5e9' : 'none',
-            }} 
-          />
-          <Tab 
-            label={t('sales.unpaid')}
-            sx={{ 
-              textTransform: 'none',
-              minHeight: 48,
-              borderBottom: tabValue === 1 ? '2px solid #0ea5e9' : 'none',
-              '&.Mui-selected': { color: '#0ea5e9' }
-            }} 
-          />
-          <Tab 
-            label={t('sales.paid')}
-            sx={{ 
-              textTransform: 'none',
-              minHeight: 48,
-              borderBottom: tabValue === 2 ? '2px solid #0ea5e9' : 'none',
-              '&.Mui-selected': { color: '#0ea5e9' }
-            }} 
-          />
-          {selectedSaleDetails && (
-            <Tab 
-              label={t('sales.sale_details')}
-              sx={{ 
-                textTransform: 'none',
-                minHeight: 48,
-                borderBottom: tabValue === 3 ? '2px solid #0ea5e9' : 'none',
-                '&.Mui-selected': { color: '#0ea5e9' }
-              }} 
-            />
-          )}
-        </Tabs>
-      </Box>
-
       {/* Sales Table or Sale Details */}
-      {tabValue === 3 && selectedSaleDetails ? (
+      {selectedSaleDetails ? (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('sales.sale_details')}</Typography>
           <Grid container spacing={3}>
@@ -601,7 +547,7 @@ export default function SalesPage(): React.JSX.Element {
           <Box sx={{ mt: 3 }}>
             <Button 
               variant="outlined" 
-              onClick={() => setTabValue(0)}
+              onClick={() => setSelectedSaleDetails(null)}
               sx={{ mr: 1 }}
             >
               {t('common.back')}

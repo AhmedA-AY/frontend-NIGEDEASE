@@ -45,7 +45,7 @@ const currencySchema = zod.object({
 type CurrencyFormValues = zod.infer<typeof currencySchema>;
 
 export default function CurrenciesPage(): React.JSX.Element {
-  const { t } = useTranslation('super-admin');
+  const { t } = useTranslation('superAdmin');
   const { data: currencies, isLoading: isLoadingCurrencies, error: currenciesError } = useCurrencies();
   const createCurrencyMutation = useCreateCurrency();
   const updateCurrencyMutation = useUpdateCurrency();
@@ -169,10 +169,10 @@ export default function CurrenciesPage(): React.JSX.Element {
           >
             <Stack spacing={1}>
               <Typography variant="h4">
-                {t('currencies.title')}
+                {t('page_titles.currencies')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t('currencies.description')}
+                {t('page_descriptions.currencies')}
               </Typography>
             </Stack>
             <Button

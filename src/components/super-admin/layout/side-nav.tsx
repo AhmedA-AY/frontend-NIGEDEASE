@@ -22,7 +22,7 @@ import { navIcons } from '@/components/dashboard/layout/nav-icons';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
-  const { t } = useTranslation('super-admin');
+  const { t } = useTranslation('superAdmin');
 
   return (
     <Box
@@ -173,23 +173,13 @@ interface NavItemProps extends Omit<NavItemConfig, 'items'> {
   t: any;
 }
 
-function NavItem({ disabled, external, href, icon, matcher, pathname, title, t }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, matcher, pathname, title = '', t }: NavItemProps): React.JSX.Element {
   const active = isNavItemActive({ disabled, external, href, matcher, pathname });
   const Icon = icon ? navIcons[icon] : null;
 
-  // Translate the menu title
-  let translatedTitle = title;
-  if (title === 'Dashboard') {
-    translatedTitle = t('common.dashboard');
-  } else if (title === 'Companies') {
-    translatedTitle = t('companies.title');
-  } else if (title === 'Subscription Plans') {
-    translatedTitle = t('subscription_plans.title');
-  } else if (title === 'Currencies') {
-    translatedTitle = t('currencies.title');
-  } else if (title === 'My Profile') {
-    translatedTitle = t('common.my_profile');
-  }
+  // Translate the menu title using the namespace approach
+  const translationKey = `navigation.${title.toLowerCase().replace(/\s+/g, '_')}`;
+  const translatedTitle = t(translationKey, title); // Falls back to original title if translation not found
 
   return (
     <li>

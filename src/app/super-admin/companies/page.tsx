@@ -34,7 +34,7 @@ import { useCompanies } from '@/hooks/super-admin/use-companies';
 import ErrorMessage from '@/components/common/error-message';
 
 const Page = () => {
-  const { t } = useTranslation('super-admin');
+  const { t } = useTranslation('superAdmin');
   const [tabValue, setTabValue] = useState(0);
   const { data: companies = [], isLoading, error, refetch } = useCompanies();
   
@@ -52,7 +52,7 @@ const Page = () => {
           <Stack direction="row" justifyContent="space-between" spacing={4}>
             <Stack spacing={1}>
               <Typography variant="h4">
-                {t('companies.title')}
+                {t('page_titles.companies')}
               </Typography>
               <Stack alignItems="center" direction="row" spacing={1}>
                 <Button
@@ -61,7 +61,7 @@ const Page = () => {
                   href={paths.superAdmin.dashboard}
                   size="small"
                 >
-                  {t('dashboard.title')}
+                  {t('page_titles.dashboard')}
                 </Button>
                 <Box
                   sx={{
@@ -72,7 +72,7 @@ const Page = () => {
                   }}
                 />
                 <Typography color="text.secondary" variant="body2">
-                  {t('companies.title')}
+                  {t('page_titles.companies')}
                 </Typography>
               </Stack>
             </Stack>

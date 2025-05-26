@@ -235,13 +235,14 @@ export default function ExpensesPage(): React.JSX.Element {
       return;
     }
     
+    // Set default values for the new expense
     setCurrentExpense({
       store_id: storeId,
-      expense_category: '',
+      expense_category: categories.length > 0 ? categories[0].id : '',
       amount: '',
       description: '',
       currency: currencies.length > 0 ? currencies[0].id : '', 
-      payment_mode: '',
+      payment_mode: paymentModes.length > 0 ? paymentModes[0].id : '',
     });
     
     console.log('currentExpense set with store ID:', storeId);

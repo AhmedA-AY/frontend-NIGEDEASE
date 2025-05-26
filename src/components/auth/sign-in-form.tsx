@@ -324,7 +324,7 @@ export function SignInForm(): React.JSX.Element {
           />
           <Link
             component={RouterLink}
-            href={paths.auth.resetPassword}
+            href={paths.auth.forgotPassword}
             sx={{ 
               alignSelf: 'flex-end',
               color: 'primary.main',
