@@ -21,14 +21,9 @@ export interface CustomerFormData {
   name: string;
   email: string;
   phone: string;
-  taxNumber?: string;
   address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  country?: string;
-  status: 'Enabled' | 'Disabled';
-  openingBalance?: number | '';
+  credit_limit?: string;
+  store_id?: string;
 }
 
 export interface CustomerEditModalProps {
@@ -42,14 +37,8 @@ const initialFormState: CustomerFormData = {
   name: '',
   email: '',
   phone: '',
-  taxNumber: '',
   address: '',
-  city: '',
-  state: '',
-  zipCode: '',
-  country: '',
-  status: 'Enabled',
-  openingBalance: '',
+  credit_limit: '',
 };
 
 const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, customer, onSave }) => {
@@ -102,11 +91,8 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
       newErrors.phone = 'Phone is required';
     }
     
-    if (formState.openingBalance !== '' && typeof formState.openingBalance === 'string') {
-      const numValue = parseFloat(formState.openingBalance);
-      if (isNaN(numValue)) {
-        newErrors.openingBalance = 'Must be a valid number';
-      }
+    if (formState.credit_limit && isNaN(parseFloat(formState.credit_limit))) {
+      newErrors.credit_limit = 'Must be a valid number';
     }
     
     setErrors(newErrors);
@@ -115,15 +101,7 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
   
   const handleSubmit = () => {
     if (validateForm()) {
-      // Convert opening balance to number if it's a non-empty string
-      const processedFormState = {
-        ...formState,
-        openingBalance: formState.openingBalance === '' ? 0 : 
-                       typeof formState.openingBalance === 'string' ? 
-                       parseFloat(formState.openingBalance) : formState.openingBalance
-      };
-      
-      onSave(processedFormState);
+      onSave(formState);
       onClose();
     }
   };
@@ -197,11 +175,16 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
           
           <Grid item xs={12} md={6}>
             <TextField
-              name="taxNumber"
-              label="Tax Number"
+              name="credit_limit"
+              label="Credit Limit"
               fullWidth
-              value={formState.taxNumber || ''}
+              value={formState.credit_limit || ''}
               onChange={handleChange}
+              error={!!errors.credit_limit}
+              helperText={errors.credit_limit}
+              InputProps={{
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              }}
             />
           </Grid>
           
@@ -220,84 +203,6 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
               onChange={handleChange}
               multiline
               rows={2}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="city"
-              label="City"
-              fullWidth
-              value={formState.city || ''}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="state"
-              label="State/Province"
-              fullWidth
-              value={formState.state || ''}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="zipCode"
-              label="Zip/Postal Code"
-              fullWidth
-              value={formState.zipCode || ''}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="country"
-              label="Country"
-              fullWidth
-              value={formState.country || ''}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-              Additional Information
-            </Typography>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth error={!!errors.status} required>
-              <InputLabel id="status-label">Status</InputLabel>
-              <Select
-                labelId="status-label"
-                name="status"
-                value={formState.status}
-                label="Status"
-                onChange={handleStatusChange}
-              >
-                <MenuItem value="Enabled">Enabled</MenuItem>
-                <MenuItem value="Disabled">Disabled</MenuItem>
-              </Select>
-              {errors.status && <FormHelperText>{errors.status}</FormHelperText>}
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="openingBalance"
-              label="Opening Balance"
-              fullWidth
-              value={formState.openingBalance === '' ? '' : formState.openingBalance}
-              onChange={handleChange}
-              error={!!errors.openingBalance}
-              helperText={errors.openingBalance}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              }}
             />
           </Grid>
         </Grid>

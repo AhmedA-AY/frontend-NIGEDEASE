@@ -111,14 +111,9 @@ export default function SuppliersPage(): React.JSX.Element {
       name: supplier.name,
       email: supplier.email,
       phone: supplier.phone,
-      status: supplier.is_active ? 'Enabled' : 'Disabled',
-      openingBalance: parseFloat(supplier.credit_limit || '0'),
-      taxNumber: '',
       address: supplier.address,
-      city: '',
-      state: '',
-      zipCode: '',
-      country: '',
+      credit_limit: supplier.credit_limit || '',
+      is_active: supplier.is_active
     });
     setIsEditModalOpen(true);
   };
@@ -140,8 +135,8 @@ export default function SuppliersPage(): React.JSX.Element {
         email: supplierData.email,
         phone: supplierData.phone,
         address: supplierData.address || '',
-        credit_limit: (supplierData.openingBalance || 0).toString(),
-        is_active: supplierData.status === 'Enabled',
+        credit_limit: supplierData.credit_limit || '',
+        is_active: supplierData.is_active
       };
 
       if (supplierData.id) {
@@ -238,13 +233,6 @@ export default function SuppliersPage(): React.JSX.Element {
           >
             Add New Supplier
           </Button>
-          <Button 
-            variant="outlined" 
-            startIcon={<UploadSimpleIcon weight="bold" />}
-            sx={{ color: '#0ea5e9', borderColor: '#0ea5e9', '&:hover': { borderColor: '#0284c7', color: '#0284c7' } }}
-          >
-            Import Suppliers
-          </Button>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <OutlinedInput
@@ -275,41 +263,6 @@ export default function SuppliersPage(): React.JSX.Element {
           </Select>
         </Box>
       </Box>
-
-      {/* Tabs */}
-      <Tabs 
-        value={tabValue} 
-        onChange={handleTabChange}
-        sx={{ mb: 2, '& .MuiTabs-indicator': { bgcolor: '#0ea5e9' } }}
-      >
-        <Tab 
-          label="All" 
-          sx={{ 
-            textTransform: 'none', 
-            minWidth: 50,
-            color: tabValue === 0 ? '#0ea5e9' : 'inherit',
-            '&.Mui-selected': { color: '#0ea5e9' }
-          }} 
-        />
-        <Tab 
-          label="To Pay" 
-          sx={{ 
-            textTransform: 'none', 
-            minWidth: 60,
-            color: tabValue === 1 ? '#0ea5e9' : 'inherit',
-            '&.Mui-selected': { color: '#0ea5e9' }
-          }} 
-        />
-        <Tab 
-          label="To Collect" 
-          sx={{ 
-            textTransform: 'none', 
-            minWidth: 80,
-            color: tabValue === 2 ? '#0ea5e9' : 'inherit',
-            '&.Mui-selected': { color: '#0ea5e9' }
-          }} 
-        />
-      </Tabs>
 
       {/* Suppliers Table */}
       <Card>

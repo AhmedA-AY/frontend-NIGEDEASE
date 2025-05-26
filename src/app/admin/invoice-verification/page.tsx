@@ -79,22 +79,22 @@ export default function InvoiceVerificationPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/process_invoice', {
+      const response = await fetch('/api/invoices/process', {
         method: 'POST',
         body: formData,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setResult(data);
-        enqueueSnackbar('Invoice processed successfully', { variant: 'success' });
-      } else {
-        enqueueSnackbar(data.error || 'Failed to process invoice', { variant: 'error' });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error: ${response.status} ${response.statusText}`);
       }
-    } catch (error) {
+
+      const data = await response.json();
+      setResult(data);
+      enqueueSnackbar('Invoice processed successfully', { variant: 'success' });
+    } catch (error: any) {
       console.error('Error processing invoice:', error);
-      enqueueSnackbar('Failed to process invoice', { variant: 'error' });
+      enqueueSnackbar(error.message || 'Failed to process invoice', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }

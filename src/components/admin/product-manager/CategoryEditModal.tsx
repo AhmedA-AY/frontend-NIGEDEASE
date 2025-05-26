@@ -46,21 +46,39 @@ export default function CategoryEditModal({
   // Reset form data when modal opens with new category data
   React.useEffect(() => {
     if (open) {
-      // If store_id isn't provided, try to get it from currentStore
-      let storeId = category.store_id;
+      console.log('CategoryEditModal opened with category:', category);
+      console.log('isNew:', isNew);
       
-      if (!storeId && currentStore) {
-        storeId = currentStore.id;
+      try {
+        // If store_id isn't provided, try to get it from currentStore
+        let storeId = category.store_id;
+        
+        if (!storeId && currentStore) {
+          storeId = currentStore.id;
+          console.log('Using store ID from currentStore:', storeId);
+        }
+        
+        if (!storeId) {
+          console.error('No store ID available for category');
+        }
+        
+        const updatedFormData = {
+          id: category?.id,
+          name: category?.name || '',
+          description: category?.description || '',
+          store_id: storeId
+        };
+        
+        console.log('Setting form data:', updatedFormData);
+        setFormData(updatedFormData);
+        setErrors({});
+        setIsSubmitting(false);
+      } catch (error) {
+        console.error('Error setting up category form data:', error);
+        enqueueSnackbar(t('common.error'), { variant: 'error' });
       }
-      
-      setFormData({
-        ...category,
-        store_id: storeId
-      });
-      setErrors({});
-      setIsSubmitting(false);
     }
-  }, [category, open, currentStore]);
+  }, [category, open, currentStore, enqueueSnackbar, t]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -111,13 +129,17 @@ export default function CategoryEditModal({
           formData.description = '';
         }
         
-        await onSave({
+        // Create a copy of the data before passing to onSave
+        const categoryData = {
           ...formData,
           id: formData.id,
           name: formData.name.trim(),
           description: formData.description,
           store_id: formData.store_id
-        });
+        };
+        
+        console.log('Sending category data to API:', categoryData);
+        await onSave(categoryData);
         
         console.log('Category saved successfully');
       } catch (error) {

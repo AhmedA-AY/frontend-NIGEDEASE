@@ -27,6 +27,7 @@ import { useCurrentUser } from '@/hooks/use-auth';
 import { companiesApi } from '@/services/api/companies';
 import { clothingsApi } from '@/services/api/clothings';
 import { useStore } from '@/providers/store-provider';
+import { SimpleUpload } from '@/components/common/simple-upload';
 
 interface ColorData {
   id: string;
@@ -44,6 +45,7 @@ interface ProductEditModalProps {
   onSave: (data: ProductCreateData & { id?: string }) => void;
   product: Partial<ProductCreateData> & { id?: string };
   categories: ProductCategory[];
+  readOnly?: boolean;
 }
 
 export default function ProductEditModal({
@@ -51,7 +53,8 @@ export default function ProductEditModal({
   onClose,
   onSave,
   product,
-  categories
+  categories,
+  readOnly = false
 }: ProductEditModalProps): React.JSX.Element {
   const { t } = useTranslation('admin');
   const [formData, setFormData] = useState<Partial<ProductCreateData> & { id?: string }>(product);
@@ -60,6 +63,7 @@ export default function ProductEditModal({
   const [colors, setColors] = useState<ColorData[]>([]);
   const [collections, setCollections] = useState<CollectionData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { userInfo } = useCurrentUser();
   const { currentStore } = useStore();
   const [companies, setCompanies] = useState<any[]>([]);
@@ -195,16 +199,12 @@ export default function ProductEditModal({
       
       if (!currentStore) {
         console.error('No store selected');
-        setErrors(prev => ({
-          ...prev,
-          store_id: t('common.no_store_selected')
-        }));
         return;
       }
       
-      // Make sure we have all required fields before submitting
+      // Prepare data for submission
       const completeData: ProductCreateData & { id?: string } = {
-        store_id: currentStore.id,
+        store_id: formData.store_id || currentStore.id,
         name: formData.name || '',
         description: formData.description || '',
         product_category_id: formData.product_category_id || '',
@@ -212,14 +212,18 @@ export default function ProductEditModal({
         image: formData.image || '',
         purchase_price: formData.purchase_price || '',
         sale_price: formData.sale_price || '',
-        color_id: formData.color_id || undefined,
-        collection_id: formData.collection_id || undefined,
-        ...(formData.id ? { id: formData.id } : {})
+        color_id: formData.color_id || '',
+        collection_id: formData.collection_id || ''
       };
-      console.log('Submitting complete data:', completeData);
+      
+      if (product.id) {
+        completeData.id = product.id;
+      }
+      
+      console.log('Submitting product data:', completeData);
+      setIsSubmitting(true);
       onSave(completeData);
-    } else {
-      console.log('Form validation failed, errors:', errors);
+      setIsSubmitting(false);
     }
   };
 
@@ -235,7 +239,14 @@ export default function ProductEditModal({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{product.id ? t('products.edit_product') : t('products.add_product')}</DialogTitle>
+      <DialogTitle>
+        {readOnly 
+          ? t('products.view_product') 
+          : product.id 
+            ? t('products.edit_product') 
+            : t('products.add_product')
+        }
+      </DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>
@@ -248,6 +259,10 @@ export default function ProductEditModal({
               onChange={handleChange}
               error={!!errors.name}
               helperText={errors.name}
+              disabled={readOnly}
+              InputProps={{
+                readOnly: readOnly
+              }}
             />
           </Grid>
           
@@ -261,6 +276,10 @@ export default function ProductEditModal({
                 value={formData.product_category_id || ''}
                 label={t('products.product_category')}
                 onChange={handleSelectChange}
+                disabled={readOnly}
+                inputProps={{
+                  readOnly: readOnly
+                }}
               >
                 <MenuItem value="">{t('products.select_category')}</MenuItem>
                 {categories.map(category => (
@@ -283,6 +302,10 @@ export default function ProductEditModal({
                 value={formData.product_unit_id || ''}
                 label={t('products.product_unit')}
                 onChange={handleSelectChange}
+                disabled={readOnly}
+                inputProps={{
+                  readOnly: readOnly
+                }}
               >
                 <MenuItem value="">{t('products.select_unit')}</MenuItem>
                 {productUnits.map(unit => (
@@ -296,14 +319,30 @@ export default function ProductEditModal({
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <TextField
-              name="image"
-              label={t('products.product_image')}
-              type="text"
-              fullWidth
-              value={formData.image || ''}
-              onChange={handleChange}
-            />
+            <FormControl fullWidth error={!!errors.image}>
+              <SimpleUpload
+                initialImage={formData.image}
+                onImageChange={(url) => {
+                  setFormData(prev => ({ ...prev, image: url }));
+                  // Clear any previous errors
+                  if (errors.image) {
+                    setErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.image;
+                      return newErrors;
+                    });
+                  }
+                }}
+                bucketName="app-images"
+                folderPath={currentStore?.id || 'default'}
+                label={t('products.upload_image')}
+                width={180}
+                height={180}
+                allowRemove={!readOnly}
+                readOnly={readOnly}
+              />
+              {errors.image && <FormHelperText error>{errors.image}</FormHelperText>}
+            </FormControl>
           </Grid>
           
           <Grid item xs={12} md={6}>
@@ -316,7 +355,9 @@ export default function ProductEditModal({
               onChange={handleChange}
               error={!!errors.purchase_price}
               helperText={errors.purchase_price}
+              disabled={readOnly}
               InputProps={{
+                readOnly: readOnly,
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
             />
@@ -332,7 +373,9 @@ export default function ProductEditModal({
               onChange={handleChange}
               error={!!errors.sale_price}
               helperText={errors.sale_price}
+              disabled={readOnly}
               InputProps={{
+                readOnly: readOnly,
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
             />
@@ -348,6 +391,10 @@ export default function ProductEditModal({
                 value={formData.color_id || ''}
                 label={t('clothing.colors.title')}
                 onChange={handleSelectChange}
+                disabled={readOnly}
+                inputProps={{
+                  readOnly: readOnly
+                }}
               >
                 <MenuItem value="">{t('products.no_color')}</MenuItem>
                 {colors.map(color => (
@@ -369,6 +416,10 @@ export default function ProductEditModal({
                 value={formData.collection_id || ''}
                 label={t('clothing.collections.title')}
                 onChange={handleSelectChange}
+                disabled={readOnly}
+                inputProps={{
+                  readOnly: readOnly
+                }}
               >
                 <MenuItem value="">{t('products.no_collection')}</MenuItem>
                 {collections.map(collection => (
@@ -392,19 +443,28 @@ export default function ProductEditModal({
               onChange={handleChange}
               error={!!errors.description}
               helperText={errors.description}
+              disabled={readOnly}
+              InputProps={{
+                readOnly: readOnly
+              }}
             />
           </Grid>
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
-          sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
-        >
-          {product.id ? t('common.save') : t('products.add_product')}
+        <Button onClick={onClose}>
+          {readOnly ? t('common.close') : t('common.cancel')}
         </Button>
+        {!readOnly && (
+          <Button 
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={isSubmitting}
+            startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+          >
+            {product.id ? t('common.update') : t('common.create')}
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

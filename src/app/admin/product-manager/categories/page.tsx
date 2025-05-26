@@ -109,15 +109,33 @@ export default function CategoriesPage(): React.JSX.Element {
   };
 
   const handleEdit = (id: string) => {
+    console.log('Edit button clicked for category ID:', id);
     const categoryToEdit = categories.find(category => category.id === id);
+    console.log('Found category to edit:', categoryToEdit);
+    
     if (categoryToEdit) {
-      setCurrentCategory({
+      // If category doesn't have store property, use currentStore
+      const storeId = currentStore?.id;
+      
+      if (!storeId) {
+        console.error('No store ID available. Please select a store.');
+        enqueueSnackbar('No store selected', { variant: 'error' });
+        return;
+      }
+      
+      const categoryData = {
         id: categoryToEdit.id,
         name: categoryToEdit.name,
-        description: categoryToEdit.description,
-        store_id: categoryToEdit.store.id
-      });
+        description: categoryToEdit.description || '',
+        store_id: storeId
+      };
+      
+      console.log('Setting current category for editing:', categoryData);
+      setCurrentCategory(categoryData);
       setIsCategoryModalOpen(true);
+    } else {
+      console.error('Category not found with ID:', id);
+      enqueueSnackbar(t('categories.category_not_found'), { variant: 'error' });
     }
   };
 
@@ -251,13 +269,6 @@ export default function CategoriesPage(): React.JSX.Element {
         >
           {t('categories.add_category')}
         </Button>
-        <Button 
-          variant="outlined" 
-          startIcon={<CloudArrowUpIcon weight="bold" />}
-          disabled={isLoading}
-        >
-          {t('categories.import_categories')}
-        </Button>
       </Box>
 
       {/* Error Alert */}
@@ -332,6 +343,7 @@ export default function CategoriesPage(): React.JSX.Element {
                         size="small" 
                         onClick={() => handleEdit(category.id)}
                         color="primary"
+                        title={t('common.edit')}
                       >
                         <PencilSimpleIcon size={20} />
                       </IconButton>
@@ -339,6 +351,7 @@ export default function CategoriesPage(): React.JSX.Element {
                         size="small" 
                         onClick={() => handleDelete(category.id)}
                         color="error"
+                        title={t('common.delete')}
                       >
                         <TrashIcon size={20} />
                       </IconButton>
@@ -354,9 +367,13 @@ export default function CategoriesPage(): React.JSX.Element {
       {/* Modals */}
       <CategoryEditModal
         open={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
+        onClose={() => {
+          console.log('Closing category modal');
+          setIsCategoryModalOpen(false);
+          setCurrentCategory(null);
+        }}
         onSave={handleSaveCategory}
-        category={currentCategory || undefined}
+        category={currentCategory || { name: '', description: '' }}
         isNew={!currentCategory?.id}
       />
       

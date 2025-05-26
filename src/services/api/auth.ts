@@ -1,7 +1,6 @@
 import { userManagementApiClient, coreApiClient } from './client';
 import tokenStorage from '@/utils/token-storage';
 import { decodeToken } from '@/utils/token-helpers';
-import { userApiProxy } from '@/utils/proxy-api';
 
 export interface AuthResponse {
   access: string;
@@ -101,14 +100,11 @@ export interface UserResponse {
 export const authApi = {
   // Login with email and password
   login: async (email: string, password: string): Promise<{ message: string }> => {
-    try {
-      // Use the proxy function for authentication
-      const response = await userApiProxy('/auth/login/', 'POST', { email, password });
-      return response;
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
+    const response = await userManagementApiClient.post<{ message: string }>('/auth/login/', {
+      email,
+      password
+    });
+    return response.data;
   },
   
   // Verify OTP after login
@@ -121,9 +117,18 @@ export const authApi = {
     assigned_store?: any;
   }> => {
     try {
-      // Use the proxy function for OTP verification
-      const response = await userApiProxy('/auth/verify-otp/', 'POST', { email, otp });
-      return response;
+      const response = await userManagementApiClient.post<{ 
+        access: string; 
+        refresh: string; 
+        role: string; 
+        company_id: string;
+        stores: any[];
+        assigned_store?: any;
+      }>('/auth/verify-otp/', {
+        email,
+        otp
+      });
+      return response.data;
     } catch (error) {
       console.error('Error verifying OTP:', error);
       throw error;
@@ -132,14 +137,10 @@ export const authApi = {
   
   // Resend OTP
   resendOtp: async (email: string): Promise<{ message: string }> => {
-    try {
-      // Use the proxy function to resend OTP
-      const response = await userApiProxy('/auth/resend-otp/', 'POST', { email });
-      return response;
-    } catch (error) {
-      console.error('Error resending OTP:', error);
-      throw error;
-    }
+    const response = await userManagementApiClient.post<{ message: string }>('/auth/resend-otp/', {
+      email
+    });
+    return response.data;
   },
   
   // Verify token
@@ -150,9 +151,15 @@ export const authApi = {
     company_id?: string;
   }> => {
     try {
-      // Use the proxy function to verify token
-      const response = await userApiProxy('/auth/verify-token/', 'POST', { token });
-      return response;
+      const response = await userManagementApiClient.post<{
+        is_valid: boolean;
+        user_id?: string;
+        email?: string;
+        company_id?: string;
+      }>('/auth/verify-token/', {
+        token
+      });
+      return response.data;
     } catch (error) {
       console.error('Error verifying token:', error);
       throw error;
@@ -161,26 +168,14 @@ export const authApi = {
   
   // Register a new user
   register: async (data: RegisterRequest): Promise<{ message: string }> => {
-    try {
-      // Use the proxy function for registration
-      const response = await userApiProxy('/auth/register/', 'POST', data);
-      return response;
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
-    }
+    const response = await userManagementApiClient.post<{ message: string }>('/auth/register/', data);
+    return response.data;
   },
   
   // Create a user for a company
   createUser: async (userData: CreateUserData): Promise<UserResponse> => {
-    try {
-      // Use the proxy function to create user
-      const response = await userApiProxy('/users/', 'POST', userData);
-      return response;
-    } catch (error) {
-      console.error('Create user error:', error);
-      throw error;
-    }
+    const response = await userManagementApiClient.post<UserResponse>('/users/', userData);
+    return response.data;
   },
   
   // Logout user
@@ -189,8 +184,9 @@ export const authApi = {
     
     if (refreshToken) {
       try {
-        // Use the proxy function for logout
-        await userApiProxy('/auth/logout/', 'POST', { refresh: refreshToken });
+        await userManagementApiClient.post('/auth/logout/', {
+          refresh: refreshToken
+        });
       } catch (error) {
         console.error('Logout error:', error);
       }
@@ -203,9 +199,10 @@ export const authApi = {
   // Refresh token
   refreshToken: async (refreshToken: string): Promise<{ access: string; refresh: string }> => {
     try {
-      // Use the proxy function for token refresh
-      const response = await userApiProxy('/auth/refresh-token/', 'POST', { refresh_token: refreshToken });
-      return response;
+      const response = await userManagementApiClient.post<{ access: string; refresh: string }>('/auth/refresh-token/', {
+        refresh_token: refreshToken
+      });
+      return response.data;
     } catch (error: any) {
       // Enhance error with more context to improve debugging and error handling
       if (error.response && 
@@ -229,86 +226,56 @@ export const authApi = {
   
   // Request password reset
   requestPasswordReset: async (data: ResetPasswordData): Promise<{ success: boolean; message: string }> => {
-    try {
-      // Use the proxy function for password reset request
-      const response = await userApiProxy('/auth/request-reset-password/', 'POST', data);
-      return response;
-    } catch (error) {
-      console.error('Password reset request error:', error);
-      throw error;
-    }
+    const response = await userManagementApiClient.post<{ success: boolean; message: string }>('/auth/request-reset-password/', data);
+    return response.data;
   },
   
   // Verify reset token
   verifyResetToken: async (data: VerifyResetTokenData): Promise<{ success: boolean; message: string }> => {
-    try {
-      // Use the proxy function to verify reset token
-      const response = await userApiProxy('/auth/verify-reset-token/', 'POST', data);
-      return response;
-    } catch (error) {
-      console.error('Reset token verification error:', error);
-      throw error;
-    }
+    const response = await userManagementApiClient.post<{ success: boolean; message: string }>('/auth/verify-reset-token/', data);
+    return response.data;
   },
   
   // Set new password
   setNewPassword: async (data: SetNewPasswordData): Promise<{ success: boolean; message: string }> => {
-    try {
-      // Use the proxy function to set new password
-      const response = await userApiProxy('/auth/set-new-password/', 'POST', data);
-      return response;
-    } catch (error) {
-      console.error('Set new password error:', error);
-      throw error;
-    }
+    const response = await userManagementApiClient.post<{ success: boolean; message: string }>('/auth/set-new-password/', data);
+    return response.data;
   },
   
   // Change password
   changePassword: async (data: ChangePasswordData): Promise<{ success: boolean; message: string }> => {
-    try {
-      // Use the proxy function to change password
-      const response = await userApiProxy('/auth/change-password/', 'POST', data);
-      return response;
-    } catch (error) {
-      console.error('Change password error:', error);
-      throw error;
-    }
+    const response = await userManagementApiClient.post<{ success: boolean; message: string }>('/auth/change-password/', data);
+    return response.data;
   },
   
   // Get current user profile
   getProfile: async (): Promise<any> => {
-    try {
-      // First get the user's info from the token
-      const userInfoFromToken = tokenStorage.getUserInfo();
-      if (!userInfoFromToken || !userInfoFromToken.id) {
-        throw new Error('No user ID available in token');
-      }
-      
-      // Then fetch the full user details using the proxy
-      const response = await userApiProxy(`/users/${userInfoFromToken.id}/`);
-      return response;
-    } catch (error) {
-      console.error('Error getting user profile:', error);
-      throw error;
+    // First get the user's info from the token
+    const userInfoFromToken = tokenStorage.getUserInfo();
+    if (!userInfoFromToken || !userInfoFromToken.id) {
+      throw new Error('No user ID available in token');
     }
+    
+    // Then fetch the full user details using the correct endpoint
+    const response = await userManagementApiClient.get(`/users/${userInfoFromToken.id}/`);
+    return response.data;
   },
   
   // Update user profile
   updateProfile: async (data: ProfileUpdateData): Promise<AuthResponse['user']> => {
+    // Get the user ID from token
+    const userInfo = tokenStorage.getUserInfo();
+    if (!userInfo || !userInfo.id) {
+      throw new Error('No user ID available in token');
+    }
+    
     try {
-      // Get the user ID from token
-      const userInfo = tokenStorage.getUserInfo();
-      if (!userInfo || !userInfo.id) {
-        throw new Error('No user ID available in token');
-      }
-      
       // First get the current user data so we have all required fields
       const currentUserData = await authApi.getProfile();
       
       // Now update the user profile with all required fields plus the new data
-      const response = await userApiProxy(
-        `/users/${userInfo.id}/`, 
-        'PUT',
+      const response = await userManagementApiClient.put<UserResponse>(
+        `/users/${userInfo.id}/`,
         {
           company_id: currentUserData.company_id,
           email: data.email || currentUserData.email,
@@ -319,7 +286,7 @@ export const authApi = {
         }
       );
       
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
@@ -328,13 +295,13 @@ export const authApi = {
   
   // Upload and update profile image
   updateProfileImage: async (imageUrl: string): Promise<AuthResponse['user']> => {
+    // First get the user ID
+    const userInfo = tokenStorage.getUserInfo();
+    if (!userInfo || !userInfo.id) {
+      throw new Error('No user ID available in token');
+    }
+    
     try {
-      // First get the user ID
-      const userInfo = tokenStorage.getUserInfo();
-      if (!userInfo || !userInfo.id) {
-        throw new Error('No user ID available in token');
-      }
-      
       // First get the current user data so we have all required fields
       const currentUserData = await authApi.getProfile();
       
@@ -354,10 +321,9 @@ export const authApi = {
       
       console.log('Updating profile image with:', imageUrl === '' ? '[EMPTY STRING]' : imageUrl);
       
-      // Now update the user profile with all required fields plus the new image URL using the proxy
-      const response = await userApiProxy(
-        `/users/${userInfo.id}/`, 
-        'PUT',
+      // Now update the user profile with all required fields plus the new image URL (or empty string to remove)
+      const response = await userManagementApiClient.put<UserResponse>(
+        `/users/${userInfo.id}/`,
         {
           company_id: currentUserData.company_id,
           email: currentUserData.email,
@@ -368,8 +334,8 @@ export const authApi = {
         }
       );
       
-      console.log('Profile update response:', response);
-      return response;
+      console.log('Profile update response:', response.data);
+      return response.data;
     } catch (error) {
       console.error('Error updating profile image:', error);
       throw error;
@@ -379,7 +345,7 @@ export const authApi = {
   // Check if authenticated (verifies token)
   checkAuth: async (): Promise<boolean> => {
     try {
-      await userApiProxy('/auth/check/');
+      await userManagementApiClient.get('/auth/check/');
       return true;
     } catch (error) {
       return false;

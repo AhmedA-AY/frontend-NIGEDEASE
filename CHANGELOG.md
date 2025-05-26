@@ -18,7 +18,7 @@
 
 ## v3.0.0
 
-###### Feb 24, 2023
+###### Feb 24, 2025
 
 - Refactor components
 - Replace authentication

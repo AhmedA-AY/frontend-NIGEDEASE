@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     // Parse the formData from the request
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const bucket = formData.get('bucket') as string || 'default-uploads';
+    const bucket = formData.get('bucket') as string || 'products';
     const folder = formData.get('folder') as string || '';
     
     if (!file) {
@@ -95,12 +95,13 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
     
-    // List all available buckets
-    const allBucketsInfo = await listBuckets();
-    console.log('Available buckets:', allBucketsInfo);
+    // Always try to ensure the "products" bucket exists as a fallback
+    await ensureBucketExists('products');
     
-    // Try to ensure the bucket exists
-    await ensureBucketExists(bucket);
+    // Then ensure the specified bucket exists
+    if (bucket !== 'products') {
+      await ensureBucketExists(bucket);
+    }
     
     // Create a unique filename
     const fileExt = file.name.split('.').pop();

@@ -21,14 +21,10 @@ export interface SupplierFormData {
   name: string;
   email: string;
   phone: string;
-  taxNumber?: string;
   address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  country?: string;
-  status: 'Enabled' | 'Disabled';
-  openingBalance?: number | '';
+  credit_limit?: string;
+  is_active?: boolean;
+  store_id?: string;
 }
 
 export interface SupplierEditModalProps {
@@ -42,14 +38,9 @@ const initialFormState: SupplierFormData = {
   name: '',
   email: '',
   phone: '',
-  taxNumber: '',
   address: '',
-  city: '',
-  state: '',
-  zipCode: '',
-  country: '',
-  status: 'Enabled',
-  openingBalance: '',
+  credit_limit: '',
+  is_active: true,
 };
 
 const SupplierEditModal: React.FC<SupplierEditModalProps> = ({ open, onClose, supplier, onSave }) => {
@@ -78,7 +69,7 @@ const SupplierEditModal: React.FC<SupplierEditModalProps> = ({ open, onClose, su
   const handleStatusChange = (event: SelectChangeEvent) => {
     const { name, value } = event.target;
     if (name) {
-      setFormState((prev) => ({ ...prev, [name]: value }));
+      setFormState((prev) => ({ ...prev, [name]: value === 'true' }));
       if (errors[name as keyof SupplierFormData]) {
         setErrors((prev) => ({ ...prev, [name]: undefined }));
       }
@@ -102,11 +93,8 @@ const SupplierEditModal: React.FC<SupplierEditModalProps> = ({ open, onClose, su
       newErrors.phone = 'Phone is required';
     }
     
-    if (formState.openingBalance !== '' && typeof formState.openingBalance === 'string') {
-      const numValue = parseFloat(formState.openingBalance);
-      if (isNaN(numValue)) {
-        newErrors.openingBalance = 'Must be a valid number';
-      }
+    if (formState.credit_limit && isNaN(parseFloat(formState.credit_limit))) {
+      newErrors.credit_limit = 'Must be a valid number';
     }
     
     setErrors(newErrors);
@@ -115,15 +103,7 @@ const SupplierEditModal: React.FC<SupplierEditModalProps> = ({ open, onClose, su
   
   const handleSubmit = () => {
     if (validateForm()) {
-      // Convert opening balance to number if it's a non-empty string
-      const processedFormState = {
-        ...formState,
-        openingBalance: formState.openingBalance === '' ? 0 : 
-                       typeof formState.openingBalance === 'string' ? 
-                       parseFloat(formState.openingBalance) : formState.openingBalance
-      };
-      
-      onSave(processedFormState);
+      onSave(formState);
       onClose();
     }
   };
@@ -197,11 +177,16 @@ const SupplierEditModal: React.FC<SupplierEditModalProps> = ({ open, onClose, su
           
           <Grid item xs={12} md={6}>
             <TextField
-              name="taxNumber"
-              label="Tax Number"
+              name="credit_limit"
+              label="Credit Limit"
               fullWidth
-              value={formState.taxNumber || ''}
+              value={formState.credit_limit || ''}
               onChange={handleChange}
+              error={!!errors.credit_limit}
+              helperText={errors.credit_limit}
+              InputProps={{
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              }}
             />
           </Grid>
           
@@ -224,81 +209,19 @@ const SupplierEditModal: React.FC<SupplierEditModalProps> = ({ open, onClose, su
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <TextField
-              name="city"
-              label="City"
-              fullWidth
-              value={formState.city || ''}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="state"
-              label="State/Province"
-              fullWidth
-              value={formState.state || ''}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="zipCode"
-              label="Zip/Postal Code"
-              fullWidth
-              value={formState.zipCode || ''}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="country"
-              label="Country"
-              fullWidth
-              value={formState.country || ''}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-              Additional Information
-            </Typography>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth error={!!errors.status} required>
-              <InputLabel id="status-label">Status</InputLabel>
+            <FormControl fullWidth>
+              <InputLabel id="is_active-label">Status</InputLabel>
               <Select
-                labelId="status-label"
-                name="status"
-                value={formState.status}
+                labelId="is_active-label"
+                name="is_active"
+                value={formState.is_active === undefined ? 'true' : formState.is_active.toString()}
                 label="Status"
                 onChange={handleStatusChange}
               >
-                <MenuItem value="Enabled">Enabled</MenuItem>
-                <MenuItem value="Disabled">Disabled</MenuItem>
+                <MenuItem value="true">Active</MenuItem>
+                <MenuItem value="false">Inactive</MenuItem>
               </Select>
-              {errors.status && <FormHelperText>{errors.status}</FormHelperText>}
             </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="openingBalance"
-              label="Opening Balance"
-              fullWidth
-              value={formState.openingBalance === '' ? '' : formState.openingBalance}
-              onChange={handleChange}
-              error={!!errors.openingBalance}
-              helperText={errors.openingBalance}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              }}
-            />
           </Grid>
         </Grid>
       </DialogContent>

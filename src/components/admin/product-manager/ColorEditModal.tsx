@@ -98,8 +98,27 @@ export default function ColorEditModal({
   };
 
   const handleSubmit = () => {
+    console.log('Validating color data:', formData);
     if (validateForm()) {
-      onSave(formData);
+      console.log('Color data validation passed');
+      
+      // Create a copy of the data to ensure we don't have any issues with reactivity
+      const colorData = {
+        ...formData,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        hexCode: formData.hexCode.toUpperCase() // Normalize hex code
+      };
+      
+      // Add ID if we're editing
+      if (color.id) {
+        colorData.id = color.id;
+      }
+      
+      console.log('Submitting color data:', colorData);
+      onSave(colorData);
+    } else {
+      console.log('Color validation failed with errors:', errors);
     }
   };
 

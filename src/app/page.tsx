@@ -13,13 +13,14 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { 
+  ArrowRight, 
   FacebookLogo, 
   InstagramLogo, 
   TelegramLogo, 
   LinkedinLogo, 
   TwitterLogo, 
-  List as ListIcon,
-  ArrowRight
+  SnapchatLogo,
+  List as ListIcon
 } from '@phosphor-icons/react/dist/ssr';
 import { useTranslation } from 'react-i18next';
 import Chatbot from '@/components/chat/Chatbot';

@@ -29,6 +29,71 @@ export const adminSidebarConfig = [
     ],
   },
   {
+    title: 'Product Management',
+    items: [
+      {
+        title: 'Product Manager',
+        path: paths.admin.productManager,
+        icon: <PackageIcon />,
+      },
+    ],
+  },
+  {
+    title: 'Partners',
+    items: [
+      {
+        title: 'Parties',
+        path: paths.admin.parties,
+        icon: <UsersIcon />,
+      },
+    ],
+  },
+  {
+    title: 'Locations',
+    items: [
+      {
+        title: 'Stores',
+        path: paths.admin.stores,
+        icon: <StorefrontIcon />,
+      },
+    ],
+  },
+  {
+    title: 'Payments',
+    items: [
+      {
+        title: 'Payment Modes',
+        path: paths.admin.paymentModes,
+        icon: <CreditCardIcon />,
+      },
+      {
+        title: 'All Payments',
+        path: paths.admin.payments,
+        icon: <CreditCardIcon />,
+      },
+    ],
+  },
+  {
+    title: 'Transactions',
+    items: [
+      {
+        title: 'Purchases',
+        path: paths.admin.purchases,
+        icon: <ReceiptIcon />,
+      },
+      {
+        title: 'Sales',
+        path: paths.admin.sales,
+        icon: <ShoppingCartIcon />,
+      },
+      {
+        title: 'Expenses',
+        path: paths.admin.expenses,
+        icon: <MoneyIcon />,
+      },
+    ],
+  },
+  {
     title: 'Inventory',
     items: [
       {
@@ -49,41 +114,6 @@ export const adminSidebarConfig = [
     ],
   },
   {
-    title: 'Sales',
-    items: [
-      {
-        title: 'Sales',
-        path: paths.admin.sales,
-        icon: <ShoppingCartIcon />,
-      },
-      {
-        title: 'Purchases',
-        path: paths.admin.purchases,
-        icon: <ReceiptIcon />,
-      },
-      {
-        title: 'Expenses',
-        path: paths.admin.expenses,
-        icon: <MoneyIcon />,
-      },
-    ],
-  },
-  {
-    title: 'Payments',
-    items: [
-      {
-        title: 'Payments',
-        path: paths.admin.payments,
-        icon: <CreditCardIcon />,
-      },
-      {
-        title: 'Payment Modes',
-        path: paths.admin.paymentModes,
-        icon: <CreditCardIcon />,
-      },
-    ],
-  },
-  {
     title: 'Management',
     items: [
       {
@@ -95,11 +125,6 @@ export const adminSidebarConfig = [
         title: 'Companies',
         path: paths.admin.companies,
         icon: <BuildingIcon />,
-      },
-      {
-        title: 'Stores',
-        path: paths.admin.stores,
-        icon: <StorefrontIcon />,
       },
     ],
   },

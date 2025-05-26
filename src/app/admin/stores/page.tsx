@@ -177,9 +177,29 @@ export default function StoresPage(): React.JSX.Element {
       }
       fetchStores();
       setIsStoreModalOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving store:', error);
-      enqueueSnackbar(t('stores.save_error'), { variant: 'error' });
+      
+      // Check for subscription limit error
+      if (error.response?.status === 403 && error.response?.data?.error?.includes('Subscription')) {
+        const { current_count, max_allowed } = error.response.data;
+        enqueueSnackbar(
+          t('stores.subscription_limit_reached', { 
+            current: current_count, 
+            max: max_allowed 
+          }) || `Subscription store limit reached (${current_count}/${max_allowed})`, 
+          { variant: 'error' }
+        );
+      } else {
+        // Extract error message if available
+        const errorMessage = 
+          error.response?.data?.message || 
+          error.response?.data?.error || 
+          error.message || 
+          t('stores.save_error');
+        
+        enqueueSnackbar(errorMessage, { variant: 'error' });
+      }
     } finally {
       setIsLoading(false);
     }

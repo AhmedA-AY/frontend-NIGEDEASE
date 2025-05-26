@@ -22,6 +22,7 @@ interface SimpleUploadProps {
   width?: number;
   height?: number;
   allowRemove?: boolean;
+  readOnly?: boolean;
 }
 
 export const SimpleUpload: React.FC<SimpleUploadProps> = ({
@@ -33,6 +34,7 @@ export const SimpleUpload: React.FC<SimpleUploadProps> = ({
   width = 200,
   height = 200,
   allowRemove = true,
+  readOnly = false,
 }) => {
   const [imageUrl, setImageUrl] = useState<string | undefined>(initialImage);
   const [isUploading, setIsUploading] = useState(false);
@@ -109,7 +111,7 @@ export const SimpleUpload: React.FC<SimpleUploadProps> = ({
         ref={fileInputRef}
         style={{ display: 'none' }}
         onChange={handleImageChange}
-        disabled={isUploading}
+        disabled={isUploading || readOnly}
       />
       
       <label htmlFor="upload-image">
@@ -123,10 +125,10 @@ export const SimpleUpload: React.FC<SimpleUploadProps> = ({
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: isUploading ? 'wait' : 'pointer',
+            cursor: readOnly ? 'default' : (isUploading ? 'wait' : 'pointer'),
             position: 'relative',
             overflow: 'hidden',
-            '&:hover': {
+            '&:hover': readOnly ? {} : {
               borderColor: 'primary.main',
               backgroundColor: 'rgba(0, 0, 0, 0.04)',
             },
@@ -148,7 +150,7 @@ export const SimpleUpload: React.FC<SimpleUploadProps> = ({
                 }}
                 alt="Uploaded"
               />
-              {allowRemove && (
+              {allowRemove && !readOnly && (
                 <IconButton
                   sx={{
                     position: 'absolute',
@@ -173,7 +175,7 @@ export const SimpleUpload: React.FC<SimpleUploadProps> = ({
             <>
               <AddPhotoAlternateIcon fontSize="large" color="action" />
               <Typography variant="body2" color="textSecondary" align="center" sx={{ mt: 1 }}>
-                {label}
+                {readOnly ? 'No image available' : label}
               </Typography>
             </>
           )}

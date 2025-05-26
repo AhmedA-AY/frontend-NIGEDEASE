@@ -112,14 +112,8 @@ export default function CustomersPage(): React.JSX.Element {
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
-      status: 'Enabled', // Status is not in Customer model, assuming Enabled by default
-      openingBalance: parseFloat(customer.credit_limit || '0'),
-      taxNumber: '',
       address: customer.address,
-      city: '',
-      state: '',
-      zipCode: '',
-      country: '',
+      credit_limit: customer.credit_limit || ''
     });
     setIsEditModalOpen(true);
   };
@@ -141,7 +135,7 @@ export default function CustomersPage(): React.JSX.Element {
         email: customerData.email,
         phone: customerData.phone,
         address: customerData.address || '',
-        credit_limit: (customerData.openingBalance || 0).toString(),
+        credit_limit: customerData.credit_limit || ''
       };
 
       if (customerData.id) {
@@ -237,13 +231,6 @@ export default function CustomersPage(): React.JSX.Element {
           >
             Add New Customer
           </Button>
-          <Button 
-            variant="outlined" 
-            startIcon={<UploadSimpleIcon weight="bold" />}
-            sx={{ color: '#0ea5e9', borderColor: '#0ea5e9', '&:hover': { borderColor: '#0284c7', color: '#0284c7' } }}
-          >
-            Import Customers
-          </Button>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <OutlinedInput
@@ -274,32 +261,6 @@ export default function CustomersPage(): React.JSX.Element {
           </Select>
         </Box>
       </Box>
-
-      {/* Tabs */}
-      <Tabs 
-        value={tabValue} 
-        onChange={handleTabChange}
-        sx={{ mb: 2, '& .MuiTabs-indicator': { bgcolor: '#0ea5e9' } }}
-      >
-        <Tab 
-          label="All" 
-          sx={{ 
-            textTransform: 'none', 
-            minWidth: 50,
-            color: tabValue === 0 ? '#0ea5e9' : 'inherit',
-            '&.Mui-selected': { color: '#0ea5e9' }
-          }} 
-        />
-        <Tab 
-          label="To Collect" 
-          sx={{ 
-            textTransform: 'none', 
-            minWidth: 80,
-            color: tabValue === 1 ? '#0ea5e9' : 'inherit',
-            '&.Mui-selected': { color: '#0ea5e9' }
-          }} 
-        />
-      </Tabs>
 
       {/* Customers Table */}
       <Card>

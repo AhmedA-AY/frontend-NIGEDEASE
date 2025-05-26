@@ -56,7 +56,7 @@ export default function ProductsPage(): React.JSX.Element {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Partial<ProductCreateData> & { id?: string }>({
+  const [currentProduct, setCurrentProduct] = useState<Partial<ProductCreateData> & { id?: string; editMode?: boolean }>({
     name: '',
     description: '',
     image: '',
@@ -66,6 +66,7 @@ export default function ProductsPage(): React.JSX.Element {
     sale_price: '',
     color_id: '',
     collection_id: '',
+    editMode: false,
   });
   const [companies, setCompanies] = useState<any[]>([]);
   const [productUnits, setProductUnits] = useState<any[]>([]);
@@ -181,23 +182,51 @@ export default function ProductsPage(): React.JSX.Element {
   };
 
   const handleEditProduct = (id: string) => {
+    console.log('Edit button clicked for product ID:', id);
     const product = products.find(p => p.id === id);
+    console.log('Found product to edit:', product);
+    
     if (product) {
+      // Use store from product if available, otherwise use currentStore
+      const storeId = product.store?.id || currentStore?.id;
+      
+      if (!storeId) {
+        console.error('No store ID available. Please select a store.');
+        enqueueSnackbar(t('dashboard.no_store_message'), { variant: 'warning' });
+        return;
+      }
+      
+      // Check if product category exists
+      if (!product.product_category?.id) {
+        console.error('Product category is missing');
+        enqueueSnackbar(t('products.missing_category'), { variant: 'error' });
+        return;
+      }
+      
+      // Check if product unit exists
+      if (!product.product_unit?.id) {
+        console.error('Product unit is missing');
+        enqueueSnackbar(t('products.missing_unit'), { variant: 'error' });
+        return;
+      }
+      
       setCurrentProduct({
         id: product.id,
-        store_id: product.store.id,
+        store_id: storeId,
         name: product.name,
-        description: product.description,
-        image: product.image,
+        description: product.description || '',
+        image: product.image || '',
         product_category_id: product.product_category.id,
         product_unit_id: product.product_unit.id,
         purchase_price: product.purchase_price || '',
         sale_price: product.sale_price || '',
         color_id: product.color || '',
         collection_id: product.collection || '',
+        editMode: true,
       });
       setIsProductModalOpen(true);
     } else {
+      console.error('Product not found with ID:', id);
       enqueueSnackbar(t('products.product_not_found'), { variant: 'error' });
     }
   };
@@ -209,6 +238,7 @@ export default function ProductsPage(): React.JSX.Element {
     }
     
     console.log('handleSaveProduct called with data:', productData);
+    
     try {
       if (productData.id) {
         // Update existing product
@@ -229,7 +259,19 @@ export default function ProductsPage(): React.JSX.Element {
       if (error.response && error.response.data) {
         // Display backend validation errors
         console.log('Backend validation errors:', error.response.data);
-        enqueueSnackbar(JSON.stringify(error.response.data), { variant: 'error' });
+        const errorData = error.response.data;
+        
+        // Format the error message for better readability
+        let errorMessage = '';
+        if (typeof errorData === 'object') {
+          Object.entries(errorData).forEach(([key, value]) => {
+            errorMessage += `${key}: ${Array.isArray(value) ? value.join(', ') : value}\n`;
+          });
+        } else {
+          errorMessage = String(errorData);
+        }
+        
+        enqueueSnackbar(errorMessage, { variant: 'error' });
       } else {
         enqueueSnackbar(t('products.save_error'), { variant: 'error' });
       }
@@ -237,8 +279,56 @@ export default function ProductsPage(): React.JSX.Element {
   };
 
   const handleViewProduct = (id: string) => {
-    // In a real application, this would navigate to product details
-    enqueueSnackbar(`${t('products.view_product_info')} ${id}`, { variant: 'info' });
+    console.log('View button clicked for product ID:', id);
+    const product = products.find(p => p.id === id);
+    console.log('Found product to view:', product);
+    
+    if (product) {
+      // Use store from product if available, otherwise use currentStore
+      const storeId = product.store?.id || currentStore?.id;
+      
+      if (!storeId) {
+        console.error('No store ID available. Please select a store.');
+        enqueueSnackbar(t('dashboard.no_store_message'), { variant: 'warning' });
+        return;
+      }
+      
+      // Check if product category exists
+      if (!product.product_category?.id) {
+        console.error('Product category is missing');
+        enqueueSnackbar(t('products.missing_category'), { variant: 'error' });
+        return;
+      }
+      
+      // Check if product unit exists
+      if (!product.product_unit?.id) {
+        console.error('Product unit is missing');
+        enqueueSnackbar(t('products.missing_unit'), { variant: 'error' });
+        return;
+      }
+      
+      // Display product details in a temporary way - this would usually navigate to a product detail page
+      setCurrentProduct({
+        id: product.id,
+        store_id: storeId,
+        name: product.name,
+        description: product.description || '',
+        image: product.image || '',
+        product_category_id: product.product_category.id,
+        product_unit_id: product.product_unit.id,
+        purchase_price: product.purchase_price || '',
+        sale_price: product.sale_price || '',
+        color_id: product.color || '',
+        collection_id: product.collection || '',
+        editMode: false,
+      });
+      
+      // Show product details in product modal (read-only)
+      setIsProductModalOpen(true);
+    } else {
+      console.error('Product not found with ID:', id);
+      enqueueSnackbar(t('products.product_not_found'), { variant: 'error' });
+    }
   };
 
   const openDeleteConfirmation = (id: string) => {
@@ -269,11 +359,6 @@ export default function ProductsPage(): React.JSX.Element {
   const handleDeleteCancel = () => {
     setDeleteConfirmOpen(false);
     setProductToDelete(null);
-  };
-
-  const handleExportProducts = () => {
-    // In a real application, this would export products to CSV/Excel
-    enqueueSnackbar(t('products.export_info'), { variant: 'info' });
   };
 
   // Generate breadcrumb path links
@@ -316,13 +401,6 @@ export default function ProductsPage(): React.JSX.Element {
           </Box>
         </Box>
         <Stack direction="row" spacing={2}>
-          <Button
-            variant="outlined"
-            startIcon={<ExportIcon weight="bold" />}
-            onClick={handleExportProducts}
-          >
-            {t('common.export')}
-          </Button>
           <Button 
             variant="contained" 
             startIcon={<PlusIcon weight="bold" />}
@@ -468,6 +546,7 @@ export default function ProductsPage(): React.JSX.Element {
                             size="small"
                             onClick={() => handleViewProduct(product.id)}
                             sx={{ color: 'info.main' }}
+                            title={t('common.view')}
                           >
                             <EyeIcon size={20} />
                           </IconButton>
@@ -475,6 +554,7 @@ export default function ProductsPage(): React.JSX.Element {
                             size="small"
                             onClick={() => handleEditProduct(product.id)}
                             sx={{ color: 'primary.main' }}
+                            title={t('common.edit')}
                           >
                             <PencilSimpleIcon size={20} />
                           </IconButton>
@@ -482,6 +562,7 @@ export default function ProductsPage(): React.JSX.Element {
                             size="small"
                             onClick={() => openDeleteConfirmation(product.id)}
                             sx={{ color: 'error.main' }}
+                            title={t('common.delete')}
                           >
                             <TrashIcon size={20} />
                           </IconButton>
@@ -503,6 +584,7 @@ export default function ProductsPage(): React.JSX.Element {
         onSave={handleSaveProduct}
         product={currentProduct}
         categories={categories}
+        readOnly={Boolean(currentProduct?.id && !currentProduct?.editMode)}
       />
       
       {/* Delete Confirmation Dialog */}

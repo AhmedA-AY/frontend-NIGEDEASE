@@ -29,11 +29,6 @@ export const adminNavItems = [
       { key: 'admin-categories', title: 'Categories', href: paths.admin.categories },
       { key: 'admin-product-units', title: 'Product Units', href: paths.admin.productUnits },
       { 
-        key: 'admin-products', 
-        title: 'Products', 
-        href: paths.admin.products
-      },
-      { 
         key: 'admin-clothing', 
         title: 'Clothing', 
         href: paths.admin.clothing,
@@ -43,10 +38,27 @@ export const adminNavItems = [
           { key: 'admin-clothing-collections', title: 'Collections', href: paths.admin.clothingCollections },
         ]
       },
+      { 
+        key: 'admin-products', 
+        title: 'Products', 
+        href: paths.admin.products
+      },
     ]
   },
-  { key: 'admin-sales', title: 'Sales', href: paths.admin.sales, icon: 'currency-dollar' },
+  { key: 'admin-parties', title: 'Parties', href: paths.admin.parties, icon: 'users' },
+  { key: 'admin-stores', title: 'Stores', href: paths.admin.stores, icon: 'storefront' },
+  { 
+    key: 'admin-payments', 
+    title: 'Payments', 
+    href: paths.admin.payments, 
+    icon: 'credit-card',
+    items: [
+      { key: 'admin-payment-modes', title: 'Payment Modes', href: paths.admin.paymentModes },
+      { key: 'admin-payments-main', title: 'All Payments', href: paths.admin.payments }
+    ]
+  },
   { key: 'admin-purchases', title: 'Purchases', href: paths.admin.purchases, icon: 'shopping-bag' },
+  { key: 'admin-sales', title: 'Sales', href: paths.admin.sales, icon: 'currency-dollar' },
   { 
     key: 'admin-expenses', 
     title: 'Expenses', 
@@ -57,18 +69,6 @@ export const adminNavItems = [
       { key: 'admin-expense-categories', title: 'Categories', href: paths.admin.expenseCategories }
     ]
   },
-  { 
-    key: 'admin-payments', 
-    title: 'Payments', 
-    href: paths.admin.payments, 
-    icon: 'credit-card',
-    items: [
-      { key: 'admin-payments-main', title: 'All Payments', href: paths.admin.payments },
-      { key: 'admin-payment-modes', title: 'Payment Modes', href: paths.admin.paymentModes }
-    ]
-  },
-  { key: 'admin-parties', title: 'Parties', href: paths.admin.parties, icon: 'users' },
-  { key: 'admin-stores', title: 'Stores', href: paths.admin.stores, icon: 'storefront' },
   { key: 'admin-users', title: 'Users', href: paths.admin.users, icon: 'user-gear' },
   { key: 'admin-reports', title: 'Reports', href: paths.admin.reports, icon: 'chart-line' },
   { key: 'admin-predictions', title: 'Predictions', href: paths.admin.predictions, icon: 'chart-line' },
