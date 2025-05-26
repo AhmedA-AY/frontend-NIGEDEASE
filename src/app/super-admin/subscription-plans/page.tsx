@@ -37,7 +37,8 @@ import {
   Grid,
   TablePagination,
   OutlinedInput,
-  Chip
+  Chip,
+  InputLabel
 } from '@mui/material';
 import { PencilSimple, Plus, Trash, MagnifyingGlass, Eye as Visibility } from '@phosphor-icons/react/dist/ssr';
 import { z as zod } from 'zod';
@@ -334,9 +335,9 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
       <Container maxWidth="xl">
         <Stack spacing={3}>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h4">
+              <Typography variant="h4">
               {safeTranslate('subscription_plans.title', 'Subscription Plans')}
-            </Typography>
+              </Typography>
             <Button
               startIcon={<Plus />}
               variant="contained"
@@ -378,9 +379,9 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
             <Divider />
             
             {isLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                <CircularProgress />
-              </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
             )}
             
             {plansError && !isLoading && (
@@ -408,49 +409,49 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                     <TableBody>
                       {paginatedPlans.length > 0 ? (
                         paginatedPlans.map((plan) => (
-                          <TableRow key={plan.id}>
-                            <TableCell>{plan.name}</TableCell>
-                            <TableCell>{plan.price}</TableCell>
-                            <TableCell>
+                        <TableRow key={plan.id}>
+                          <TableCell>{plan.name}</TableCell>
+                          <TableCell>{plan.price}</TableCell>
+                          <TableCell>
                               {safeTranslate(`subscription_plans.${plan.billing_cycle}`, plan.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly')}
-                            </TableCell>
+                          </TableCell>
                             <TableCell>{plan.storage_limit_gb}</TableCell>
-                            <TableCell>
+                          <TableCell>
                               <Chip 
                                 label={plan.is_active ? safeTranslate('common.active', 'Active') : safeTranslate('common.inactive', 'Inactive')} 
                                 color={plan.is_active ? 'success' : 'default'} 
                                 size="small"
                               />
-                            </TableCell>
-                            <TableCell align="right">
+                          </TableCell>
+                          <TableCell align="right">
                               <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                <IconButton
-                                  onClick={() => handleViewDetails(plan)}
-                                  size="small"
-                                >
+                            <IconButton
+                              onClick={() => handleViewDetails(plan)}
+                              size="small"
+                            >
                                   <Visibility />
-                                </IconButton>
-                                <IconButton
-                                  onClick={() => handleEditDialogOpen(plan)}
+                            </IconButton>
+                            <IconButton
+                              onClick={() => handleEditDialogOpen(plan)}
                                   size="small"
-                                >
-                                  <PencilSimple />
-                                </IconButton>
-                                <IconButton
+                            >
+                              <PencilSimple />
+                            </IconButton>
+                            <IconButton
                                   onClick={() => handleDeleteDialogOpen(plan)}
                                   size="small"
-                                  color="error"
-                                >
-                                  <Trash />
-                                </IconButton>
+                              color="error"
+                            >
+                              <Trash />
+                            </IconButton>
                               </Stack>
-                            </TableCell>
-                          </TableRow>
+                          </TableCell>
+                        </TableRow>
                         ))
                       ) : (
                         <TableRow>
                           <TableCell colSpan={6} align="center">
-                            {searchQuery
+                            {searchQuery 
                               ? safeTranslate('subscription_plans.no_results', 'No subscription plans match your search')
                               : safeTranslate('subscription_plans.no_plans', 'No subscription plans found')}
                           </TableCell>
@@ -459,13 +460,13 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                     </TableBody>
                   </Table>
                 </TableContainer>
-                <TablePagination
-                  component="div"
+                  <TablePagination
+                    component="div"
                   count={filteredPlans.length}
                   page={page}
-                  onPageChange={handleChangePage}
+                    onPageChange={handleChangePage}
                   rowsPerPage={rowsPerPage}
-                  onRowsPerPageChange={handleChangeRowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
                   rowsPerPageOptions={[5, 10, 25, 50]}
                   labelRowsPerPage={safeTranslate('common.rows_per_page', 'Rows per page:')}
                 />
@@ -476,16 +477,234 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
       </Container>
       
       {/* Dialog components will remain unchanged for now */}
-
+          
       {/* Create Subscription Plan Dialog */}
-      <Dialog
+      <Dialog 
         open={createDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>{safeTranslate('subscription_plans.create_title', 'Create Subscription Plan')}</DialogTitle>
-        {/* Dialog content continues... */}
+        <form onSubmit={handleSubmit(handleCreateSubmit)}>
+          <DialogTitle>{safeTranslate('subscription_plans.create_title', 'Create Subscription Plan')}</DialogTitle>
+          <Divider />
+          <DialogContent sx={{ pt: 2 }}>
+            <Stack spacing={3}>
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={safeTranslate('subscription_plans.form.name', 'Plan Name')}
+                    error={!!errors.name}
+                    helperText={errors.name?.message}
+                    fullWidth
+                    required
+                  />
+                )}
+              />
+              
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={safeTranslate('subscription_plans.form.description', 'Description')}
+                    error={!!errors.description}
+                    helperText={errors.description?.message}
+                    fullWidth
+                    multiline
+                    rows={3}
+                    required
+                  />
+                )}
+              />
+              
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name="price"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={safeTranslate('subscription_plans.form.price', 'Price')}
+                      error={!!errors.price}
+                      helperText={errors.price?.message}
+                      fullWidth
+                      required
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      }}
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="billing_cycle"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth error={!!errors.billing_cycle}>
+                      <InputLabel id="billing-cycle-label">
+                        {safeTranslate('subscription_plans.form.billing_cycle', 'Billing Cycle')}
+                      </InputLabel>
+                      <Select
+                        {...field}
+                        labelId="billing-cycle-label"
+                        label={safeTranslate('subscription_plans.form.billing_cycle', 'Billing Cycle')}
+                      >
+                        <MenuItem value="monthly">{safeTranslate('subscription_plans.monthly', 'Monthly')}</MenuItem>
+                        <MenuItem value="yearly">{safeTranslate('subscription_plans.yearly', 'Yearly')}</MenuItem>
+                      </Select>
+                      {errors.billing_cycle && (
+                        <FormHelperText error>{errors.billing_cycle.message}</FormHelperText>
+                      )}
+                    </FormControl>
+                  )}
+                />
+              </Box>
+              
+              <Controller
+                name="features"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={safeTranslate('subscription_plans.form.features', 'Features')}
+                    error={!!errors.features}
+                    helperText={errors.features?.message || safeTranslate('subscription_plans.form.features_helper', 'Enter features separated by commas')}
+                    fullWidth
+                    multiline
+                    rows={3}
+                    required
+                  />
+                )}
+              />
+              
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name="storage_limit_gb"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.storage_limit', 'Storage Limit (GB)')}
+                      type="number"
+                      error={!!errors.storage_limit_gb}
+                      helperText={errors.storage_limit_gb?.message}
+                      fullWidth
+                      required
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="duration_in_months"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.duration', 'Duration (months)')}
+                      type="number"
+                      error={!!errors.duration_in_months}
+                      helperText={errors.duration_in_months?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+              </Box>
+              
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name="max_products"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.max_products', 'Max Products')}
+                      type="number"
+                      error={!!errors.max_products}
+                      helperText={errors.max_products?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="max_stores"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.max_stores', 'Max Stores')}
+                      type="number"
+                      error={!!errors.max_stores}
+                      helperText={errors.max_stores?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="max_customers"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.max_customers', 'Max Customers')}
+                      type="number"
+                      error={!!errors.max_customers}
+                      helperText={errors.max_customers?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+              </Box>
+              
+              <Controller
+                name="is_active"
+                control={control}
+                render={({ field: { value, onChange, ...field } }) => (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={value}
+                        onChange={(e) => onChange(e.target.checked)}
+                        {...field}
+                      />
+                    }
+                    label={safeTranslate('subscription_plans.form.is_active', 'Active')}
+                  />
+                )}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={() => setCreateDialogOpen(false)}
+            >
+              {safeTranslate('common.cancel', 'Cancel')}
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              disabled={isLoading}
+            >
+              {isLoading ? <CircularProgress size={24} /> : safeTranslate('common.create', 'Create')}
+            </Button>
+          </DialogActions>
+        </form>
       </Dialog>
 
       {/* Edit Subscription Plan Dialog */}
@@ -495,8 +714,226 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>{safeTranslate('subscription_plans.edit_title', 'Edit Subscription Plan')}</DialogTitle>
-        {/* Dialog content continues... */}
+        <form onSubmit={handleSubmit(handleEditSubmit)}>
+          <DialogTitle>{safeTranslate('subscription_plans.edit_title', 'Edit Subscription Plan')}</DialogTitle>
+          <Divider />
+          <DialogContent sx={{ pt: 2 }}>
+            <Stack spacing={3}>
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={safeTranslate('subscription_plans.form.name', 'Plan Name')}
+                    error={!!errors.name}
+                    helperText={errors.name?.message}
+                    fullWidth
+                    required
+                  />
+                )}
+              />
+              
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={safeTranslate('subscription_plans.form.description', 'Description')}
+                    error={!!errors.description}
+                    helperText={errors.description?.message}
+                    fullWidth
+                    multiline
+                    rows={3}
+                    required
+                  />
+                )}
+              />
+              
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name="price"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={safeTranslate('subscription_plans.form.price', 'Price')}
+                      error={!!errors.price}
+                      helperText={errors.price?.message}
+                      fullWidth
+                      required
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      }}
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="billing_cycle"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth error={!!errors.billing_cycle}>
+                      <InputLabel id="billing-cycle-label-edit">
+                        {safeTranslate('subscription_plans.form.billing_cycle', 'Billing Cycle')}
+                      </InputLabel>
+                      <Select
+                        {...field}
+                        labelId="billing-cycle-label-edit"
+                        label={safeTranslate('subscription_plans.form.billing_cycle', 'Billing Cycle')}
+                      >
+                        <MenuItem value="monthly">{safeTranslate('subscription_plans.monthly', 'Monthly')}</MenuItem>
+                        <MenuItem value="yearly">{safeTranslate('subscription_plans.yearly', 'Yearly')}</MenuItem>
+                      </Select>
+                      {errors.billing_cycle && (
+                        <FormHelperText error>{errors.billing_cycle.message}</FormHelperText>
+                      )}
+                    </FormControl>
+                  )}
+                />
+              </Box>
+              
+              <Controller
+                name="features"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={safeTranslate('subscription_plans.form.features', 'Features')}
+                    error={!!errors.features}
+                    helperText={errors.features?.message || safeTranslate('subscription_plans.form.features_helper', 'Enter features separated by commas')}
+                    fullWidth
+                    multiline
+                    rows={3}
+                    required
+                  />
+                )}
+              />
+              
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name="storage_limit_gb"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.storage_limit', 'Storage Limit (GB)')}
+                      type="number"
+                      error={!!errors.storage_limit_gb}
+                      helperText={errors.storage_limit_gb?.message}
+                      fullWidth
+                      required
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="duration_in_months"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.duration', 'Duration (months)')}
+                      type="number"
+                      error={!!errors.duration_in_months}
+                      helperText={errors.duration_in_months?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+              </Box>
+              
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name="max_products"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.max_products', 'Max Products')}
+                      type="number"
+                      error={!!errors.max_products}
+                      helperText={errors.max_products?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="max_stores"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.max_stores', 'Max Stores')}
+                      type="number"
+                      error={!!errors.max_stores}
+                      helperText={errors.max_stores?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="max_customers"
+                  control={control}
+                  render={({ field: { onChange, value, ...rest } }) => (
+                    <TextField
+                      {...rest}
+                      value={value}
+                      onChange={(e) => onChange(Number(e.target.value))}
+                      label={safeTranslate('subscription_plans.form.max_customers', 'Max Customers')}
+                      type="number"
+                      error={!!errors.max_customers}
+                      helperText={errors.max_customers?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+              </Box>
+              
+              <Controller
+                name="is_active"
+                control={control}
+                render={({ field: { value, onChange, ...field } }) => (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={value}
+                        onChange={(e) => onChange(e.target.checked)}
+                        {...field}
+                      />
+                    }
+                    label={safeTranslate('subscription_plans.form.is_active', 'Active')}
+                  />
+                )}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={() => setEditDialogOpen(false)}
+            >
+              {safeTranslate('common.cancel', 'Cancel')}
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              disabled={isLoading}
+            >
+              {isLoading ? <CircularProgress size={24} /> : safeTranslate('common.update', 'Update')}
+            </Button>
+          </DialogActions>
+        </form>
       </Dialog>
 
       {/* Delete Subscription Plan Dialog */}
@@ -505,159 +942,159 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
         onClose={() => setDeleteDialogOpen(false)}
       >
         <DialogTitle>{safeTranslate('subscription_plans.delete_title', 'Delete Subscription Plan')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
+            <DialogContent>
+              <DialogContentText>
             {safeTranslate('subscription_plans.delete_confirmation', 'Are you sure you want to delete this subscription plan?')}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>{safeTranslate('common.cancel', 'Cancel')}</Button>
-          <Button 
-            onClick={handleDeleteSubmit} 
-            color="error"
-            disabled={isLoading}
-          >
-            {isLoading ? <CircularProgress size={24} /> : safeTranslate('common.delete', 'Delete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Details Subscription Plan Dialog */}
-      <Dialog 
-        open={detailsDialogOpen} 
-        onClose={() => setDetailsDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        {selectedPlan && (
-          <>
-            <DialogTitle>
-              {safeTranslate('subscription_plans.details_title', 'Subscription Plan Details')}
-            </DialogTitle>
-            <Divider />
-            <DialogContent sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    {selectedPlan.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    {selectedPlan.description}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Divider />
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {safeTranslate('subscription_plans.columns.price', 'Price')}
-                  </Typography>
-                  <Typography variant="body1">
-                    ${selectedPlan.price}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {safeTranslate('subscription_plans.columns.billing_cycle', 'Billing Cycle')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {safeTranslate(`subscription_plans.${selectedPlan.billing_cycle}`, selectedPlan.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly')}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {safeTranslate('subscription_plans.columns.storage', 'Storage (GB)')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.storage_limit_gb} GB
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {safeTranslate('subscription_plans.columns.max_products', 'Max Products')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.max_products}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {safeTranslate('subscription_plans.columns.max_stores', 'Max Stores')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.max_stores}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {safeTranslate('subscription_plans.columns.max_customers', 'Max Customers')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.max_customers}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {safeTranslate('subscription_plans.columns.status', 'Status')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedPlan.is_active ? safeTranslate('common.active', 'Active') : safeTranslate('common.inactive', 'Inactive')}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Divider />
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {safeTranslate('subscription_plans.columns.features', 'Features')}
-                  </Typography>
-                  {typeof selectedPlan.features === 'string' && selectedPlan.features.split(',').map((feature: string, index: number) => (
-                    <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                      <Box
-                        component="span"
-                        sx={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: '50%',
-                          backgroundColor: 'primary.main',
-                          display: 'inline-block',
-                          mr: 1.5
-                        }}
-                      />
-                      {feature.trim()}
-                    </Typography>
-                  ))}
-                </Grid>
-              </Grid>
+              </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setDetailsDialogOpen(false)}>
-                {safeTranslate('common.close', 'Close')}
-              </Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>{safeTranslate('common.cancel', 'Cancel')}</Button>
               <Button 
-                color="primary"
-                variant="contained"
-                onClick={() => {
-                  setDetailsDialogOpen(false);
-                  handleEditDialogOpen(selectedPlan);
-                }}
+                onClick={handleDeleteSubmit} 
+                color="error"
+                disabled={isLoading}
               >
-                {safeTranslate('subscription_plans.edit_plan', 'Edit Plan')}
+            {isLoading ? <CircularProgress size={24} /> : safeTranslate('common.delete', 'Delete')}
               </Button>
             </DialogActions>
-          </>
-        )}
-      </Dialog>
+          </Dialog>
+
+      {/* Details Subscription Plan Dialog */}
+          <Dialog 
+            open={detailsDialogOpen} 
+            onClose={() => setDetailsDialogOpen(false)}
+            maxWidth="md"
+            fullWidth
+          >
+            {selectedPlan && (
+              <>
+                <DialogTitle>
+              {safeTranslate('subscription_plans.details_title', 'Subscription Plan Details')}
+                </DialogTitle>
+                <Divider />
+                <DialogContent sx={{ pt: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Typography variant="h6" gutterBottom>
+                        {selectedPlan.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" paragraph>
+                        {selectedPlan.description}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Divider />
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                    {safeTranslate('subscription_plans.columns.price', 'Price')}
+                      </Typography>
+                      <Typography variant="body1">
+                        ${selectedPlan.price}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                    {safeTranslate('subscription_plans.columns.billing_cycle', 'Billing Cycle')}
+                      </Typography>
+                      <Typography variant="body1">
+                    {safeTranslate(`subscription_plans.${selectedPlan.billing_cycle}`, selectedPlan.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly')}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                    {safeTranslate('subscription_plans.columns.storage', 'Storage (GB)')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.storage_limit_gb} GB
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                    {safeTranslate('subscription_plans.columns.max_products', 'Max Products')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.max_products}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                    {safeTranslate('subscription_plans.columns.max_stores', 'Max Stores')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.max_stores}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                    {safeTranslate('subscription_plans.columns.max_customers', 'Max Customers')}
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedPlan.max_customers}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                    {safeTranslate('subscription_plans.columns.status', 'Status')}
+                      </Typography>
+                      <Typography variant="body1">
+                    {selectedPlan.is_active ? safeTranslate('common.active', 'Active') : safeTranslate('common.inactive', 'Inactive')}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Divider />
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                    {safeTranslate('subscription_plans.columns.features', 'Features')}
+                      </Typography>
+                      {typeof selectedPlan.features === 'string' && selectedPlan.features.split(',').map((feature: string, index: number) => (
+                        <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              backgroundColor: 'primary.main',
+                              display: 'inline-block',
+                              mr: 1.5
+                            }}
+                          />
+                          {feature.trim()}
+                        </Typography>
+                      ))}
+                    </Grid>
+                  </Grid>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={() => setDetailsDialogOpen(false)}>
+                {safeTranslate('common.close', 'Close')}
+                  </Button>
+                  <Button 
+                    color="primary"
+                    variant="contained"
+                    onClick={() => {
+                      setDetailsDialogOpen(false);
+                      handleEditDialogOpen(selectedPlan);
+                    }}
+                  >
+                {safeTranslate('subscription_plans.edit_plan', 'Edit Plan')}
+                  </Button>
+                </DialogActions>
+              </>
+            )}
+          </Dialog>
     </Box>
   );
 } 
