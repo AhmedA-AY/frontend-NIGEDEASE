@@ -1,10 +1,11 @@
 import axios from 'axios';
 import tokenStorage from '@/utils/token-storage';
 import { paths } from '@/paths';
+import { proxyApiClient, coreApiProxy, userApiProxy } from '@/utils/proxy-api';
 
-// API Base URLs
-export const USER_MANAGEMENT_API = 'http://evergreen-technologies-ngedease-userservice.147.79.115.12.sslip.io';
-export const CORE_API = 'http://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io';
+// Original API Base URLs (kept for reference)
+export const USER_MANAGEMENT_API = 'https://evergreen-technologies-ngedease-userservice.147.79.115.12.sslip.io';
+export const CORE_API = 'https://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io';
 
 // Create axios instance for the user management service
 export const userManagementApiClient = axios.create({
@@ -21,6 +22,60 @@ export const coreApiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Create proxy versions of the API clients that use our proxy instead of direct HTTP calls
+// These will be used in place of the direct clients to avoid mixed content issues
+
+// Proxy-based client for user management service
+export const userManagementProxyClient = {
+  get: async <T>(url: string, config?: any): Promise<{ data: T }> => {
+    const response = await userApiProxy(url, 'GET');
+    return { data: response as T };
+  },
+  post: async <T>(url: string, data?: any, config?: any): Promise<{ data: T }> => {
+    const response = await userApiProxy(url, 'POST', data);
+    return { data: response as T };
+  },
+  put: async <T>(url: string, data?: any, config?: any): Promise<{ data: T }> => {
+    const response = await userApiProxy(url, 'PUT', data);
+    return { data: response as T };
+  },
+  delete: async <T>(url: string, config?: any): Promise<{ data: T }> => {
+    const response = await userApiProxy(url, 'DELETE');
+    return { data: response as T };
+  }
+};
+
+// Proxy-based client for core service
+export const coreProxyClient = {
+  get: async <T>(url: string, config?: any): Promise<{ data: T }> => {
+    const response = await coreApiProxy(url, 'GET');
+    return { data: response as T };
+  },
+  post: async <T>(url: string, data?: any, config?: any): Promise<{ data: T }> => {
+    const response = await coreApiProxy(url, 'POST', data);
+    return { data: response as T };
+  },
+  put: async <T>(url: string, data?: any, config?: any): Promise<{ data: T }> => {
+    const response = await coreApiProxy(url, 'PUT', data);
+    return { data: response as T };
+  },
+  delete: async <T>(url: string, config?: any): Promise<{ data: T }> => {
+    const response = await coreApiProxy(url, 'DELETE');
+    return { data: response as T };
+  }
+};
+
+// Replace the original clients with proxy clients to prevent mixed content issues
+// Comment out this line during development if needed
+export const useProxyClients = true;
+
+// If using proxy clients, replace the original clients with the proxy versions
+if (useProxyClients) {
+  // Override the original clients with the proxy versions
+  Object.assign(userManagementApiClient, userManagementProxyClient);
+  Object.assign(coreApiClient, coreProxyClient);
+}
 
 // Generic API client (primarily for backward compatibility)
 export const apiClient = coreApiClient;

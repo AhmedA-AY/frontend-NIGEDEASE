@@ -11,6 +11,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { paths } from '@/paths';
 import { useTranslation } from 'react-i18next';
+import { coreApiProxy } from '@/utils/proxy-api';
 
 interface InventoryItem {
   store_id: string;
@@ -68,11 +69,7 @@ export default function InventorySearchPage(): React.JSX.Element {
     setError(null);
 
     try {
-      const response = await fetch(`http://evergreen-technologies-ngedease-coreservice.147.79.115.12.sslip.io/inventory/companies/d27c0519-58c3-4ec4-a6af-59dc6666b401/product-search/${encodeURIComponent(searchTerm)}/`);
-      if (!response.ok) {
-        throw new Error(t('inventory_search.fetch_error'));
-      }
-      const data = await response.json();
+      const data = await coreApiProxy(`/inventory/companies/d27c0519-58c3-4ec4-a6af-59dc6666b401/product-search/${encodeURIComponent(searchTerm)}/`);
       setProducts(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('inventory_search.error_occurred'));

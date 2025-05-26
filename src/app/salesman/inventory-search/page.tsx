@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { inventoryApi, InventorySearchResult } from '@/services/api/inventory';
 import { SalesmanGuard } from '@/components/auth/salesman-guard';
+import { coreApiProxy } from '@/utils/proxy-api';
 
 export default function SalesInventorySearchPage(): React.JSX.Element {
   const { userInfo } = useCurrentUser();
@@ -25,16 +26,15 @@ export default function SalesInventorySearchPage(): React.JSX.Element {
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!searchTerm.trim() || !userInfo?.company_id) return;
+    if (!searchTerm.trim()) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const data = await inventoryApi.searchProducts(userInfo.company_id, searchTerm);
+      const data = await coreApiProxy(`/inventory/companies/d27c0519-58c3-4ec4-a6af-59dc6666b401/product-search/${encodeURIComponent(searchTerm)}/`);
       setProducts(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('inventory_search.error_occurred'));
       setError(err instanceof Error ? err.message : t('inventory_search.error_occurred'));
       setProducts([]);
     } finally {
