@@ -20,6 +20,7 @@ import enCommon from '../../public/locales/en/common.json';
 import enFeatures from '../../public/locales/en/features.json';
 import enContact from '../../public/locales/en/contact.json';
 import enAuth from '../../public/locales/en/auth.json';
+import enSuperAdmin from '../../public/locales/en/super-admin.json';
 
 // Import Amharic translations
 import amAdmin from '../../public/locales/am/admin.json';
@@ -27,6 +28,7 @@ import amCommon from '../../public/locales/am/common.json';
 import amFeatures from '../../public/locales/am/features.json';
 import amContact from '../../public/locales/am/contact.json';
 import amAuth from '../../public/locales/am/auth.json';
+import amSuperAdmin from '../../public/locales/am/super-admin.json';
 
 // Import Oromo translations
 import omAdmin from '../../public/locales/om/admin.json';
@@ -34,6 +36,7 @@ import omCommon from '../../public/locales/om/common.json';
 import omFeatures from '../../public/locales/om/features.json';
 import omContact from '../../public/locales/om/contact.json';
 import omAuth from '../../public/locales/om/auth.json';
+import omSuperAdmin from '../../public/locales/om/super-admin.json';
 
 // Initialize with resources already loaded
 i18n
@@ -54,21 +57,24 @@ i18n
         common: enCommon,
         features: enFeatures,
         contact: enContact,
-        auth: enAuth
+        auth: enAuth,
+        'super-admin': enSuperAdmin
       },
       am: {
         admin: amAdmin,
         common: amCommon,
         features: amFeatures,
         contact: amContact,
-        auth: amAuth
+        auth: amAuth,
+        'super-admin': amSuperAdmin
       },
       om: {
         admin: omAdmin,
         common: omCommon,
         features: omFeatures,
         contact: omContact,
-        auth: omAuth
+        auth: omAuth,
+        'super-admin': omSuperAdmin
       }
     },
     backend: {
@@ -83,7 +89,7 @@ i18n
       useSuspense: false,
     },
     defaultNS: 'common',
-    ns: ['admin', 'common', 'features', 'contact', 'auth'],
+    ns: ['admin', 'common', 'features', 'contact', 'auth', 'super-admin'],
   }).then(() => {
     if (isDevMode) {
       console.log('i18next initialized with language:', i18n.language);
@@ -112,7 +118,7 @@ export function I18nProvider({ children }: I18nProviderProps): JSX.Element {
       
       // Check availability of translations for all languages and namespaces
       const languages = ['en', 'am', 'om'];
-      const namespaces = ['admin', 'common', 'features', 'contact', 'auth'];
+      const namespaces = ['admin', 'common', 'features', 'contact', 'auth', 'super-admin'];
       
       languages.forEach(lang => {
         namespaces.forEach(ns => {
@@ -124,7 +130,7 @@ export function I18nProvider({ children }: I18nProviderProps): JSX.Element {
     i18n.on('languageChanged', handleLanguageChange);
 
     // Force a reload of all namespaces to ensure they're loaded for all languages
-    i18n.loadNamespaces(['admin', 'common', 'features', 'contact', 'auth']).then(() => {
+    i18n.loadNamespaces(['admin', 'common', 'features', 'contact', 'auth', 'super-admin']).then(() => {
       if (isDevMode) {
         console.log('All namespaces loaded');
       }

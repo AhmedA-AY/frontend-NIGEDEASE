@@ -27,20 +27,28 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-
+import ErrorMessage from '@/components/common/error-message';
 import { CompaniesList } from '@/components/companies/companies-list';
 import { paths } from '@/paths';
 import { useCompanies } from '@/hooks/super-admin/use-companies';
-import ErrorMessage from '@/components/common/error-message';
+
+export const metadata: Metadata = {
+  title: 'Companies | Super Admin',
+};
 
 const Page = () => {
-  const { t } = useTranslation('super-admin');
+  const { t, i18n } = useTranslation(['super-admin', 'common']);
   const [tabValue, setTabValue] = useState(0);
   const { data: companies = [], isLoading, error, refetch } = useCompanies();
   
   const activeCompanies = companies.filter((company) => company.is_active);
   const inactiveCompanies = companies.filter((company) => !company.is_active);
   
+  const safeTranslate = (key: string, fallback: string) => {
+    const result = t(key);
+    return result === key ? fallback : result;
+  };
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -52,7 +60,7 @@ const Page = () => {
           <Stack direction="row" justifyContent="space-between" spacing={4}>
             <Stack spacing={1}>
               <Typography variant="h4">
-                {t('companies.title')}
+                {safeTranslate('companies.title', 'Companies')}
               </Typography>
               <Stack alignItems="center" direction="row" spacing={1}>
                 <Button
@@ -61,7 +69,7 @@ const Page = () => {
                   href={paths.superAdmin.dashboard}
                   size="small"
                 >
-                  {t('dashboard.title')}
+                  {safeTranslate('dashboard.title', 'Dashboard')}
                 </Button>
                 <Box
                   sx={{
@@ -72,7 +80,7 @@ const Page = () => {
                   }}
                 />
                 <Typography color="text.secondary" variant="body2">
-                  {t('companies.title')}
+                  {safeTranslate('companies.title', 'Companies')}
                 </Typography>
               </Stack>
             </Stack>
@@ -86,7 +94,7 @@ const Page = () => {
               }
               variant="contained"
             >
-              {t('companies.add')}
+              {safeTranslate('companies.add', 'Add Company')}
             </Button>
           </Stack>
           
@@ -96,9 +104,9 @@ const Page = () => {
               onChange={handleTabChange}
               sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
             >
-              <Tab label={t('companies.all')} />
-              <Tab label={t('companies.active')} />
-              <Tab label={t('companies.inactive')} />
+              <Tab label={safeTranslate('companies.all', 'All')} />
+              <Tab label={safeTranslate('companies.active', 'Active')} />
+              <Tab label={safeTranslate('companies.inactive', 'Inactive')} />
             </Tabs>
             
             {isLoading ? (
@@ -109,7 +117,7 @@ const Page = () => {
               <Box sx={{ p: 3 }}>
                 <ErrorMessage 
                   error={error} 
-                  title={t('companies.failed_to_load')} 
+                  title={safeTranslate('companies.failed_to_load', 'Failed to load companies')} 
                   onRetry={refetch} 
                 />
               </Box>

@@ -143,11 +143,18 @@ const StatCard = ({
 
 export default function SuperAdminDashboard(): React.JSX.Element {
   const router = useRouter();
-  const { t } = useTranslation('super-admin');
+  const { t, i18n } = useTranslation('super-admin');
   const { data: companies, isLoading: isLoadingCompanies, error: companiesError } = useCompanies();
   const { data: currencies, isLoading: isLoadingCurrencies, error: currenciesError } = useCurrencies();
   const { data: subscriptionPlans, isLoading: isLoadingPlans, error: plansError } = useSubscriptionPlans();
   
+  // Helper function to safely translate with a fallback
+  const safeTranslate = (key: string, fallback: string): string => {
+    const result = t(key);
+    // If the result is the same as the key, it means translation failed
+    return result === key ? fallback : result;
+  };
+
   // Function to get status counts
   const getStatusCounts = (companies: Company[] = []) => {
     let active = 0;
@@ -175,7 +182,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
   const { active, inactive } = getStatusCounts(companies);
   
   const getStatusChipProps = (isActive: boolean) => ({
-    label: isActive ? t('dashboard.active') : t('dashboard.inactive'),
+    label: isActive ? safeTranslate('dashboard.active', 'Active') : safeTranslate('dashboard.inactive', 'Inactive'),
     color: (isActive ? 'success' : 'error') as 'success' | 'error',
     size: 'small' as const,
     sx: { 
@@ -198,11 +205,11 @@ export default function SuperAdminDashboard(): React.JSX.Element {
           <Stack direction="row" justifyContent="space-between" spacing={4}>
             <Stack spacing={1}>
               <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                {t('dashboard.title')}
+                {safeTranslate('dashboard.title', 'Dashboard')}
               </Typography>
               <Stack direction="row" spacing={1}>
                 <Typography color="text.secondary" variant="body2">
-                  {t('dashboard.overview')}
+                  {safeTranslate('dashboard.overview', 'System Overview')}
                 </Typography>
               </Stack>
             </Stack>
@@ -223,7 +230,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
           <Grid container spacing={3}>
             <Grid item xs={12} md={3}>
               <StatCard 
-                title={t('dashboard.total_companies')} 
+                title={safeTranslate('dashboard.total_companies', 'Total Companies')} 
                 value={companies?.length || 0} 
                 icon={Buildings} 
                 color="primary"
@@ -232,7 +239,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
             </Grid>
             <Grid item xs={12} md={3}>
               <StatCard 
-                title={t('dashboard.active_companies')} 
+                title={safeTranslate('dashboard.active_companies', 'Active Companies')} 
                 value={active} 
                 icon={Buildings} 
                 color="success"
@@ -241,7 +248,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
             </Grid>
             <Grid item xs={12} md={3}>
               <StatCard 
-                title={t('dashboard.subscription_plans')} 
+                title={safeTranslate('dashboard.subscription_plans', 'Subscription Plans')} 
                 value={subscriptionPlans?.length || 0} 
                 icon={Package} 
                 color="info"
@@ -250,7 +257,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
             </Grid>
             <Grid item xs={12} md={3}>
               <StatCard 
-                title={t('dashboard.currencies')} 
+                title={safeTranslate('dashboard.currencies', 'Currencies')} 
                 value={currencies?.length || 0} 
                 icon={CurrencyDollar} 
                 color="warning"
@@ -261,8 +268,8 @@ export default function SuperAdminDashboard(): React.JSX.Element {
           
           <Card sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.04)', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.05)' }}>
             <CardHeader 
-              title={t('companies.title')} 
-              subheader={t('dashboard.recent_companies')} 
+              title={safeTranslate('companies.title', 'Companies')} 
+              subheader={safeTranslate('dashboard.recent_companies', 'Recent Companies')} 
               action={
                 <Button
                   color="inherit"
@@ -271,7 +278,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                   variant="text"
                   onClick={() => router.push(paths.superAdmin.companies)}
                 >
-                  {t('common.view_all')}
+                  {safeTranslate('common.view_all', 'View All')}
                 </Button>
               }
               sx={{
@@ -300,11 +307,11 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('companies.company_name')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('companies.description')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('companies.subscription')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('companies.status')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('companies.date_created')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('companies.company_name', 'Company Name')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('companies.description', 'Description')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('companies.subscription', 'Subscription')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('companies.status', 'Status')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('companies.date_created', 'Date Created')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -334,7 +341,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                         <TableRow>
                           <TableCell colSpan={5} align="center">
                             <Typography variant="body2">
-                              {t('companies.no_companies')}
+                              {safeTranslate('companies.no_companies', 'No companies found')}
                             </Typography>
                           </TableCell>
                         </TableRow>
@@ -350,7 +357,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
             <Grid item xs={12} md={6}>
               <Card sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.04)', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.05)' }}>
                 <CardHeader 
-                  title={t('subscription_plans.title')} 
+                  title={safeTranslate('subscription_plans.title', 'Subscription Plans')} 
                   action={
                     <Button
                       color="inherit"
@@ -359,7 +366,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                       variant="text"
                       onClick={() => router.push(paths.superAdmin.subscriptionPlans)}
                     >
-                      {t('common.manage')}
+                      {safeTranslate('common.manage', 'Manage')}
                     </Button>
                   }
                   sx={{
@@ -385,9 +392,9 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                       <Table>
                         <TableHead>
                           <TableRow>
-                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('subscription_plans.plan_name')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('subscription_plans.price')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('companies.status')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('subscription_plans.plan_name', 'Plan Name')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('subscription_plans.price', 'Price')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('companies.status', 'Status')}</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -411,7 +418,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                             <TableRow>
                               <TableCell colSpan={3} align="center">
                                 <Typography variant="body2">
-                                  {t('subscription_plans.no_plans')}
+                                  {safeTranslate('subscription_plans.no_plans', 'No subscription plans found')}
                                 </Typography>
                               </TableCell>
                             </TableRow>
@@ -427,7 +434,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
             <Grid item xs={12} md={6}>
               <Card sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.04)', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.05)' }}>
                 <CardHeader 
-                  title={t('currencies.title')} 
+                  title={safeTranslate('currencies.title', 'Currencies')} 
                   action={
                     <Button
                       color="inherit"
@@ -436,7 +443,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                       variant="text"
                       onClick={() => router.push(paths.superAdmin.currencies)}
                     >
-                      {t('common.manage')}
+                      {safeTranslate('common.manage', 'Manage')}
                     </Button>
                   }
                   sx={{
@@ -462,8 +469,8 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                       <Table>
                         <TableHead>
                           <TableRow>
-                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('currencies.name')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{t('currencies.code')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('currencies.name', 'Name')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.secondary', py: 2 }}>{safeTranslate('currencies.code', 'Code')}</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -482,7 +489,7 @@ export default function SuperAdminDashboard(): React.JSX.Element {
                             <TableRow>
                               <TableCell colSpan={2} align="center">
                                 <Typography variant="body2">
-                                  {t('currencies.no_currencies')}
+                                  {safeTranslate('currencies.no_currencies', 'No currencies found')}
                                 </Typography>
                               </TableCell>
                             </TableRow>
