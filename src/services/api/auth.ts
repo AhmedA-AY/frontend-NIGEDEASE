@@ -100,11 +100,38 @@ export interface UserResponse {
 export const authApi = {
   // Login with email and password
   login: async (email: string, password: string): Promise<{ message: string }> => {
-    const response = await userManagementApiClient.post<{ message: string }>('/auth/login/', {
-      email,
-      password
-    });
-    return response.data;
+    try {
+      const response = await userManagementApiClient.post<{ message: string }>('/auth/login/', {
+        email,
+        password
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      // If we're getting a 405 (Method Not Allowed), it could be due to the trailing slash
+      if (error?.response?.status === 405) {
+        try {
+          // Try without the trailing slash
+          const retryResponse = await userManagementApiClient.post<{ message: string }>('/auth/login', {
+            email,
+            password
+          });
+          return retryResponse.data;
+        } catch (retryError: any) {
+          console.error('Login retry error:', retryError);
+          throw {
+            error: retryError?.response?.data?.error || retryError?.message || 'Invalid credentials',
+            statusCode: retryError?.response?.status
+          };
+        }
+      }
+      
+      throw {
+        error: error?.response?.data?.error || error?.message || 'Invalid credentials',
+        statusCode: error?.response?.status
+      };
+    }
   },
   
   // Verify OTP after login

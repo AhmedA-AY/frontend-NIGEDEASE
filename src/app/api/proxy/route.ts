@@ -12,7 +12,13 @@ async function forwardRequest(
     // Extract the path after /api/proxy
     const pathSegments = originalPath.split('/');
     const apiPathIndex = pathSegments.findIndex(segment => segment === 'api') + 2;
-    const remainingPath = pathSegments.slice(apiPathIndex).join('/');
+    let remainingPath = pathSegments.slice(apiPathIndex).join('/');
+    
+    // Fix for auth/login vs auth/login/ discrepancy
+    // If we're dealing with auth/login, ensure the trailing slash
+    if (remainingPath === 'auth/login') {
+      remainingPath = 'auth/login/';
+    }
 
     // Create the full URL for the backend
     const url = `${targetUrl}/${remainingPath}${req.nextUrl.search || ''}`;
@@ -44,14 +50,14 @@ async function forwardRequest(
     };
 
     // Special handling for auth/login endpoint
-    if (remainingPath === 'auth/login' && method === 'POST') {
+    if ((remainingPath === 'auth/login' || remainingPath === 'auth/login/') && method === 'POST') {
       try {
         let body;
         const contentType = req.headers.get('content-type') || '';
         
         if (contentType.includes('application/json')) {
           body = await req.clone().json(); // clone the request to avoid consuming it
-          console.log('Forwarding JSON login request');
+          console.log('Forwarding JSON login request:', JSON.stringify(body));
         } else {
           body = await req.clone().text();
           try {
@@ -95,6 +101,9 @@ async function forwardRequest(
     }
 
     // Forward the request to the backend
+    console.log(`Sending ${method} request to ${url}`);
+    console.log('Request headers:', Object.fromEntries(headers));
+    
     const response = await fetch(url, requestOptions);
     
     // Debug information
@@ -105,7 +114,7 @@ async function forwardRequest(
     const contentType = response.headers.get('content-type') || 'application/json';
     
     // Log response data for debugging
-    if (remainingPath === 'auth/login') {
+    if (remainingPath === 'auth/login/' || remainingPath === 'auth/login') {
       console.log('Login response:', responseData.substring(0, 100) + '...');
     }
     
@@ -117,7 +126,7 @@ async function forwardRequest(
         'Content-Type': contentType,
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
       }
     });
   } catch (error: any) {
