@@ -1,6 +1,5 @@
 'use client';
 
-import type { Metadata } from 'next';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -31,10 +30,6 @@ import ErrorMessage from '@/components/common/error-message';
 import { CompaniesList } from '@/components/companies/companies-list';
 import { paths } from '@/paths';
 import { useCompanies } from '@/hooks/super-admin/use-companies';
-
-export const metadata: Metadata = {
-  title: 'Companies | Super Admin',
-};
 
 const Page = () => {
   const { t, i18n } = useTranslation(['super-admin', 'common']);
