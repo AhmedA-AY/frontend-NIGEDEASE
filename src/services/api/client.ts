@@ -4,6 +4,7 @@ import { paths } from '@/paths';
 
 // API Base URLs - Now using our proxy instead of direct HTTP URLs
 export const BASE_URL = typeof window !== 'undefined' ? window.location.origin : '';
+// Use proxy path that will be handled by our catch-all route
 export const USER_MANAGEMENT_API = `${BASE_URL}/api/proxy`;
 export const CORE_API = `${BASE_URL}/api/proxy`;
 
