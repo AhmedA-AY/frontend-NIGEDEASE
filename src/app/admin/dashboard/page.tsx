@@ -832,7 +832,7 @@ function ReportsSection({ storeId }: { storeId: string | undefined }) {
                                   style:
                                     key.includes('price') ||
                                     key.includes('amount') ||
-                                    key.includes('total') ||
+                                    (key.includes('total') && !key.includes('quantity')) ||
                                     key.includes('revenue') ||
                                     key.includes('profit') ||
                                     key.includes('margin') ||
