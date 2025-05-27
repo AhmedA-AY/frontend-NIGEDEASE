@@ -51,7 +51,8 @@
     "users": "Users",
     "reports": "Reports",
     "invoice_verification": "Invoice Verification",
-    "inventory_search": "Inventory Search"
+    "inventory_search": "Inventory Search",
+    "activity_logs": "Activity Logs"
   },
   "common": {
     "role": "Role",
@@ -588,5 +589,36 @@
     "product_details": "Product Details",
     "total_quantity": "Total Quantity",
     "available_in": "Available in"
+  },
+  "activity_logs": {
+    "description": "View system activity logs and user actions",
+    "search_placeholder": "Search by user, action or description...",
+    "user": "User",
+    "action": "Action",
+    "description": "Description",
+    "date": "Date",
+    "error": "Failed to load activity logs",
+    "no_results": "No activity logs found matching your search",
+    "no_logs": "No activity logs found",
+    "viewing_company": "Viewing logs for your company",
+    "no_company": "No company ID found. Please ensure you are logged in with the correct account."
+  },
+  "invoice_verification": {
+    "title": "Invoice Verification",
+    "process_invoice": "Process Invoice",
+    "invoice_url": "Enter PDF URL",
+    "upload_pdf": "Upload PDF File",
+    "upload_image": "Upload Image File",
+    "selected_file": "Selected file",
+    "process": "Process Invoice",
+    "success": "Invoice processed successfully",
+    "error": "Failed to process invoice",
+    "extracted_info": "Extracted Information",
+    "qr_success": "QR code successfully scanned",
+    "no_qr_found": "No QR code found in the image",
+    "starting_camera": "Starting camera...",
+    "scanning": "Scanning for QR code...",
+    "camera_error": "Error accessing camera",
+    "or": "OR"
   }
 } 

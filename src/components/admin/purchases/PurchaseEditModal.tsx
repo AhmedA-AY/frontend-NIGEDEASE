@@ -50,6 +50,7 @@ interface PurchaseData {
   supplier: string;  // supplier ID
   totalAmount: number;
   tax: string;
+  amount_paid?: number;
   subtotal?: number;
   taxAmount?: number;
   is_credit?: boolean;
@@ -80,6 +81,7 @@ export default function PurchaseEditModal({
     status: '',
     products: [],
     totalAmount: 0,
+    amount_paid: 0,
     subtotal: 0,
     taxAmount: 0,
     tax: '0',
@@ -280,6 +282,17 @@ export default function PurchaseEditModal({
     
     if (!formData.payment_mode_id) {
       newErrors.payment_mode_id = 'Payment mode is required';
+    }
+    
+    // Validate amount_paid is not negative
+    if (formData.amount_paid !== undefined && formData.amount_paid < 0) {
+      newErrors.amount_paid = 'Amount paid cannot be negative';
+    }
+    
+    // Validate amount_paid is not greater than total amount
+    if (formData.amount_paid !== undefined && formData.totalAmount !== undefined && 
+        formData.amount_paid > formData.totalAmount) {
+      newErrors.amount_paid = 'Amount paid cannot exceed total amount';
     }
     
     setErrors(newErrors);
@@ -521,6 +534,27 @@ export default function PurchaseEditModal({
                   />
                 }
                 label={t('purchases.credit')}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label={t('purchases.amount_paid')}
+              type="number"
+              name="amount_paid"
+              value={formData.amount_paid || 0}
+              onChange={handleChange}
+              fullWidth
+              variant="outlined"
+              margin="normal"
+              InputProps={{
+                startAdornment: currencies.find(c => c.id === formData.currency_id)?.code && (
+                  <InputAdornment position="start">
+                    {currencies.find(c => c.id === formData.currency_id)?.code}
+                  </InputAdornment>
+                ),
+              }}
+              error={!!errors.amount_paid}
+              helperText={errors.amount_paid}
             />
           </Grid>
         </Grid>

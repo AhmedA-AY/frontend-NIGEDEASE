@@ -388,6 +388,7 @@ export default function PurchasesPage(): React.JSX.Element {
         supplier_id: purchaseData.supplier,
         total_amount: purchaseData.totalAmount.toString(),
         tax: purchaseData.tax || '0',
+        amount_paid: (purchaseData.amount_paid || purchaseData.paidAmount || '0').toString(),
         currency_id: purchaseData.currency_id,
         payment_mode_id: purchaseData.payment_mode_id,
         is_credit: purchaseData.is_credit || false,
@@ -399,11 +400,18 @@ export default function PurchasesPage(): React.JSX.Element {
 
       if (purchaseData.id) {
         // Update existing purchase
-        await transactionsApi.updatePurchase(currentStore.id, purchaseData.id, createOrUpdateData);
+        await transactionsApi.updatePurchase(
+          currentStore.id, 
+          purchaseData.id, 
+          createOrUpdateData
+        );
         enqueueSnackbar(t('purchases.purchase_updated'), { variant: 'success' });
       } else {
         // Create new purchase
-        await transactionsApi.createPurchase(currentStore.id, createOrUpdateData);
+        await transactionsApi.createPurchase(
+          currentStore.id, 
+          createOrUpdateData
+        );
         enqueueSnackbar(t('purchases.purchase_created'), { variant: 'success' });
       }
 

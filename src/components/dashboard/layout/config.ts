@@ -75,6 +75,7 @@ export const adminNavItems = [
   { key: 'admin-invoice-verification', title: 'Invoice Verification', href: paths.admin.invoiceVerification, icon: 'file-text' },
   { key: 'admin-inventory-search', title: 'Inventory Search', href: paths.admin.inventorySearch, icon: 'magnifying-glass' },
   { key: 'admin-stock-transfers', title: 'Stock Transfers', href: paths.admin.stockTransfers, icon: 'arrows-left-right' },
+  { key: 'admin-activity-logs', title: 'Activity Logs', href: paths.admin.activityLogs, icon: 'clock-clockwise' },
 ] satisfies NavItemConfig[];
 
 export const stockManagerNavItems = [

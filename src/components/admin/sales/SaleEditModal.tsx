@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -38,33 +38,25 @@ interface ProductItem {
   name: string;
   quantity: number;
   unitPrice: number;
-  discount: number;
   tax: number;
   subtotal: number;
 }
 
 interface SaleData {
   id?: string;
-  customer: string;  // customer ID
-  totalAmount: number;
+  customer_id: string;
+  total_amount: number;
+  amount_paid: number;
   tax: string;
   subtotal?: number;
   taxAmount?: number;
-  is_credit?: boolean;
+  is_credit: boolean;
   company_id?: string;
-  store_id?: string;
-  currency_id?: string;
-  payment_mode_id?: string;
-  
-  // These fields can remain for UI purposes only
-  date?: string;
-  status?: string;
-  reference?: string;
-  note?: string;
+  store_id: string;
+  currency_id: string;
+  payment_mode_id: string;
   products?: ProductItem[];
-  paidAmount?: number;
-  dueAmount?: number;
-  paymentStatus?: string;
+  items?: Array<{product_id: string, quantity: string}>;
 }
 
 interface SaleEditModalProps {
@@ -80,17 +72,14 @@ export default function SaleEditModal({
   onClose,
   onSave,
   sale = {
-    date: new Date().toISOString().split('T')[0],
-    customer: '',
-    status: 'Ordered',
+    customer_id: '',
     products: [],
-    totalAmount: 0,
+    total_amount: 0,
+    amount_paid: 0,
     subtotal: 0,
     taxAmount: 0,
     tax: '0',
-    paidAmount: 0,
-    dueAmount: 0,
-    paymentStatus: 'Unpaid',
+    is_credit: false,
     company_id: '',
     store_id: '',
     currency_id: '',
@@ -99,23 +88,20 @@ export default function SaleEditModal({
   isNew = true
 }: SaleEditModalProps): React.JSX.Element {
   const [formData, setFormData] = React.useState<SaleData>({
-    date: new Date().toISOString().split('T')[0],
-    customer: '',
-    status: 'Ordered',
+    customer_id: '',
     products: [],
-    totalAmount: 0,
+    total_amount: 0,
+    amount_paid: 0,
     subtotal: 0,
     taxAmount: 0,
     tax: '0',
-    paidAmount: 0,
-    dueAmount: 0,
-    paymentStatus: 'Unpaid',
+    is_credit: false,
     company_id: '',
     store_id: '',
     currency_id: '',
     payment_mode_id: ''
   });
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [formErrors, setFormErrors] = React.useState<Record<string, string>>({});
   const [selectedProduct, setSelectedProduct] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [customers, setCustomers] = React.useState<Customer[]>([]);
@@ -157,7 +143,16 @@ export default function SaleEditModal({
             companiesApi.getCurrencies()
           ]);
           
-          setCustomers(customersData);
+          // Validate customer data has proper UUIDs
+          const validCustomers = customersData.filter(customer => 
+            customer.id && typeof customer.id === 'string' && customer.id.trim() !== ''
+          );
+          
+          if (validCustomers.length === 0) {
+            console.warn('No valid customers found with proper IDs');
+          }
+          
+          setCustomers(validCustomers);
           setProducts(productsData);
           setCompanies(companiesData);
           setStores(storesData);
@@ -260,73 +255,64 @@ export default function SaleEditModal({
       }
       
       setFormData(saleWithProducts);
-      setErrors({});
+      setFormErrors({});
       calculateTotals(saleWithProducts.products);
     }
   }, [sale, open, userInfo]);
   
   const calculateTotals = (productItems: ProductItem[]) => {
-    let subtotal = 0;
+    // Calculate subtotal
+    const subtotal = productItems.reduce((sum, item) => sum + item.subtotal, 0);
     
-    productItems.forEach(item => {
-      const itemSubtotal = (item.quantity * item.unitPrice) - item.discount;
-      subtotal += itemSubtotal;
-    });
+    // Calculate tax amount
+    const taxRate = parseFloat(formData.tax || '0') / 100;
+    const taxAmount = subtotal * taxRate;
     
-    // Calculate tax amount based on tax percentage
-    const taxPercentage = parseFloat(formData.tax) || 0;
-    const taxAmount = (subtotal * taxPercentage) / 100;
+    // Calculate total amount
+    const totalAmount = subtotal + taxAmount;
     
-    // Total amount is subtotal + tax
-    const total = subtotal + taxAmount;
-    
+    // Update form data with calculated values
     setFormData(prev => ({
       ...prev,
-      subtotal: subtotal,
-      taxAmount: taxAmount,
-      totalAmount: total,
-      dueAmount: total - (prev.paidAmount || 0),
-      paymentStatus: (prev.paidAmount || 0) >= total ? 'Paid' : ((prev.paidAmount || 0) > 0 ? 'Partially Paid' : 'Unpaid')
+      subtotal,
+      taxAmount,
+      total_amount: totalAmount,
     }));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
-    if (name === 'paidAmount') {
-      const paidAmount = parseFloat(value) || 0;
-      const paymentStatus = paidAmount >= formData.totalAmount 
-        ? 'Paid' 
-        : (paidAmount > 0 ? 'Partially Paid' : 'Unpaid');
-      
+    // Handle tax field separately for calculations
+    if (name === 'tax') {
+      const tax = parseFloat(value) || 0;
+      setFormData(prev => {
+        const newState = {
+          ...prev,
+          tax: value
+        };
+        
+        // Recalculate tax amount and total if we have products
+        if (prev.products && prev.products.length > 0) {
+          const taxRate = tax / 100;
+          const taxAmount = (prev.subtotal || 0) * taxRate;
+          newState.taxAmount = taxAmount;
+          newState.total_amount = (prev.subtotal || 0) + taxAmount;
+        }
+        
+        return newState;
+      });
+    } else {
+      // For other fields, just update the value
       setFormData(prev => ({
         ...prev,
-        paidAmount,
-        dueAmount: prev.totalAmount - paidAmount,
-        paymentStatus
+        [name]: value
       }));
-    } else if (name === 'tax') {
-      // When tax changes, first update the tax value
-      const newTax = value;
-      const taxPercentage = parseFloat(newTax) || 0;
-      const subtotal = formData.subtotal || 0;
-      const taxAmount = (subtotal * taxPercentage) / 100;
-      const total = subtotal + taxAmount;
-      
-      setFormData(prev => ({ 
-        ...prev, 
-        tax: newTax,
-        taxAmount: taxAmount,
-        totalAmount: total,
-        dueAmount: total - (prev.paidAmount || 0)
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
     }
     
     // Clear error when field is edited
-    if (errors[name]) {
-      setErrors(prev => {
+    if (formErrors[name]) {
+      setFormErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -337,15 +323,6 @@ export default function SaleEditModal({
   const handleSelectChange = (e: any) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Special handling for is_credit toggle
-    if (name === 'is_credit') {
-      setFormData(prev => ({ 
-        ...prev, 
-        is_credit: value === 'true',
-        status: value === 'true' ? 'Credit' : 'Confirmed'
-      }));
-    }
   };
 
   const handleAddProduct = () => {
@@ -361,7 +338,6 @@ export default function SaleEditModal({
       name: product.name,
       quantity: 1,
       unitPrice: unitPrice,
-      discount: 0,
       tax: 0,
       subtotal: unitPrice
     };
@@ -386,7 +362,7 @@ export default function SaleEditModal({
         const updatedProduct = { ...product, [field]: parseFloat(value) || 0 };
         
         // Recalculate subtotal for this product (not including tax, which is calculated at the order level)
-        updatedProduct.subtotal = (updatedProduct.quantity * updatedProduct.unitPrice) - updatedProduct.discount;
+        updatedProduct.subtotal = updatedProduct.quantity * updatedProduct.unitPrice;
           
         return updatedProduct;
       }
@@ -397,63 +373,135 @@ export default function SaleEditModal({
     calculateTotals(updatedProducts);
   };
 
-  // Status options for the form
-  const statusOptions = [
-    { value: 'false', label: 'Confirmed' },
-    { value: 'true', label: 'Credit' }
-  ];
-
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    const errors: Record<string, string> = {};
     
-    if (!formData.customer) {
-      newErrors.customer = 'Customer is required';
+    // Validate customer_id is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!formData.customer_id) {
+      errors.customer_id = t('sales.select_customer');
+    } else if (!uuidRegex.test(formData.customer_id)) {
+      errors.customer_id = 'Invalid customer ID format. Must be a valid UUID.';
     }
     
-    if (formData.totalAmount <= 0) {
-      newErrors.totalAmount = 'Total amount must be greater than zero';
-    }
-    
-    if (!formData.company_id) {
-      newErrors.company_id = 'Company is required. Please refresh the page to get your company information.';
-    }
-    
-    if (!formData.store_id) {
-      newErrors.store_id = 'Store is required';
-    }
-    
+    // Validate currency_id is a valid UUID
     if (!formData.currency_id) {
-      newErrors.currency_id = 'Currency is required';
+      errors.currency_id = t('purchases.currency_required');
+    } else if (!uuidRegex.test(formData.currency_id)) {
+      errors.currency_id = 'Invalid currency ID format. Must be a valid UUID.';
     }
     
+    // Validate payment_mode_id is a valid UUID
     if (!formData.payment_mode_id) {
-      newErrors.payment_mode_id = 'Payment mode is required';
+      errors.payment_mode_id = t('purchases.payment_mode_required');
+    } else if (!uuidRegex.test(formData.payment_mode_id)) {
+      errors.payment_mode_id = 'Invalid payment mode ID format. Must be a valid UUID.';
+    }
+    
+    // Validate store_id is a valid UUID
+    if (!formData.store_id) {
+      errors.store_id = t('products.store_required');
+    } else if (!uuidRegex.test(formData.store_id)) {
+      errors.store_id = 'Invalid store ID format. Must be a valid UUID.';
     }
     
     if (!formData.products || formData.products.length === 0) {
-      newErrors.products = 'At least one product is required';
+      errors.products = t('purchases.products_required');
     }
     
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // If company is required but we don't have it
+    if (!formData.company_id) {
+      errors.company_id = 'Company is required. Please refresh the page to get your company information.';
+    } else if (!uuidRegex.test(formData.company_id)) {
+      errors.company_id = 'Invalid company ID format. Must be a valid UUID.';
+    }
+    
+    // Validate amount_paid is not negative
+    if (formData.amount_paid < 0) {
+      errors.amount_paid = t('sales.amount_paid_negative');
+    }
+    
+    // Validate amount_paid is not greater than total amount
+    if (formData.amount_paid > formData.total_amount) {
+      errors.amount_paid = t('sales.amount_paid_exceeds_total');
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = () => {
     // Log the form data to see what's being submitted
     console.log('Form data before validation:', formData);
     
-    // Check company_id specifically
-    if (!formData.company_id) {
-      console.error('Company ID is missing!');
-      setErrors(prev => ({
+    // Check for empty customer_id first as this is the main issue
+    if (!formData.customer_id || formData.customer_id.trim() === '') {
+      setFormErrors(prev => ({
         ...prev,
-        company_id: 'Company is required. Please refresh the page to get your company information.'
+        customer_id: t('sales.select_customer')
+      }));
+      return;
+    }
+    
+    // Validate all required IDs are valid UUIDs
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const idFields = {
+      customer_id: 'Please select a valid customer',
+      company_id: 'Company is required. Please refresh the page to get your company information.',
+      store_id: 'Please select a valid store',
+      currency_id: 'Please select a valid currency',
+      payment_mode_id: 'Please select a valid payment method'
+    };
+    
+    const errors: Record<string, string> = {};
+    
+    // Check each ID field
+    for (const [field, message] of Object.entries(idFields)) {
+      if (!formData[field as keyof SaleData] || !uuidRegex.test(formData[field as keyof SaleData] as string)) {
+        console.error(`Invalid ${field}:`, formData[field as keyof SaleData]);
+        errors[field] = message;
+      }
+    }
+    
+    // If we have any errors, set them and return
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(prev => ({
+        ...prev,
+        ...errors
       }));
       return;
     }
     
     if (validateForm()) {
-      onSave(formData);
+      try {
+        // Transform products array into items array for API
+        const items = formData.products?.map(product => ({
+          product_id: product.id,
+          quantity: product.quantity.toString()
+        })) || [];
+        
+        // Create a new object that matches what the API expects
+        const apiData: SaleData = {
+          store_id: formData.store_id.trim(),
+          customer_id: formData.customer_id.trim(),
+          currency_id: formData.currency_id.trim(),
+          payment_mode_id: formData.payment_mode_id.trim(),
+          is_credit: formData.is_credit,
+          tax: formData.tax,
+          total_amount: formData.total_amount,
+          amount_paid: formData.amount_paid || 0,
+          items: items
+        };
+        
+        console.log('Submitting data to API:', apiData);
+        onSave(apiData);
+      } catch (error) {
+        console.error('Error preparing data for submission:', error);
+        setFormErrors(prev => ({
+          ...prev,
+          general: 'Error preparing data for submission'
+        }));
+      }
     }
   };
 
@@ -472,71 +520,40 @@ export default function SaleEditModal({
           </Box>
         ) : (
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={3}>
-              <TextField
-                name="date"
-                label={t('sales.sale_date')}
-                type="date"
-                fullWidth
-                value={formData.date}
-                onChange={handleChange}
-                error={!!errors.date}
-                helperText={errors.date}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.customer}>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth error={!!formErrors.customer_id} required>
                 <InputLabel id="customer-select-label">{t('sales.sale_customer')}</InputLabel>
                 <Select
                   labelId="customer-select-label"
-                  id="customer"
-                  name="customer"
-                  value={formData.customer}
+                  id="customer_id"
+                  name="customer_id"
+                  value={formData.customer_id}
                   label={t('sales.sale_customer')}
                   onChange={handleSelectChange}
+                  error={!!formErrors.customer_id}
                 >
-                  {customers.map(customer => (
-                    <MenuItem key={customer.id} value={customer.id}>{customer.name}</MenuItem>
-                  ))}
-                </Select>
-                {errors.customer && <Typography color="error" variant="caption">{errors.customer}</Typography>}
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth margin="normal" error={!!errors.status}>
-                <InputLabel>{t('sales.sale_status')}</InputLabel>
-                <Select
-                  name="is_credit"
-                  value={String(formData.is_credit)}
-                  onChange={handleSelectChange}
-                  label={t('sales.sale_status')}
-                >
-                  {statusOptions.map(option => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.value === 'false' ? t('sales.confirmed') : t('sales.credit')}
+                  {customers.length > 0 ? (
+                    customers.map(customer => (
+                      <MenuItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled value="">
+                      {t('common.no_customers_available')}
                     </MenuItem>
-                  ))}
+                  )}
                 </Select>
-                {errors.status && <Typography color="error" variant="caption">{errors.status}</Typography>}
+                {formErrors.customer_id && (
+                  <Typography color="error" variant="caption">
+                    {formErrors.customer_id}
+                  </Typography>
+                )}
               </FormControl>
             </Grid>
             
-            <Grid item xs={12} md={3}>
-              <TextField
-                name="reference"
-                label={t('sales.reference_number')}
-                type="text"
-                fullWidth
-                value={formData.reference || ''}
-                onChange={handleChange}
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.company_id} disabled>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth error={!!formErrors.company_id} disabled>
                 <InputLabel id="company-select-label">{t('common.company')}</InputLabel>
                 <Select
                   labelId="company-select-label"
@@ -557,12 +574,12 @@ export default function SaleEditModal({
                     </MenuItem>
                   ))}
                 </Select>
-                {errors.company_id && <Typography color="error" variant="caption">{errors.company_id}</Typography>}
+                {formErrors.company_id && <Typography color="error" variant="caption">{formErrors.company_id}</Typography>}
               </FormControl>
             </Grid>
             
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.store_id}>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth error={!!formErrors.store_id}>
                 <InputLabel id="store-select-label">{t('common.store')}</InputLabel>
                 <Select
                   labelId="store-select-label"
@@ -588,12 +605,12 @@ export default function SaleEditModal({
                     ))
                   )}
                 </Select>
-                {errors.store_id && <Typography color="error" variant="caption">{errors.store_id}</Typography>}
+                {formErrors.store_id && <Typography color="error" variant="caption">{formErrors.store_id}</Typography>}
               </FormControl>
             </Grid>
             
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.currency_id}>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth error={!!formErrors.currency_id}>
                 <InputLabel id="currency-select-label">{t('common.currency')}</InputLabel>
                 <Select
                   labelId="currency-select-label"
@@ -607,12 +624,12 @@ export default function SaleEditModal({
                     <MenuItem key={currency.id} value={currency.id}>{currency.name}</MenuItem>
                   ))}
                 </Select>
-                {errors.currency_id && <Typography color="error" variant="caption">{errors.currency_id}</Typography>}
+                {formErrors.currency_id && <Typography color="error" variant="caption">{formErrors.currency_id}</Typography>}
               </FormControl>
             </Grid>
             
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth error={!!errors.payment_mode_id}>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth error={!!formErrors.payment_mode_id}>
                 <InputLabel id="payment-mode-label">{t('sales.payment_method')}</InputLabel>
                 <Select
                   labelId="payment-mode-label"
@@ -626,11 +643,11 @@ export default function SaleEditModal({
                     <MenuItem key={mode.id} value={mode.id}>{mode.name}</MenuItem>
                   ))}
                 </Select>
-                {errors.payment_mode_id && <Typography color="error" variant="caption">{errors.payment_mode_id}</Typography>}
+                {formErrors.payment_mode_id && <Typography color="error" variant="caption">{formErrors.payment_mode_id}</Typography>}
               </FormControl>
             </Grid>
             
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <TextField
                 name="tax"
                 label={t('sales.tax')}
@@ -648,7 +665,7 @@ export default function SaleEditModal({
             
             <Grid item xs={12}>
               <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="subtitle1">Products</Typography>
+                <Typography variant="subtitle1">{t('sales.products')}</Typography>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <FormControl sx={{ minWidth: 200 }}>
                     <InputLabel id="product-select-label">{t('sales.select_product')}</InputLabel>
@@ -666,8 +683,8 @@ export default function SaleEditModal({
                       ))}
                     </Select>
                   </FormControl>
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     onClick={handleAddProduct}
                     startIcon={<PlusIcon weight="bold" />}
                     sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
@@ -677,10 +694,10 @@ export default function SaleEditModal({
                   </Button>
                 </Box>
               </Box>
-              
-              {errors.products && (
+
+              {formErrors.products && (
                 <Typography color="error" variant="caption" sx={{ mb: 1, display: 'block' }}>
-                  {errors.products}
+                  {formErrors.products}
                 </Typography>
               )}
               
@@ -692,7 +709,6 @@ export default function SaleEditModal({
                         <TableCell>{t('products.product_name')}</TableCell>
                         <TableCell align="right">{t('sales.quantity')}</TableCell>
                         <TableCell align="right">{t('sales.price')}</TableCell>
-                        <TableCell align="right">{t('sales.discount')}</TableCell>
                         <TableCell align="right">{t('sales.subtotal')}</TableCell>
                         <TableCell align="center">{t('common.actions')}</TableCell>
                       </TableRow>
@@ -722,17 +738,7 @@ export default function SaleEditModal({
                             />
                           </TableCell>
                           <TableCell align="right">
-                            <TextField
-                              type="number"
-                              value={product.discount}
-                              onChange={(e) => handleProductChange(product.id, 'discount', e.target.value)}
-                              size="small"
-                              InputProps={{ inputProps: { min: 0, step: 0.01, style: { textAlign: 'right' } } }}
-                              sx={{ width: '100px' }}
-                            />
-                          </TableCell>
-                          <TableCell align="right">
-                            ${((product.quantity * product.unitPrice) - product.discount).toFixed(2)}
+                            ${(product.quantity * product.unitPrice).toFixed(2)}
                           </TableCell>
                           <TableCell align="center">
                             <IconButton
@@ -748,25 +754,25 @@ export default function SaleEditModal({
                       
                       {/* Calculate subtotal, tax, and total */}
                       <TableRow>
-                        <TableCell colSpan={4} align="right"><strong>{t('sales.subtotal')}:</strong></TableCell>
+                        <TableCell colSpan={3} align="right"><strong>{t('sales.subtotal')}:</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
                           <strong>
-                            ${(formData.subtotal || formData.products.reduce((sum, product) => sum + ((product.quantity * product.unitPrice) - product.discount), 0)).toFixed(2)}
+                            ${(formData.subtotal || formData.products.reduce((sum, product) => sum + (product.quantity * product.unitPrice), 0)).toFixed(2)}
                           </strong>
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell colSpan={4} align="right"><strong>{t('sales.tax')} ({formData.tax || 0}%):</strong></TableCell>
+                        <TableCell colSpan={3} align="right"><strong>{t('sales.tax')} ({formData.tax || 0}%):</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
                           <strong>
-                            ${(formData.taxAmount || ((parseFloat(formData.tax) / 100) * (formData.subtotal || formData.products.reduce((sum, product) => sum + ((product.quantity * product.unitPrice) - product.discount), 0)))).toFixed(2)}
+                            ${(formData.taxAmount || ((parseFloat(formData.tax) / 100) * (formData.subtotal || formData.products.reduce((sum, product) => sum + (product.quantity * product.unitPrice), 0)))).toFixed(2)}
                           </strong>
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell colSpan={4} align="right"><strong>{t('sales.total')}:</strong></TableCell>
+                        <TableCell colSpan={3} align="right"><strong>{t('sales.total')}:</strong></TableCell>
                         <TableCell align="right" colSpan={2}>
-                          <strong>${(formData.totalAmount || ((formData.subtotal || 0) + (formData.taxAmount || 0))).toFixed(2)}</strong>
+                          <strong>${(formData.total_amount || ((formData.subtotal || 0) + (formData.taxAmount || 0))).toFixed(2)}</strong>
                         </TableCell>
                       </TableRow>
                     </TableBody>
@@ -776,61 +782,69 @@ export default function SaleEditModal({
             </Grid>
             
             <Grid item xs={12}>
-              <TextField
-                name="note"
-                label={t('sales.purchase_notes')}
-                multiline
-                rows={2}
-                fullWidth
-                value={formData.note || ''}
-                onChange={handleChange}
-              />
-            </Grid>
-            
-            <Grid item xs={12}>
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'flex-end',
-                gap: 1,
-                mt: 2
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>{t('sales.total')}:</Typography>
-                  <Typography variant="subtitle1">${formData.totalAmount.toFixed(2)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>{t('sales.paid')}:</Typography>
-                  <TextField
-                    name="paidAmount"
-                    type="number"
-                    value={formData.paidAmount}
-                    onChange={handleChange}
-                    InputProps={{ startAdornment: '$' }}
-                    size="small"
-                    sx={{ width: 120 }}
-                  />
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>{t('common.due_amount')}:</Typography>
-                  <Typography variant="subtitle1" color={(formData.dueAmount || 0) > 0 ? 'error' : 'success'}>
-                    ${(formData.dueAmount || 0).toFixed(2)}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ minWidth: 150 }}>{t('sales.payment_status')}:</Typography>
-                  <Typography variant="subtitle1" 
-                    color={
-                      formData.paymentStatus === 'Paid' 
-                        ? 'success' 
-                        : formData.paymentStatus === 'Partially Paid' 
-                          ? 'warning'
-                          : 'error'
-                    }
-                  >
-                    {formData.paymentStatus}
-                  </Typography>
-                </Box>
+              <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
+                {t('sales.payment_details')}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  label={t('sales.subtotal')}
+                  value={formData.subtotal?.toFixed(2) || '0.00'}
+                  InputProps={{
+                    readOnly: true,
+                    startAdornment: <InputAdornment position="start">
+                      {currencies.find(c => c.id === formData.currency_id)?.code || ''}
+                    </InputAdornment>,
+                  }}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                />
+                
+                <TextField
+                  label={t('common.tax') + ` (${formData.tax}%)`}
+                  value={formData.taxAmount?.toFixed(2) || '0.00'}
+                  InputProps={{
+                    readOnly: true,
+                    startAdornment: <InputAdornment position="start">
+                      {currencies.find(c => c.id === formData.currency_id)?.code || ''}
+                    </InputAdornment>,
+                  }}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                />
+                
+                <TextField
+                  label={t('sales.total_amount')}
+                  value={formData.total_amount?.toFixed(2) || '0.00'}
+                  InputProps={{
+                    readOnly: true,
+                    startAdornment: <InputAdornment position="start">
+                      {currencies.find(c => c.id === formData.currency_id)?.code || ''}
+                    </InputAdornment>,
+                  }}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                />
+                
+                <TextField
+                  name="amount_paid"
+                  label={t('sales.amount_paid')}
+                  type="number"
+                  value={formData.amount_paid || 0}
+                  onChange={handleChange}
+                  error={!!formErrors.amount_paid}
+                  helperText={formErrors.amount_paid}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">
+                      {currencies.find(c => c.id === formData.currency_id)?.code || ''}
+                    </InputAdornment>,
+                  }}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                />
               </Box>
             </Grid>
           </Grid>

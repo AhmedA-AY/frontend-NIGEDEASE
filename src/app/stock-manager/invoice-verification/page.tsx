@@ -93,31 +93,65 @@ export default function StockManagerInvoiceVerificationPage() {
     setIsLoading(true);
     setResult(null);
 
-    const formData = new FormData();
-    if (url) {
-      formData.append('url', url);
-    }
-    if (selectedFile) {
-      formData.append('pdf_file', selectedFile);
-    }
-
+    // Use the external OCR service
+    const OCR_SERVICE_URL = 'https://ocr-uwkr.onrender.com/process_invoice';
+    
     try {
-      const response = await fetch('http://localhost:5000/process_invoice', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      let ocrFormData;
+      
+      if (url) {
+        // If we have a URL, we need to send it to the OCR service
+        // The OCR service expects a PDF URL
+        console.log("Sending URL to OCR service:", url);
+        
+        // The url key is the one expected by the OCR service
+        ocrFormData = new FormData();
+        ocrFormData.append('url', url.trim());
+        
+        // Log the form data
+        console.log(`Form data: url=${url.trim()}`);
+        
+        const response = await fetch(OCR_SERVICE_URL, {
+          method: 'POST',
+          body: ocrFormData,
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OCR service error response:', errorText);
+          throw new Error(`Error: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        setResult(data);
+        enqueueSnackbar(t('invoice_verification.success'), { variant: 'success' });
+      } else if (selectedFile) {
+        // If we have a file, we need to send it to the OCR service
+        console.log("Sending file to OCR service:", selectedFile.name);
+        
+        ocrFormData = new FormData();
+        ocrFormData.append('pdf_file', selectedFile);
+        
+        const response = await fetch(OCR_SERVICE_URL, {
+          method: 'POST',
+          body: ocrFormData,
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OCR service error response:', errorText);
+          throw new Error(`Error: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
         setResult(data);
         enqueueSnackbar(t('invoice_verification.success'), { variant: 'success' });
       } else {
-        enqueueSnackbar(data.error || t('invoice_verification.error'), { variant: 'error' });
+        throw new Error('Please provide a URL or upload a file');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing invoice:', error);
-      enqueueSnackbar(t('invoice_verification.error'), { variant: 'error' });
+      enqueueSnackbar(error.message || t('invoice_verification.error'), { variant: 'error' });
     } finally {
       setIsLoading(false);
     }

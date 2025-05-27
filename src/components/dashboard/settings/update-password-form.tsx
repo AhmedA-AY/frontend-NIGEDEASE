@@ -17,6 +17,7 @@ import Collapse from '@mui/material/Collapse';
 import FormHelperText from '@mui/material/FormHelperText';
 import { useState } from 'react';
 import { authApi } from '@/services/api/auth';
+import tokenStorage from '@/utils/token-storage';
 
 export function UpdatePasswordForm(): React.JSX.Element {
   const [formData, setFormData] = useState({
@@ -79,6 +80,27 @@ export function UpdatePasswordForm(): React.JSX.Element {
     setSaveError(null);
     
     try {
+      // First try to verify the old password
+      try {
+        const userInfo = tokenStorage.getUserInfo();
+        if (!userInfo || !userInfo.email) {
+          throw new Error('User information not available');
+        }
+        
+        // We can attempt to login with the old password to verify it's correct
+        await authApi.login(userInfo.email, formData.current_password);
+      } catch (error: any) {
+        // If login fails, the old password is incorrect
+        if (error?.response?.status === 401) {
+          setSaveError('Current password is incorrect. Please try again.');
+          setIsSubmitting(false);
+          return;
+        }
+        // If there's another error, proceed with the password change anyway
+        console.warn('Could not verify old password, proceeding with change:', error);
+      }
+      
+      // Proceed with password change
       await authApi.changePassword({
         old_password: formData.current_password,
         new_password: formData.new_password

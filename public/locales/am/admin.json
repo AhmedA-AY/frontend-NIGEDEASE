@@ -630,5 +630,23 @@
     "product_details": "የምርት ዝርዝሮች",
     "total_quantity": "ጠቅላላ ብዛት",
     "available_in": "የሚገኝበት"
+  },
+  "invoice_verification": {
+    "title": "የደረሰኝ ማረጋገጫ",
+    "process_invoice": "ደረሰኝ ማስኬድ",
+    "invoice_url": "የPDF ሊንክ ያስገቡ",
+    "upload_pdf": "የPDF ፋይል አስገባ",
+    "upload_image": "የምስል ፋይል አስገባ",
+    "selected_file": "የተመረጠው ፋይል",
+    "process": "ደረሰኝ ማስኬድ",
+    "success": "ደረሰኝ በተሳካ ሁኔታ ተስኳል",
+    "error": "ደረሰኝ ማስኬድ አልተቻለም",
+    "extracted_info": "የተገኘ መረጃ",
+    "qr_success": "QR ኮድ በተሳካ ሁኔታ ተሰካኗል",
+    "no_qr_found": "በምስሉ ውስጥ QR ኮድ አልተገኘም",
+    "starting_camera": "ካሜራ በመጀመር ላይ...",
+    "scanning": "QR ኮድ በመፈለግ ላይ...",
+    "camera_error": "ካሜራን ለመድረስ ስህተት",
+    "or": "ወይም"
   }
 } 

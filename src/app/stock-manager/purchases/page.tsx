@@ -135,7 +135,7 @@ export default function PurchasesPage(): React.JSX.Element {
 
   // Calculate total amounts
   const totalAmount = filteredPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.total_amount), 0);
-  const totalPaid = 0; // Not available directly from the API
+  const totalPaid = filteredPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.amount_paid || '0'), 0);
   const totalDue = totalAmount - totalPaid;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -244,16 +244,17 @@ export default function PurchasesPage(): React.JSX.Element {
           status: purchaseToEdit.is_credit ? 'Credit' : 'Paid',
           products: products,
           totalAmount: parseFloat(purchaseToEdit.total_amount),
-          paidAmount: 0, // Not available directly
-          dueAmount: parseFloat(purchaseToEdit.total_amount), // Assuming full amount is due
+          amount_paid: parseFloat(purchaseToEdit.amount_paid || '0'), // Use amount_paid from API
+          paidAmount: parseFloat(purchaseToEdit.amount_paid || '0'), // Update paidAmount with amount_paid
+          dueAmount: parseFloat(purchaseToEdit.total_amount) - parseFloat(purchaseToEdit.amount_paid || '0'), // Calculate due amount
           paymentStatus: purchaseToEdit.is_credit ? 'Unpaid' : 'Paid',
           store_id: purchaseToEdit.store.id,
           payment_mode_id: purchaseToEdit.payment_mode.id,
           is_credit: purchaseToEdit.is_credit
         });
         
-      setIsPurchaseModalOpen(true);
-      handleMenuClose(id);
+        setIsPurchaseModalOpen(true);
+        handleMenuClose(id);
       } catch (error) {
         console.error('Error fetching purchase items:', error);
         enqueueSnackbar('Failed to fetch purchase details', { variant: 'error' });
@@ -375,53 +376,64 @@ export default function PurchasesPage(): React.JSX.Element {
       
     setIsLoading(true);
     try {
-      // Calculate total amount from items
-      const totalAmount = purchaseData.products.reduce((sum: number, item: any) => {
-        const product = products.find(p => p.id === item.id);
-        const price = product ? parseFloat(product.purchase_price || '0') : 0;
-        return sum + (item.quantity * price);
-      }, 0);
-      
-      // Default currency if not provided but currencies are available
-      const currencyId = purchaseData.currency_id || (currencies.length > 0 ? currencies[0].id : null);
-      
-      if (!currencyId) {
-        throw new Error('No valid currency available');
-      }
-      
-      // Make sure we have all required fields
+      // Convert form data to API format
       const formattedData = {
         store_id: currentStore.id,
         supplier_id: purchaseData.supplier,
-        total_amount: totalAmount.toString(),
+        total_amount: purchaseData.totalAmount.toString(),
+        amount_paid: (purchaseData.amount_paid || purchaseData.paidAmount || 0).toString(), // Include amount_paid
+        tax: '0', // Default tax value
+        currency_id: purchaseData.currency_id,
         payment_mode_id: purchaseData.payment_mode_id,
-        is_credit: purchaseData.is_credit,
-        currency_id: currencyId,
-        tax: "0",
+        is_credit: purchaseData.is_credit || false,
         items: purchaseData.products.map((product: any) => ({
           product_id: product.id,
           quantity: product.quantity.toString()
         }))
       };
+
+      let savedPurchase;
       
       if (purchaseData.id) {
         // Update existing purchase
-        await transactionsApi.updatePurchase(currentStore.id, purchaseData.id, formattedData);
+        savedPurchase = await transactionsApi.updatePurchase(currentStore.id, purchaseData.id, formattedData);
         enqueueSnackbar('Purchase updated successfully', { variant: 'success' });
       } else {
         // Create new purchase
-        await transactionsApi.createPurchase(currentStore.id, formattedData);
+        savedPurchase = await transactionsApi.createPurchase(currentStore.id, formattedData);
         enqueueSnackbar('Purchase created successfully', { variant: 'success' });
       }
       
+      // Check if there's a partial payment (amount_paid < total_amount)
+      const totalAmount = parseFloat(formattedData.total_amount);
+      const amountPaid = parseFloat(formattedData.amount_paid);
+      
+      if (amountPaid < totalAmount && savedPurchase) {
+        // Calculate the outstanding amount
+        const outstandingAmount = (totalAmount - amountPaid).toString();
+        
+        // Create a payable record for the outstanding amount
+        try {
+          const payableData = {
+            store_id: currentStore.id,
+            purchase: savedPurchase.id,
+            amount: outstandingAmount,
+            currency: formattedData.currency_id
+          };
+          
+          await financialsApi.createPayable(currentStore.id, payableData);
+          console.log('Payable created for outstanding amount:', outstandingAmount);
+        } catch (error) {
+          console.error('Error creating payable:', error);
+          enqueueSnackbar('Purchase saved but failed to record payable', { variant: 'warning' });
+        }
+      }
+      
       setIsPurchaseModalOpen(false);
-      fetchData();
-    } catch (error: any) {
+      fetchData(); // Refresh the data
+    } catch (error) {
       console.error('Error saving purchase:', error);
-      const errorMessage = error?.response?.data?.non_field_errors?.[0] || 
-                          error?.message || 
-                          'Failed to save purchase';
-      enqueueSnackbar(errorMessage, { variant: 'error' });
+      enqueueSnackbar('Failed to save purchase', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -603,8 +615,8 @@ export default function PurchasesPage(): React.JSX.Element {
                   />
                 </TableCell>
                       <TableCell>${parseFloat(purchase.total_amount).toFixed(2)}</TableCell>
-                      <TableCell>$0.00</TableCell>
-                      <TableCell>${parseFloat(purchase.total_amount).toFixed(2)}</TableCell>
+                      <TableCell>${parseFloat(purchase.amount_paid || '0').toFixed(2)}</TableCell>
+                      <TableCell>${(parseFloat(purchase.total_amount) - parseFloat(purchase.amount_paid || '0')).toFixed(2)}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <IconButton onClick={(e) => {
                           e.stopPropagation();

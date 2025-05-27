@@ -315,19 +315,47 @@ export default function SalesPage(): React.JSX.Element {
     
     setIsLoading(true);
     try {
+      // Log the incoming data for debugging
+      console.log('Original sale data:', saleData);
+      
+      // Safely convert values and handle undefined
+      const safeToString = (value: any) => {
+        if (value === undefined || value === null) {
+          return '0';
+        }
+        return value.toString();
+      };
+      
       const formattedData = {
         store_id: currentStore.id,
-        customer_id: saleData.customer,
-        total_amount: saleData.totalAmount.toString(),
-        tax: saleData.tax || '0',
+        customer_id: saleData.customer_id || saleData.customer,
+        total_amount: safeToString(saleData.total_amount || saleData.totalAmount),
+        tax: safeToString(saleData.tax || '0'),
+        amount_paid: safeToString(saleData.amount_paid || 0),
         currency_id: saleData.currency_id,
         payment_mode_id: saleData.payment_mode_id,
-        is_credit: saleData.is_credit,
-        items: saleData.products.map((product: any) => ({
-          product_id: product.id,
-          quantity: product.quantity.toString()
-        }))
+        is_credit: Boolean(saleData.is_credit),
+        items: []
       };
+      
+      // Only add items if products exist and are in an array
+      if (Array.isArray(saleData.products) && saleData.products.length > 0) {
+        formattedData.items = saleData.products.map((product: any) => {
+          return {
+            product_id: product.product_id || product.id,
+            quantity: safeToString(product.quantity)
+          };
+        });
+      }
+      
+      console.log('Formatted data for API:', formattedData);
+      
+      // Check if items array is empty before sending to API
+      if (!formattedData.items || formattedData.items.length === 0) {
+        enqueueSnackbar(t('sales.error_no_items'), { variant: 'error' });
+        setIsLoading(false);
+        return;
+      }
       
       let saleId;
       
@@ -350,7 +378,7 @@ export default function SalesPage(): React.JSX.Element {
           const receivableData = {
             store_id: currentStore.id,
             sale: saleId,
-            amount: saleData.totalAmount.toString(),
+            amount: safeToString(saleData.total_amount || saleData.totalAmount),
             currency: saleData.currency_id
           };
           

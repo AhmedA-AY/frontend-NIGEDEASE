@@ -58,6 +58,7 @@ export const paths = {
     profile: '/stock-manager/profile',
     inventorySearch: '/stock-manager/inventory-search',
     stockTransfers: '/stock-manager/stock-transfers',
+    sales: '/stock-manager/sales',
   },
   superAdmin: {
     dashboard: '/super-admin/dashboard',
@@ -82,4 +83,4 @@ export const paths = {
     inventorySearch: '/salesman/inventory-search',
   },
   errors: { notFound: '/errors/not-found' },
-} as const;
+} as const; 

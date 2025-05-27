@@ -649,5 +649,23 @@
     "product_details": "Ibsa Oomishaa",
     "total_quantity": "Hamma Waliigala",
     "available_in": "Kan argamu"
+  },
+  "invoice_verification": {
+    "title": "Mirkaneessa Invooysii",
+    "process_invoice": "Invooysii Qindeessuu",
+    "invoice_url": "URL PDF Galchi",
+    "upload_pdf": "Faayilii PDF Olkaa'i",
+    "upload_image": "Faayilii Suuraa Olkaa'i",
+    "selected_file": "Faayilii filatame",
+    "process": "Invooysii Qindeessuu",
+    "success": "Invooysiin milkaa'inaan qindaa'e",
+    "error": "Invooysii qindeessuun hin milkoofne",
+    "extracted_info": "Odeeffannoo Baafame",
+    "qr_success": "Koodiin QR milkaa'inaan skaan ta'e",
+    "no_qr_found": "Suuraa keessatti koodiin QR hin argamne",
+    "starting_camera": "Kaameeraa jalqabaa jira...",
+    "scanning": "Koodii QR barbaadaa jira...",
+    "camera_error": "Kaameeraa argachuuf dogoggora",
+    "or": "YOOKAAN"
   }
 } 

@@ -58,9 +58,7 @@ const subscriptionPlanSchema = zod.object({
   description: zod.string().min(1, 'Description is required').max(500, 'Description must be 500 characters or less'),
   price: zod.string().min(1, 'Price is required').refine(val => !isNaN(Number(val)), { message: 'Price must be a valid number' }),
   billing_cycle: zod.enum(['monthly', 'yearly'], { required_error: 'Billing cycle is required' }),
-  features: zod.string().min(1, 'Features are required').max(1000, 'Features must be 1000 characters or less'),
   is_active: zod.boolean(),
-  storage_limit_gb: zod.number().min(1, 'Storage limit must be at least 1GB'),
   duration_in_months: zod.number().min(1, 'Duration must be at least 1 month'),
   max_products: zod.number().min(1, 'Max products must be at least 1'),
   max_stores: zod.number().min(1, 'Max stores must be at least 1'),
@@ -92,9 +90,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     description: '',
     price: '',
     billing_cycle: 'monthly',
-    features: '',
     is_active: true,
-    storage_limit_gb: 10,
     duration_in_months: 1,
     max_products: 100,
     max_stores: 5,
@@ -162,9 +158,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
     setValue('description', plan.description);
     setValue('price', plan.price);
     setValue('billing_cycle', plan.billing_cycle);
-    setValue('features', plan.features);
     setValue('is_active', plan.is_active);
-    setValue('storage_limit_gb', plan.storage_limit_gb);
     setValue('duration_in_months', plan.duration_in_months || 1);
     setValue('max_products', plan.max_products || 100);
     setValue('max_stores', plan.max_stores || 5);
@@ -191,13 +185,11 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
       const formattedData = {
         ...planData,
         // Ensure numeric fields are sent as proper data types
-        storage_limit_gb: Number(planData.storage_limit_gb),
         price: String(planData.price),
         duration_in_months: Number(planData.duration_in_months || 1),
         max_products: Number(planData.max_products || 100),
         max_stores: Number(planData.max_stores || 5),
         max_customers: Number(planData.max_customers || 10),
-        features: String(planData.features),
         is_active: Boolean(planData.is_active)
       };
       
@@ -235,13 +227,9 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
         if (planData.description !== currentPlan.description) changedFields.description = planData.description;
         if (planData.price !== currentPlan.price) changedFields.price = planData.price;
         if (planData.billing_cycle !== currentPlan.billing_cycle) changedFields.billing_cycle = planData.billing_cycle;
-        if (planData.features !== currentPlan.features) changedFields.features = planData.features;
         if (planData.is_active !== currentPlan.is_active) changedFields.is_active = planData.is_active;
         
         // For numeric fields, compare and convert if changed
-        if (planData.storage_limit_gb !== currentPlan.storage_limit_gb) 
-          changedFields.storage_limit_gb = Number(planData.storage_limit_gb);
-        
         if (planData.duration_in_months !== currentPlan.duration_in_months) 
           changedFields.duration_in_months = Number(planData.duration_in_months || 1);
         
@@ -264,13 +252,10 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
               id,
               data: {
                 ...planData,
-                storage_limit_gb: Number(planData.storage_limit_gb),
-                price: String(planData.price),
                 duration_in_months: Number(planData.duration_in_months || 1),
                 max_products: Number(planData.max_products || 100),
                 max_stores: Number(planData.max_stores || 5),
                 max_customers: Number(planData.max_customers || 10),
-                features: String(planData.features),
                 is_active: Boolean(planData.is_active)
               } as SubscriptionPlanData
             });
@@ -396,7 +381,6 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                         <TableCell>{t('subscription_plans.columns.name')}</TableCell>
                         <TableCell>{t('subscription_plans.columns.price')}</TableCell>
                         <TableCell>{t('subscription_plans.columns.billing_cycle')}</TableCell>
-                        <TableCell>{t('subscription_plans.columns.storage')}</TableCell>
                         <TableCell>{t('subscription_plans.columns.max_products')}</TableCell>
                         <TableCell>{t('subscription_plans.columns.max_stores')}</TableCell>
                         <TableCell>{t('subscription_plans.columns.max_customers')}</TableCell>
@@ -412,7 +396,6 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                           <TableCell>
                             {plan.billing_cycle === 'monthly' ? t('subscription_plans.monthly') : t('subscription_plans.yearly')}
                           </TableCell>
-                          <TableCell>{plan.storage_limit_gb || 0}</TableCell>
                           <TableCell>{plan.max_products || 0}</TableCell>
                           <TableCell>{plan.max_stores || 0}</TableCell>
                           <TableCell>{plan.max_customers || 0}</TableCell>
@@ -460,7 +443,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       ))}
                       {paginatedPlans?.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={9} align="center">
+                          <TableCell colSpan={8} align="center">
                             {searchQuery 
                               ? t('subscription_plans.no_results') 
                               : t('subscription_plans.no_plans')}
@@ -570,42 +553,7 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       />
                     </Box>
                     
-                    <Controller
-                      name="features"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          label={t('subscription_plans.form.features')}
-                          error={!!errors.features}
-                          helperText={errors.features?.message || t('subscription_plans.form.features_helper')}
-                          fullWidth
-                          multiline
-                          rows={3}
-                          required
-                        />
-                      )}
-                    />
-                    
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Controller
-                        name="storage_limit_gb"
-                        control={control}
-                        render={({ field: { onChange, value, ...rest } }) => (
-                          <TextField
-                            {...rest}
-                            value={value}
-                            onChange={(e) => onChange(Number(e.target.value))}
-                            label={t('subscription_plans.form.storage_limit')}
-                            type="number"
-                            error={!!errors.storage_limit_gb}
-                            helperText={errors.storage_limit_gb?.message}
-                            fullWidth
-                            required
-                          />
-                        )}
-                      />
-                      
                       <Controller
                         name="duration_in_months"
                         control={control}
@@ -805,15 +753,6 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                     
                     <Grid item xs={6} md={4}>
                       <Typography variant="subtitle2" color="text.secondary">
-                        {t('subscription_plans.columns.storage')}
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedPlan.storage_limit_gb} GB
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={6} md={4}>
-                      <Typography variant="subtitle2" color="text.secondary">
                         {t('subscription_plans.columns.max_products')}
                       </Typography>
                       <Typography variant="body1">
@@ -852,26 +791,13 @@ export default function SubscriptionPlansPage(): React.JSX.Element {
                       <Divider />
                     </Grid>
                     
-                    <Grid item xs={12}>
+                    <Grid item xs={6} md={4}>
                       <Typography variant="subtitle2" color="text.secondary">
-                        {t('subscription_plans.columns.features')}
+                        {t('subscription_plans.form.duration')}
                       </Typography>
-                      {typeof selectedPlan.features === 'string' && selectedPlan.features.split(',').map((feature: string, index: number) => (
-                        <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                          <Box
-                            component="span"
-                            sx={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: '50%',
-                              backgroundColor: 'primary.main',
-                              display: 'inline-block',
-                              mr: 1.5
-                            }}
-                          />
-                          {feature.trim()}
-                        </Typography>
-                      ))}
+                      <Typography variant="body1">
+                        {selectedPlan.duration_in_months} {t('subscription_plans.months', 'months')}
+                      </Typography>
                     </Grid>
                   </Grid>
                 </DialogContent>

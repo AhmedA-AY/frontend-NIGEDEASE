@@ -213,6 +213,22 @@ export default function ProfilePage() {
     setPasswordUpdateSuccess(false);
     
     try {
+      // First try to verify the old password
+      try {
+        // We can attempt to login with the old password to verify it's correct
+        await authApi.login(profileData.email, passwordData.old_password);
+      } catch (error: any) {
+        // If login fails, the old password is incorrect
+        if (error?.response?.status === 401) {
+          enqueueSnackbar('Current password is incorrect', { variant: 'error' });
+          setIsChangingPassword(false);
+          return;
+        }
+        // If there's another error, proceed with the password change anyway
+        console.warn('Could not verify old password, proceeding with change:', error);
+      }
+      
+      // Proceed with password change
       await authApi.changePassword({
         old_password: passwordData.old_password,
         new_password: passwordData.new_password,

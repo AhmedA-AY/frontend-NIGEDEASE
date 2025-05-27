@@ -272,27 +272,57 @@ export default function SalesPage(): React.JSX.Element {
 
   const handleSaveSale = async (saleData: any) => {
     if (!currentStore) {
-      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      enqueueSnackbar('Please select a store', { variant: 'warning' });
       return;
     }
     
     setIsLoading(true);
     try {
+      // Log the incoming data for debugging
+      console.log('Original sale data:', saleData);
+      
+      // Safely convert values and handle undefined
+      const safeToString = (value: any) => {
+        if (value === undefined || value === null) {
+          return '0';
+        }
+        return value.toString();
+      };
+
+      // Create a formatted data object with default empty arrays for items if missing
       const formattedData = {
         store_id: currentStore.id,
-        customer_id: saleData.customer,
-        total_amount: saleData.totalAmount.toString(),
-        tax: saleData.tax || '0',
+        customer_id: saleData.customer_id || saleData.customer,
+        total_amount: safeToString(saleData.total_amount || saleData.totalAmount),
+        tax: safeToString(saleData.tax || '0'),
+        amount_paid: safeToString(saleData.amount_paid || 0),
         currency_id: saleData.currency_id,
         payment_mode_id: saleData.payment_mode_id,
-        is_credit: saleData.is_credit,
+        is_credit: saleData.is_credit || false,
         status: saleData.status,
-        items: saleData.products.map((product: any) => ({
-          product_id: product.id,
-          quantity: (product.quantity || 0).toString(),
-          unit_price: (product.price || product.unitPrice || 0).toString()
-        }))
+        items: []
       };
+      
+      // Only add items if products exist and are in an array
+      if (Array.isArray(saleData.products) && saleData.products.length > 0) {
+        formattedData.items = saleData.products.map((item: any) => {
+          const product = item.product_id ? item : item;
+          return {
+            product_id: product.product_id || product.id,
+            quantity: safeToString(product.quantity),
+            unit_price: safeToString(product.price || product.unitPrice || 0)
+          };
+        });
+      }
+      
+      console.log('Formatted data for API:', formattedData);
+      
+      // Check if items array is empty before sending to API
+      if (!formattedData.items || formattedData.items.length === 0) {
+        enqueueSnackbar('Sale must include at least one product', { variant: 'error' });
+        setIsLoading(false);
+        return;
+      }
       
       if (saleData.id) {
         // Update existing sale

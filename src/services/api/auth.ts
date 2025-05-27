@@ -244,8 +244,35 @@ export const authApi = {
   
   // Change password
   changePassword: async (data: ChangePasswordData): Promise<{ success: boolean; message: string }> => {
-    const response = await userManagementApiClient.post<{ success: boolean; message: string }>('/auth/change-password/', data);
-    return response.data;
+    // Get the user ID from token
+    const userInfo = tokenStorage.getUserInfo();
+    if (!userInfo || !userInfo.id) {
+      throw new Error('No user ID available in token');
+    }
+    
+    try {
+      // First get the current user data so we have all required fields
+      const currentUserData = await authApi.getProfile();
+      
+      // Update the user with the new password
+      const response = await userManagementApiClient.put<UserResponse>(
+        `/users/${userInfo.id}/`,
+        {
+          company_id: currentUserData.company_id,
+          email: currentUserData.email,
+          password: data.new_password,
+          first_name: currentUserData.first_name || '',
+          last_name: currentUserData.last_name || '',
+          role: currentUserData.role,
+          profile_image: currentUserData.profile_image || ''
+        }
+      );
+      
+      return { success: true, message: 'Password updated successfully' };
+    } catch (error) {
+      console.error('Error updating password:', error);
+      throw error;
+    }
   },
   
   // Get current user profile
