@@ -78,7 +78,7 @@ export interface TransactionStore {
   location: string;
   created_at: string;
   updated_at: string;
-  is_active: "active" | "inactive";
+  is_active: 'active' | 'inactive';
 }
 
 // Purchase Interfaces
@@ -89,6 +89,7 @@ export interface Purchase {
   total_amount: string;
   tax: string;
   amount_paid: string;
+  amount: string;
   currency: Currency;
   payment_mode: PaymentMode;
   is_credit: boolean;
@@ -103,6 +104,7 @@ export interface PurchaseCreateData {
   total_amount: string;
   tax: string;
   amount_paid: string;
+  amount: string;
   currency_id: string;
   payment_mode_id: string;
   is_credit: boolean;
@@ -236,7 +238,10 @@ export const transactionsApi = {
 
   updatePaymentMode: async (storeId: string, id: string, data: PaymentModeUpdateData): Promise<PaymentMode> => {
     try {
-      const response = await coreApiClient.put<PaymentMode>(`/transactions/stores/${storeId}/payment-modes/${id}/`, data);
+      const response = await coreApiClient.put<PaymentMode>(
+        `/transactions/stores/${storeId}/payment-modes/${id}/`,
+        data
+      );
       return response.data;
     } catch (error) {
       console.error('Error updating payment mode:', error);
@@ -280,22 +285,41 @@ export const transactionsApi = {
 
   // Purchase Items
   getPurchaseItems: async (storeId: string, purchaseId: string): Promise<PurchaseItem[]> => {
-    const response = await coreApiClient.get<PurchaseItem[]>(`/transactions/stores/${storeId}/purchases/${purchaseId}/items/`);
+    const response = await coreApiClient.get<PurchaseItem[]>(
+      `/transactions/stores/${storeId}/purchases/${purchaseId}/items/`
+    );
     return response.data;
   },
 
   getPurchaseItem: async (storeId: string, purchaseId: string, itemId: number): Promise<PurchaseItem> => {
-    const response = await coreApiClient.get<PurchaseItem>(`/transactions/stores/${storeId}/purchases/${purchaseId}/items/${itemId}/`);
+    const response = await coreApiClient.get<PurchaseItem>(
+      `/transactions/stores/${storeId}/purchases/${purchaseId}/items/${itemId}/`
+    );
     return response.data;
   },
 
-  createPurchaseItem: async (storeId: string, purchaseId: string, data: PurchaseItemCreateData): Promise<PurchaseItem> => {
-    const response = await coreApiClient.post<PurchaseItem>(`/transactions/stores/${storeId}/purchases/${purchaseId}/items/`, data);
+  createPurchaseItem: async (
+    storeId: string,
+    purchaseId: string,
+    data: PurchaseItemCreateData
+  ): Promise<PurchaseItem> => {
+    const response = await coreApiClient.post<PurchaseItem>(
+      `/transactions/stores/${storeId}/purchases/${purchaseId}/items/`,
+      data
+    );
     return response.data;
   },
 
-  updatePurchaseItem: async (storeId: string, purchaseId: string, itemId: number, data: PurchaseItemUpdateData): Promise<PurchaseItem> => {
-    const response = await coreApiClient.put<PurchaseItem>(`/transactions/stores/${storeId}/purchases/${purchaseId}/items/${itemId}/`, data);
+  updatePurchaseItem: async (
+    storeId: string,
+    purchaseId: string,
+    itemId: number,
+    data: PurchaseItemUpdateData
+  ): Promise<PurchaseItem> => {
+    const response = await coreApiClient.put<PurchaseItem>(
+      `/transactions/stores/${storeId}/purchases/${purchaseId}/items/${itemId}/`,
+      data
+    );
     return response.data;
   },
 
@@ -315,8 +339,20 @@ export const transactionsApi = {
   },
 
   createSale: async (storeId: string, data: SaleCreateData): Promise<Sale> => {
-    const response = await coreApiClient.post<Sale>(`/transactions/stores/${storeId}/sales/`, data);
-    return response.data;
+    try {
+      console.log('Calling API to create sale with data:', JSON.stringify(data));
+      const response = await coreApiClient.post<Sale>(`/transactions/stores/${storeId}/sales/`, data);
+      console.log('Sale created successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating sale:', error);
+      // Log more detailed error information if available
+      if (error.response) {
+        console.error('API Response Status:', error.response.status);
+        console.error('API Response Data:', error.response.data);
+      }
+      throw error;
+    }
   },
 
   updateSale: async (storeId: string, id: string, data: SaleUpdateData): Promise<Sale> => {
@@ -335,7 +371,9 @@ export const transactionsApi = {
   },
 
   getSaleItem: async (storeId: string, saleId: string, itemId: number): Promise<SaleItem> => {
-    const response = await coreApiClient.get<SaleItem>(`/transactions/stores/${storeId}/sales/${saleId}/items/${itemId}/`);
+    const response = await coreApiClient.get<SaleItem>(
+      `/transactions/stores/${storeId}/sales/${saleId}/items/${itemId}/`
+    );
     return response.data;
   },
 
@@ -344,8 +382,16 @@ export const transactionsApi = {
     return response.data;
   },
 
-  updateSaleItem: async (storeId: string, saleId: string, itemId: number, data: SaleItemUpdateData): Promise<SaleItem> => {
-    const response = await coreApiClient.put<SaleItem>(`/transactions/stores/${storeId}/sales/${saleId}/items/${itemId}/`, data);
+  updateSaleItem: async (
+    storeId: string,
+    saleId: string,
+    itemId: number,
+    data: SaleItemUpdateData
+  ): Promise<SaleItem> => {
+    const response = await coreApiClient.put<SaleItem>(
+      `/transactions/stores/${storeId}/sales/${saleId}/items/${itemId}/`,
+      data
+    );
     return response.data;
   },
 
@@ -377,4 +423,4 @@ export const transactionsApi = {
   deleteSupplier: async (storeId: string, id: string): Promise<void> => {
     await coreApiClient.delete(`/transactions/stores/${storeId}/suppliers/${id}/`);
   },
-}; 
+};

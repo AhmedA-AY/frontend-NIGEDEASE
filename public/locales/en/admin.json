@@ -242,7 +242,7 @@
     "name_required": "Name is required",
     "category_required": "Category is required",
     "unit_required": "Unit is required",
-    "description_required": "Description is required", 
+    "description_required": "Description is required",
     "store_required": "Store is required",
     "purchase_price_invalid": "Purchase price must be a valid number",
     "sale_price_invalid": "Sale price must be a valid number",
@@ -376,8 +376,16 @@
     "no_sale_selected": "No sale selected or no store selected",
     "error_deleting": "Failed to delete sale",
     "error_saving": "Failed to save sale",
-    "receivable_created": "Receivable record created for credit sale",
-    "receivable_error": "Sale saved but failed to create receivable record"
+    "error_no_items": "Sale must include at least one product",
+    "invalid_items": "Some items have invalid product ID or quantity",
+    "amount_paid_negative": "Amount paid cannot be negative",
+    "amount_paid_exceeds_total": "Amount paid cannot exceed total amount",
+    "receivable_created": "Receivable record created successfully",
+    "receivable_error": "Error creating receivable record",
+    "credit": "Credit",
+    "confirmed": "Confirmed",
+    "tax": "Tax",
+    "amount_paid_creates_receivable": "A receivable will be created for the remaining balance"
   },
   "purchases": {
     "title": "Purchases",
@@ -438,7 +446,18 @@
     "supplier_required": "Please select a supplier",
     "products_required": "Please add at least one product to the purchase",
     "currency_required": "Please select a currency",
-    "payment_mode_required": "Please select a payment mode"
+    "payment_mode_required": "Please select a payment mode",
+    "credit": "Credit",
+    "amount_paid_negative": "Amount paid cannot be negative",
+    "amount_paid_exceeds_total": "Amount paid cannot exceed total amount",
+    "amount_paid_creates_payable": "A payable will be created for the remaining balance",
+    "payable_created": "Payable record created successfully",
+    "payable_error": "Error creating payable record",
+    "supplier": "Supplier",
+    "amount_paid": "Amount Paid",
+    "amount": "Amount",
+    "amount_description": "Total purchase amount (used for accounting purposes)",
+    "payable_amount": "Payable Amount"
   },
   "stores": {
     "title": "Stores Management",
@@ -521,7 +540,7 @@
     "all_expenses": "All Expenses",
     "add_expense": "Add Expense",
     "edit_expense": "Edit Expense",
-    "delete_expense": "Delete Expense", 
+    "delete_expense": "Delete Expense",
     "expense_details": "Expense Details",
     "expense_amount": "Amount",
     "expense_date": "Date",
@@ -621,4 +640,4 @@
     "camera_error": "Error accessing camera",
     "or": "OR"
   }
-} 
+}

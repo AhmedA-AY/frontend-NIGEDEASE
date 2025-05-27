@@ -1,6 +1,11 @@
 export const paths = {
   home: '/',
-  auth: { signIn: '/auth/sign-in', signUp: '/auth/sign-up', resetPassword: '/auth/reset-password', forgotPassword: '/auth/forgot-password' },
+  auth: {
+    signIn: '/auth/sign-in',
+    signUp: '/auth/sign-up',
+    resetPassword: '/auth/reset-password',
+    forgotPassword: '/auth/forgot-password',
+  },
   dashboard: {
     overview: '/dashboard',
     account: '/dashboard/account',
@@ -72,6 +77,7 @@ export const paths = {
     customers: '/salesman/parties/customers',
     sales: '/salesman/sales',
     paymentIn: '/salesman/sales/payments-in',
+    purchases: '/salesman/purchases',
     expenses: '/salesman/expenses',
     reports: '/salesman/reports',
     paymentReports: '/salesman/reports/payments',

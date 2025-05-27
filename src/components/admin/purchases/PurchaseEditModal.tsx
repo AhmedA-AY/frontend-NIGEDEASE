@@ -1,40 +1,40 @@
 'use client';
 
 import * as React from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
+import { useStore } from '@/providers/store-provider';
+import { companiesApi } from '@/services/api/companies';
+import { inventoryApi } from '@/services/api/inventory';
+import { transactionsApi } from '@/services/api/transactions';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import Checkbox from '@mui/material/Checkbox';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
+import Select from '@mui/material/Select';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import IconButton from '@mui/material/IconButton';
-import CircularProgress from '@mui/material/CircularProgress';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import InputAdornment from '@mui/material/InputAdornment';
-import Card from '@mui/material/Card';
-import TableContainer from '@mui/material/TableContainer';
-import Paper from '@mui/material/Paper';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
-import { transactionsApi } from '@/services/api/transactions';
-import { inventoryApi } from '@/services/api/inventory';
-import { companiesApi } from '@/services/api/companies';
-import { useCurrentUser } from '@/hooks/use-auth';
-import { useStore } from '@/providers/store-provider';
 import { useTranslation } from 'react-i18next';
+
+import { useCurrentUser } from '@/hooks/use-auth';
 
 // Define type interfaces
 interface ProductItem {
@@ -47,7 +47,7 @@ interface ProductItem {
 
 interface PurchaseData {
   id?: string;
-  supplier: string;  // supplier ID
+  supplier: string;
   totalAmount: number;
   tax: string;
   amount_paid?: number;
@@ -71,29 +71,32 @@ interface PurchaseEditModalProps {
   isNew?: boolean;
 }
 
+// Default purchase data
+const defaultPurchase = {
+  date: new Date().toISOString().split('T')[0],
+  supplier: '',
+  status: '',
+  products: [],
+  totalAmount: 0,
+  amount_paid: 0,
+  subtotal: 0,
+  taxAmount: 0,
+  tax: '0',
+  company_id: '',
+  store_id: '',
+  currency_id: '',
+  payment_mode_id: '',
+  is_credit: false,
+};
+
 export default function PurchaseEditModal({
   open,
   onClose,
   onSave,
-  purchase = {
-    date: new Date().toISOString().split('T')[0],
-    supplier: '',
-    status: '',
-    products: [],
-    totalAmount: 0,
-    amount_paid: 0,
-    subtotal: 0,
-    taxAmount: 0,
-    tax: '0',
-    company_id: '',
-    store_id: '',
-    currency_id: '',
-    payment_mode_id: '',
-    is_credit: false
-  },
-  isNew = true
-}: PurchaseEditModalProps): React.JSX.Element {
-  // Use React.useState for all state variables
+  purchase = defaultPurchase,
+  isNew = true,
+}: PurchaseEditModalProps) {
+  // State
   const [formData, setFormData] = React.useState<PurchaseData>(purchase);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = React.useState(false);
@@ -103,124 +106,124 @@ export default function PurchaseEditModal({
   const [paymentModes, setPaymentModes] = React.useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = React.useState('');
   const [currentQuantity, setCurrentQuantity] = React.useState(1);
-  
-  // Get hooks
+
+  // Hooks
   const { t } = useTranslation('admin');
   const { userInfo } = useCurrentUser();
   const { currentStore } = useStore();
 
-  // Initialize data when component mounts
+  // Load data when modal opens
   React.useEffect(() => {
     if (open && currentStore) {
-          setIsLoading(true);
-          
-      Promise.all([
+      setIsLoading(true);
+
+      const fetchData = async () => {
+        try {
+          const [suppliersData, productsData, currenciesData, paymentModesData] = await Promise.all([
             transactionsApi.getSuppliers(currentStore.id),
             inventoryApi.getProducts(currentStore.id),
             companiesApi.getCurrencies(),
-            transactionsApi.getPaymentModes(currentStore.id)
-      ])
-        .then(([suppliersData, productsData, currenciesData, paymentModesData]) => {
+            transactionsApi.getPaymentModes(currentStore.id),
+          ]);
+
           setSuppliers(suppliersData);
           setProducts(productsData);
           setCurrencies(currenciesData);
           setPaymentModes(paymentModesData);
-          
+
           // Initialize form with defaults if needed
           if (!formData.supplier) {
-            setFormData(prev => ({
+            setFormData((prev) => ({
               ...prev,
               currency_id: currenciesData.length > 0 ? currenciesData[0].id : '',
               payment_mode_id: paymentModesData.length > 0 ? paymentModesData[0].id : '',
-            store_id: currentStore.id,
-              company_id: userInfo?.company_id || ''
-          }));
+              store_id: currentStore.id,
+              company_id: userInfo?.company_id || '',
+            }));
           }
-        })
-        .catch(error => {
+        } catch (error) {
           console.error('Error loading data:', error);
-        })
-        .finally(() => {
+        } finally {
           setIsLoading(false);
-        });
+        }
+      };
+
+      fetchData();
     }
-  }, [open, currentStore, userInfo]);
-  
+  }, [open, currentStore, userInfo, formData.supplier]);
+
   // Update formData when purchase prop changes
   React.useEffect(() => {
-    if (purchase) {
-      setFormData(purchase);
-    }
+    setFormData(purchase);
   }, [purchase]);
 
   // Handle form field changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: newValue
+      [name]: newValue,
     }));
-    
+
     // Clear error
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: '',
       }));
     }
   };
-  
+
   // Handle select field changes
   const handleSelectChange = (e: any) => {
     const { name, value } = e.target;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear error
     if (errors[name]) {
-      setErrors(prev => ({
-          ...prev,
-        [name]: ''
+      setErrors((prev) => ({
+        ...prev,
+        [name]: '',
       }));
     }
   };
-  
+
   // Calculate totals
   const calculateTotals = (items: ProductItem[] = []) => {
-    const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const taxPercentage = parseFloat(formData.tax || '0');
-        const taxAmount = (subtotal * taxPercentage) / 100;
-        
-        return { 
+    const taxAmount = (subtotal * taxPercentage) / 100;
+
+    return {
       subtotal,
       taxAmount,
-      totalAmount: subtotal + taxAmount
+      totalAmount: subtotal + taxAmount,
     };
   };
-  
+
   // Add product to the order
   const handleAddProduct = () => {
     if (!selectedProduct) {
-      setErrors(prev => ({...prev, product: 'Please select a product'}));
+      setErrors((prev) => ({ ...prev, product: 'Please select a product' }));
       return;
     }
-    
-    const product = products.find(p => p.id === selectedProduct);
+
+    const product = products.find((p) => p.id === selectedProduct);
     if (!product) return;
-    
+
     const newProducts = [...(formData.products || [])];
-    const existingIndex = newProducts.findIndex(p => p.id === selectedProduct);
-    
+    const existingIndex = newProducts.findIndex((p) => p.id === selectedProduct);
+
     if (existingIndex >= 0) {
       // Update existing product
       newProducts[existingIndex].quantity += currentQuantity;
-      newProducts[existingIndex].subtotal = 
-        newProducts[existingIndex].quantity * newProducts[existingIndex].unitPrice;
+      newProducts[existingIndex].subtotal = newProducts[existingIndex].quantity * newProducts[existingIndex].unitPrice;
     } else {
       // Add new product
       const price = parseFloat(product.purchase_price || '0');
@@ -229,84 +232,72 @@ export default function PurchaseEditModal({
         name: product.name,
         quantity: currentQuantity,
         unitPrice: price,
-        subtotal: currentQuantity * price
+        subtotal: currentQuantity * price,
       });
     }
-    
+
     const { subtotal, taxAmount, totalAmount } = calculateTotals(newProducts);
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       products: newProducts,
       subtotal,
       taxAmount,
-      totalAmount
+      totalAmount,
     }));
-    
+
     setSelectedProduct('');
     setCurrentQuantity(1);
-    setErrors(prev => ({...prev, product: ''}));
+    setErrors((prev) => ({ ...prev, product: '' }));
   };
-  
+
   // Remove product
   const handleRemoveProduct = (id: string) => {
     if (!formData.products) return;
-    
-    const updatedProducts = formData.products.filter(p => p.id !== id);
+
+    const updatedProducts = formData.products.filter((p) => p.id !== id);
     const { subtotal, taxAmount, totalAmount } = calculateTotals(updatedProducts);
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       products: updatedProducts,
       subtotal,
       taxAmount,
-      totalAmount
+      totalAmount,
     }));
   };
-  
+
   // Validate form
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.supplier) {
       newErrors.supplier = 'Supplier is required';
     }
-    
+
     if (!formData.products || formData.products.length === 0) {
       newErrors.product = 'At least one product is required';
     }
-    
+
     if (!formData.currency_id) {
       newErrors.currency_id = 'Currency is required';
     }
-    
+
     if (!formData.payment_mode_id) {
       newErrors.payment_mode_id = 'Payment mode is required';
     }
-    
-    // Validate amount_paid is not negative
-    if (formData.amount_paid !== undefined && formData.amount_paid < 0) {
-      newErrors.amount_paid = 'Amount paid cannot be negative';
-    }
-    
-    // Validate amount_paid is not greater than total amount
-    if (formData.amount_paid !== undefined && formData.totalAmount !== undefined && 
-        formData.amount_paid > formData.totalAmount) {
-      newErrors.amount_paid = 'Amount paid cannot exceed total amount';
-    }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   // Submit form
   const handleSubmit = () => {
     if (!validateForm()) return;
-    
-      onSave(formData);
+    onSave(formData);
   };
-  
-  // Simple loading state
+
+  // Loading state
   if (isLoading) {
     return (
       <Dialog open={open} onClose={onClose}>
@@ -318,54 +309,56 @@ export default function PurchaseEditModal({
       </Dialog>
     );
   }
-  
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        {isNew ? t('purchases.add_purchase') : t('purchases.edit_purchase')}
-      </DialogTitle>
+      <DialogTitle>{isNew ? t('purchases.add_purchase') : t('purchases.edit_purchase')}</DialogTitle>
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {/* Basic info */}
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-            <FormControl fullWidth error={!!errors.supplier}>
+              <FormControl fullWidth error={!!errors.supplier}>
                 <InputLabel id="supplier-label">{t('purchases.purchase_supplier')}</InputLabel>
-              <Select
-                labelId="supplier-label"
-                name="supplier"
+                <Select
+                  labelId="supplier-label"
+                  name="supplier"
                   value={formData.supplier || ''}
                   onChange={handleSelectChange}
                   label={t('purchases.purchase_supplier')}
                 >
                   {suppliers.map((supplier) => (
-                  <MenuItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.supplier && (
-                  <Typography color="error" variant="caption">{errors.supplier}</Typography>
-              )}
-            </FormControl>
-          </Grid>
+                    <MenuItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.supplier && (
+                  <Typography color="error" variant="caption">
+                    {errors.supplier}
+                  </Typography>
+                )}
+              </FormControl>
+            </Grid>
             <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
+              <TextField
+                fullWidth
                 label={t('purchases.purchase_date')}
                 name="date"
-              type="date"
+                type="date"
                 value={formData.date || ''}
                 onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-            />
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
           </Grid>
-          </Grid>
-          
+
           {/* Product selection */}
           <Card sx={{ p: 2, bgcolor: '#f9fafb' }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>{t('purchases.add_item')}</Typography>
-            
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              {t('purchases.add_item')}
+            </Typography>
+
             <Grid container spacing={2}>
               <Grid item xs={12} sm={5}>
                 <FormControl fullWidth error={!!errors.product}>
@@ -384,7 +377,9 @@ export default function PurchaseEditModal({
                     ))}
                   </Select>
                   {errors.product && (
-                    <Typography color="error" variant="caption">{errors.product}</Typography>
+                    <Typography color="error" variant="caption">
+                      {errors.product}
+                    </Typography>
                   )}
                 </FormControl>
               </Grid>
@@ -399,73 +394,71 @@ export default function PurchaseEditModal({
                 />
               </Grid>
               <Grid item xs={12} sm={4}>
-                <Button 
-                  fullWidth
-                  variant="contained" 
-                  onClick={handleAddProduct}
-                  sx={{ height: '56px' }}
-                >
+                <Button fullWidth variant="contained" onClick={handleAddProduct} sx={{ height: '56px' }}>
                   {t('purchases.add_item')}
                 </Button>
               </Grid>
             </Grid>
-            
+
             {/* Products table */}
             {formData.products && formData.products.length > 0 && (
               <TableContainer component={Paper} sx={{ mt: 2 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>{t('products.product_name')}</TableCell>
-                  <TableCell align="right">{t('purchases.quantity')}</TableCell>
-                  <TableCell align="right">{t('purchases.price')}</TableCell>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>{t('products.product_name')}</TableCell>
+                      <TableCell align="right">{t('purchases.quantity')}</TableCell>
+                      <TableCell align="right">{t('purchases.price')}</TableCell>
                       <TableCell align="right">{t('purchases.total')}</TableCell>
                       <TableCell align="right">{t('common.actions')}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {formData.products.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>{product.name}</TableCell>
+                      <TableRow key={product.id}>
+                        <TableCell>{product.name}</TableCell>
                         <TableCell align="right">{product.quantity}</TableCell>
                         <TableCell align="right">${product.unitPrice.toFixed(2)}</TableCell>
                         <TableCell align="right">${(product.quantity * product.unitPrice).toFixed(2)}</TableCell>
-                      <TableCell align="right">
-                        <IconButton 
-                          size="small" 
-                          onClick={() => handleRemoveProduct(product.id)}
-                        >
+                        <TableCell align="right">
+                          <IconButton size="small" onClick={() => handleRemoveProduct(product.id)}>
                             <TrashIcon size={20} />
-                        </IconButton>
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
                     <TableRow>
-                      <TableCell colSpan={3} align="right"><strong>{t('purchases.subtotal')}:</strong></TableCell>
+                      <TableCell colSpan={3} align="right">
+                        <strong>{t('purchases.subtotal')}:</strong>
+                      </TableCell>
                       <TableCell align="right" colSpan={2}>
                         ${formData.subtotal ? formData.subtotal.toFixed(2) : '0.00'}
                       </TableCell>
                     </TableRow>
-                  <TableRow>
+                    <TableRow>
                       <TableCell colSpan={3} align="right">
-                        <strong>{t('purchases.tax')} ({formData.tax || 0}%):</strong>
-                    </TableCell>
-                  <TableCell align="right" colSpan={2}>
+                        <strong>
+                          {t('purchases.tax')} ({formData.tax || 0}%):
+                        </strong>
+                      </TableCell>
+                      <TableCell align="right" colSpan={2}>
                         ${formData.taxAmount ? formData.taxAmount.toFixed(2) : '0.00'}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                      <TableCell colSpan={3} align="right"><strong>{t('purchases.total')}:</strong></TableCell>
-                  <TableCell align="right" colSpan={2}>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell colSpan={3} align="right">
+                        <strong>{t('purchases.total')}:</strong>
+                      </TableCell>
+                      <TableCell align="right" colSpan={2}>
                         ${formData.totalAmount ? formData.totalAmount.toFixed(2) : '0.00'}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </TableContainer>
             )}
           </Card>
-          
+
           {/* Payment details */}
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
@@ -485,7 +478,9 @@ export default function PurchaseEditModal({
                   ))}
                 </Select>
                 {errors.currency_id && (
-                  <Typography color="error" variant="caption">{errors.currency_id}</Typography>
+                  <Typography color="error" variant="caption">
+                    {errors.currency_id}
+                  </Typography>
                 )}
               </FormControl>
             </Grid>
@@ -506,19 +501,21 @@ export default function PurchaseEditModal({
                   ))}
                 </Select>
                 {errors.payment_mode_id && (
-                  <Typography color="error" variant="caption">{errors.payment_mode_id}</Typography>
+                  <Typography color="error" variant="caption">
+                    {errors.payment_mode_id}
+                  </Typography>
                 )}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
+              <TextField
+                fullWidth
                 label={t('purchases.tax')}
                 name="tax"
                 type="number"
                 value={formData.tax || '0'}
                 onChange={handleChange}
-                InputProps={{ 
+                InputProps={{
                   inputProps: { min: 0, step: 0.01 },
                   endAdornment: <InputAdornment position="end">%</InputAdornment>,
                 }}
@@ -526,45 +523,44 @@ export default function PurchaseEditModal({
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControlLabel
-                control={
-                  <Checkbox
-                    name="is_credit"
-                    checked={formData.is_credit || false}
-                    onChange={handleChange}
-                  />
-                }
+                control={<Checkbox name="is_credit" checked={formData.is_credit || false} onChange={handleChange} />}
                 label={t('purchases.credit')}
-            />
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label={t('purchases.amount_paid')}
+                type="number"
+                name="amount_paid"
+                value={formData.amount_paid || 0}
+                onChange={handleChange}
+                fullWidth
+                variant="outlined"
+                margin="normal"
+                InputProps={{
+                  startAdornment: currencies.find((c) => c.id === formData.currency_id)?.code && (
+                    <InputAdornment position="start">
+                      {currencies.find((c) => c.id === formData.currency_id)?.code}
+                    </InputAdornment>
+                  ),
+                }}
+                error={!!errors.amount_paid}
+                helperText={
+                  errors.amount_paid ||
+                  ((formData.amount_paid || 0) < (formData.totalAmount || 0)
+                    ? t('purchases.amount_paid_creates_payable')
+                    : '')
+                }
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
-              label={t('purchases.amount_paid')}
-              type="number"
-              name="amount_paid"
-              value={formData.amount_paid || 0}
-              onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              margin="normal"
-              InputProps={{
-                startAdornment: currencies.find(c => c.id === formData.currency_id)?.code && (
-                  <InputAdornment position="start">
-                    {currencies.find(c => c.id === formData.currency_id)?.code}
-                  </InputAdornment>
-                ),
-              }}
-              error={!!errors.amount_paid}
-              helperText={errors.amount_paid}
-            />
-          </Grid>
-        </Grid>
         </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
           sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
         >
           {t('common.save')}
@@ -572,4 +568,4 @@ export default function PurchaseEditModal({
       </DialogActions>
     </Dialog>
   );
-} 
+}

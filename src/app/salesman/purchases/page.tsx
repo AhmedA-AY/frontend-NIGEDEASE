@@ -465,8 +465,8 @@ export default function PurchasesPage(): React.JSX.Element {
 
   // Generate breadcrumb path links
   const breadcrumbItems = [
-    { label: t('dashboard.title'), url: paths.stockManager.dashboard },
-    { label: t('purchases.title'), url: paths.stockManager.purchases },
+    { label: t('dashboard.title'), url: paths.salesman.dashboard },
+    { label: t('purchases.title'), url: paths.salesman.purchases },
   ];
 
   return (
