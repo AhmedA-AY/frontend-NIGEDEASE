@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from 'react';
-import dynamic from 'next/dynamic';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -26,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import Chatbot from '@/components/chat/Chatbot';
 
 import { paths } from '@/paths';
+import dynamic from 'next/dynamic';
 
 // Dynamically import the LanguageSwitcher with SSR disabled to prevent hydration errors
 const LanguageSwitcher = dynamic(
@@ -112,6 +112,8 @@ export default function LandingPage(): React.JSX.Element {
                 component="img"
                 src="/assets/Neged.png"
                 alt="NIGED-EASE Logo"
+                role="img"
+                aria-label="NIGED-EASE Logo"
                 sx={{
                     width: 40,
                     height: 40,
@@ -350,6 +352,7 @@ export default function LandingPage(): React.JSX.Element {
       </Box>
 
       {/* Hero Section */}
+      {/* ========================= */}
       <Box
         sx={{
           position: 'relative',
@@ -487,6 +490,7 @@ export default function LandingPage(): React.JSX.Element {
       </Box>
 
       {/* Stats Section */}
+      {/* ========================= */}
       <Container maxWidth="lg">
         <Box 
           sx={{ 
@@ -521,7 +525,10 @@ export default function LandingPage(): React.JSX.Element {
               bottom: -100,
               left: -100,
               zIndex: 0,
-            }
+            },
+            // #6: Move hardcoded box shadow and color to theme or constants (example)
+            // boxShadow: theme.shadows[8],
+            // background: theme.palette.background.paper,
           }}
         >
           <Grid container spacing={{ xs: 4, md: 6 }} sx={{ position: 'relative', zIndex: 1 }}>
@@ -643,6 +650,7 @@ export default function LandingPage(): React.JSX.Element {
       </Container>
 
       {/* Testimonials Section */}
+      {/* ========================= */}
       <Box sx={{ bgcolor: '#edfafa', py: { xs: 6, sm: 8, md: 12 } }}>
         <Container maxWidth="lg">
           <Grid container spacing={{ xs: 4, md: 5 }}>
@@ -895,6 +903,7 @@ export default function LandingPage(): React.JSX.Element {
       </Box>
 
       {/* Features Section */}
+      {/* ========================= */}
       <Container maxWidth="lg">
         <Box sx={{ py: { xs: 6, sm: 8, md: 12 } }}>
           <Typography 
@@ -1060,6 +1069,7 @@ export default function LandingPage(): React.JSX.Element {
       </Container>
 
       {/* Screenshot Section */}
+      {/* ========================= */}
       <Box sx={{ bgcolor: '#0694A2', py: { xs: 6, sm: 8, md: 12 }, color: 'white' }}>
         <Container maxWidth="lg">
           <Grid container spacing={{ xs: 4, md: 6 }} alignItems="center">
@@ -1125,6 +1135,7 @@ export default function LandingPage(): React.JSX.Element {
       <Chatbot />
 
       {/* Footer */}
+      {/* ========================= */}
       <Box sx={{ 
         bgcolor: '#f8fafc', 
         borderTop: '3px solid #0694A2',
@@ -1138,6 +1149,8 @@ export default function LandingPage(): React.JSX.Element {
                 component="img"
                 src="/assets/Neged.png"
                 alt="NIGED-EASE Logo"
+                role="img"
+                aria-label="NIGED-EASE Logo"
                 sx={{
                   width: { xs: 150, sm: 200 },
                   height: 'auto',
