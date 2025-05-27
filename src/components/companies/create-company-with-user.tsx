@@ -2,42 +2,42 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
+import { companiesApi, CompanyCreateData } from '@/services/api/companies';
+import { inventoryApi } from '@/services/api/inventory';
+import { extractErrorMessage } from '@/utils/api-error';
 import {
+  Alert,
+  Avatar,
   Box,
+  Button,
   Card,
   CardContent,
   CardHeader,
-  Container,
-  Grid,
-  Stack,
-  TextField,
-  Button,
-  MenuItem,
   CircularProgress,
-  Alert,
-  Step,
-  Stepper,
-  StepLabel,
-  Typography,
-  Paper,
-  Avatar,
+  Container,
   FormControl,
   FormHelperText,
+  Grid,
   InputLabel,
+  MenuItem,
+  Paper,
   Select,
   SelectChangeEvent,
-  Snackbar
+  Snackbar,
+  Stack,
+  Step,
+  StepLabel,
+  Stepper,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
-import { useCurrencies, useSubscriptionPlans } from '@/hooks/super-admin/use-companies';
-import { inventoryApi } from '@/services/api/inventory';
 import { paths } from '@/paths';
-import { companiesApi, CompanyCreateData } from '@/services/api/companies';
+import { useCurrencies, useSubscriptionPlans } from '@/hooks/super-admin/use-companies';
 import { useCreateUser } from '@/hooks/super-admin/use-users';
-import { extractErrorMessage } from '@/utils/api-error';
 import ErrorMessage from '@/components/common/error-message';
 import { ImageUpload } from '@/components/common/image-upload';
 
@@ -53,10 +53,8 @@ interface CompanyFormData {
 interface StoreFormData {
   name: string;
   address: string;
-  phone_number: string;
-  email: string;
   location: string;
-  is_active: "active" | "inactive";
+  is_active: 'active' | 'inactive';
 }
 
 interface UserFormData {
@@ -73,26 +71,24 @@ export const CreateCompanyWithUser: React.FC = () => {
   const router = useRouter();
   const { data: currencies, isLoading: isLoadingCurrencies } = useCurrencies();
   const { data: subscriptionPlans, isLoading: isLoadingSubscriptionPlans } = useSubscriptionPlans();
-  
+
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [companyFormData, setCompanyFormData] = useState<CompanyFormData>({
     name: '',
     short_name: '',
     address: '',
     description: '',
     subscription_plan_id: '',
-    currency_id: ''
+    currency_id: '',
   });
 
   const [storeFormData, setStoreFormData] = useState<StoreFormData>({
     name: '',
     address: '',
-    phone_number: '',
-    email: '',
     location: '',
-    is_active: "active"
+    is_active: 'active',
   });
 
   const [userFormData, setUserFormData] = useState<UserFormData>({
@@ -101,9 +97,9 @@ export const CreateCompanyWithUser: React.FC = () => {
     email: '',
     password: '',
     confirm_password: '',
-    profile_image: ''
+    profile_image: '',
   });
-  
+
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
@@ -115,9 +111,9 @@ export const CreateCompanyWithUser: React.FC = () => {
       console.error('Error creating company:', error);
       setFormErrors({
         ...formErrors,
-        submit: extractErrorMessage(error) || 'Failed to create company'
+        submit: extractErrorMessage(error) || 'Failed to create company',
       });
-    }
+    },
   });
 
   const createStoreMutation = useMutation({
@@ -126,44 +122,48 @@ export const CreateCompanyWithUser: React.FC = () => {
       console.error('Error creating store:', error);
       setFormErrors({
         ...formErrors,
-        submit: extractErrorMessage(error) || 'Failed to create store'
+        submit: extractErrorMessage(error) || 'Failed to create store',
       });
-    }
+    },
   });
 
   const createUserMutation = useCreateUser();
 
-  const handleCompanyFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent<string>) => {
+  const handleCompanyFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent<string>
+  ) => {
     const { name, value } = e.target;
     if (name) {
       setCompanyFormData({
         ...companyFormData,
-        [name]: value
+        [name]: value,
       });
-      
+
       // Clear error when field is edited
       if (formErrors[name]) {
         setFormErrors({
           ...formErrors,
-          [name]: ''
+          [name]: '',
         });
       }
     }
   };
 
-  const handleStoreFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent<string>) => {
+  const handleStoreFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent<string>
+  ) => {
     const { name, value } = e.target;
     if (name) {
       setStoreFormData({
         ...storeFormData,
-        [name]: value
+        [name]: value,
       });
-      
+
       // Clear error when field is edited
       if (formErrors[name]) {
         setFormErrors({
           ...formErrors,
-          [name]: ''
+          [name]: '',
         });
       }
     }
@@ -173,88 +173,76 @@ export const CreateCompanyWithUser: React.FC = () => {
     const { name, value } = e.target;
     setUserFormData({
       ...userFormData,
-      [name]: value
+      [name]: value,
     });
-    
+
     // Clear error when field is edited
     if (formErrors[name]) {
       setFormErrors({
         ...formErrors,
-        [name]: ''
+        [name]: '',
       });
     }
   };
 
   const validateCompanyForm = (): boolean => {
     const errors: Record<string, string> = {};
-    
+
     if (!companyFormData.name.trim()) {
       errors.name = t('companies.name_required', { ns: 'superAdmin' });
     } else if (companyFormData.name.length > 100) {
       errors.name = t('companies.name_too_long', { ns: 'superAdmin' });
     }
-    
+
     if (!companyFormData.short_name.trim()) {
       errors.short_name = t('companies.short_name_required', { ns: 'superAdmin' });
     } else if (companyFormData.short_name.length > 20) {
       errors.short_name = t('companies.short_name_too_long', { ns: 'superAdmin' });
     }
-    
+
     if (!companyFormData.address.trim()) {
       errors.address = t('common.address_required');
     } else if (companyFormData.address.length > 200) {
       errors.address = t('common.address_too_long');
     }
-    
+
     if (!companyFormData.subscription_plan_id) {
       errors.subscription_plan_id = t('companies.subscription_plan_required', { ns: 'superAdmin' });
     }
-    
+
     if (!companyFormData.currency_id) {
       errors.currency_id = t('companies.currency_required', { ns: 'superAdmin' });
     }
-    
+
     if (companyFormData.description && companyFormData.description.length > 500) {
       errors.description = t('common.description_too_long');
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const validateStoreForm = (): boolean => {
     const errors: Record<string, string> = {};
-    
+
     if (!storeFormData.name.trim()) {
       errors.name = t('companies.store_name_required', { ns: 'superAdmin' });
     } else if (storeFormData.name.length > 100) {
       errors.name = t('companies.store_name_too_long', { ns: 'superAdmin' });
     }
-    
+
     if (!storeFormData.address.trim()) {
       errors.address = t('common.address_required');
     } else if (storeFormData.address.length > 200) {
       errors.address = t('common.address_too_long');
     }
-    
-    if (!storeFormData.phone_number.trim()) {
-      errors.phone_number = t('common.phone_required');
-    } else if (!/^\+?[\d\s-]{7,15}$/.test(storeFormData.phone_number)) {
-      errors.phone_number = t('common.invalid_phone');
-    }
-    
-    if (!storeFormData.email.trim()) {
-      errors.email = t('common.email_required');
-    } else if (!/\S+@\S+\.\S+/.test(storeFormData.email)) {
-      errors.email = t('common.invalid_email');
-    }
-    
+
     if (!storeFormData.location.trim()) {
       errors.location = t('common.location_required');
     } else if (storeFormData.location.length > 100) {
       errors.location = t('common.location_too_long');
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -311,15 +299,15 @@ export const CreateCompanyWithUser: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!validateUserForm()) {
       setSnackbarMessage(t('companies.please_fix_errors', { ns: 'superAdmin' }));
       setSnackbarOpen(true);
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Step 1: Create company
       const companyData: CompanyCreateData = {
@@ -327,22 +315,20 @@ export const CreateCompanyWithUser: React.FC = () => {
         description: companyFormData.description?.trim() || companyFormData.short_name.trim(),
         subscription_plan: companyFormData.subscription_plan_id,
       };
-      
+
       const companyResponse = await createCompanyMutation.mutateAsync(companyData);
-      
+
       // Step 2: Create store
       const storeData = {
         name: storeFormData.name.trim(),
         address: storeFormData.address.trim(),
-        phone_number: storeFormData.phone_number.trim(),
-        email: storeFormData.email.trim(),
         location: storeFormData.location.trim(),
         company_id: companyResponse.id,
-        is_active: storeFormData.is_active as "active" | "inactive"
+        is_active: storeFormData.is_active as 'active' | 'inactive',
       };
-      
+
       await createStoreMutation.mutateAsync(storeData);
-      
+
       // Step 3: Create user
       const userResponse = await createUserMutation.mutateAsync({
         first_name: userFormData.first_name,
@@ -352,17 +338,16 @@ export const CreateCompanyWithUser: React.FC = () => {
         company_id: companyResponse.id,
         role: 'admin',
       });
-      
+
       // Navigate to companies list after successful creation
       setTimeout(() => {
         router.push(paths.superAdmin.companies);
       }, 1500);
-      
     } catch (error: any) {
       console.error('Error in company creation process:', error);
       setFormErrors({
         ...formErrors,
-        submit: extractErrorMessage(error) || 'Failed to complete the company creation process'
+        submit: extractErrorMessage(error) || 'Failed to complete the company creation process',
       });
     } finally {
       setIsSubmitting(false);
@@ -374,7 +359,7 @@ export const CreateCompanyWithUser: React.FC = () => {
   const steps = [
     t('companies.create_company', { ns: 'superAdmin' }),
     t('companies.create_store', { ns: 'superAdmin' }),
-    t('companies.create_admin', { ns: 'superAdmin' })
+    t('companies.create_admin', { ns: 'superAdmin' }),
   ];
 
   return (
@@ -391,7 +376,7 @@ export const CreateCompanyWithUser: React.FC = () => {
             </Button>
             <Typography variant="h4">{t('companies.create_company', { ns: 'superAdmin' })}</Typography>
           </Stack>
-          
+
           <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
             {steps.map((label) => (
               <Step key={label}>
@@ -399,16 +384,16 @@ export const CreateCompanyWithUser: React.FC = () => {
               </Step>
             ))}
           </Stepper>
-          
+
           {/* Global error message */}
           {formErrors.submit && (
-            <ErrorMessage 
+            <ErrorMessage
               error={new Error(formErrors.submit)}
               title={t('companies.creation_failed', { ns: 'superAdmin' })}
-              onRetry={() => setFormErrors({...formErrors, submit: ''})}
+              onRetry={() => setFormErrors({ ...formErrors, submit: '' })}
             />
           )}
-          
+
           {activeStep === 0 ? (
             <Card>
               <CardHeader title={t('companies.company_details', { ns: 'superAdmin' })} />
@@ -427,7 +412,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                       disabled={isLoading}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
@@ -441,7 +426,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                       disabled={isLoading}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
@@ -456,7 +441,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                       rows={2}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
@@ -470,7 +455,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                       rows={3}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <FormControl fullWidth required error={!!formErrors.subscription_plan_id}>
                       <InputLabel id="subscription-plan-label">{t('page_titles.subscription_plans')}</InputLabel>
@@ -498,7 +483,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                       )}
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <FormControl fullWidth required error={!!formErrors.currency_id}>
                       <InputLabel id="currency-label">{t('page_titles.currencies')}</InputLabel>
@@ -521,19 +506,12 @@ export const CreateCompanyWithUser: React.FC = () => {
                           ))
                         )}
                       </Select>
-                      {formErrors.currency_id && (
-                        <FormHelperText>{formErrors.currency_id}</FormHelperText>
-                      )}
+                      {formErrors.currency_id && <FormHelperText>{formErrors.currency_id}</FormHelperText>}
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12}>
-                    <Button
-                      size="large"
-                      variant="contained"
-                      onClick={handleNextStep}
-                      disabled={isLoading}
-                    >
+                    <Button size="large" variant="contained" onClick={handleNextStep} disabled={isLoading}>
                       {t('common.next_step')}
                     </Button>
                   </Grid>
@@ -557,7 +535,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                       helperText={formErrors.name}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
@@ -572,7 +550,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                       rows={2}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
@@ -586,48 +564,13 @@ export const CreateCompanyWithUser: React.FC = () => {
                       placeholder={t('common.location_placeholder')}
                     />
                   </Grid>
-                  
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label={t('common.phone')}
-                      name="phone_number"
-                      onChange={handleStoreFormChange}
-                      required
-                      value={storeFormData.phone_number}
-                      error={!!formErrors.phone_number}
-                      helperText={formErrors.phone_number}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label={t('common.email')}
-                      name="email"
-                      type="email"
-                      onChange={handleStoreFormChange}
-                      required
-                      value={storeFormData.email}
-                      error={!!formErrors.email}
-                      helperText={formErrors.email}
-                    />
-                  </Grid>
-                  
+
                   <Grid item xs={12}>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-                      <Button 
-                        onClick={() => setActiveStep(activeStep - 1)} 
-                        sx={{ mr: 1 }}
-                        disabled={isLoading}
-                      >
+                      <Button onClick={() => setActiveStep(activeStep - 1)} sx={{ mr: 1 }} disabled={isLoading}>
                         {t('common.back')}
                       </Button>
-                      <Button 
-                        variant="contained" 
-                        onClick={handleNextStep}
-                        disabled={isLoading}
-                      >
+                      <Button variant="contained" onClick={handleNextStep} disabled={isLoading}>
                         {t('common.next_step')}
                       </Button>
                     </Box>
@@ -647,7 +590,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                         onImageChange={(url) => {
                           setUserFormData({
                             ...userFormData,
-                            profile_image: url || ''
+                            profile_image: url || '',
                           });
                         }}
                         bucket="app-images"
@@ -671,7 +614,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                         disabled={isSubmitting}
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
@@ -685,7 +628,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                         disabled={isSubmitting}
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
@@ -699,7 +642,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                         helperText={formErrors.email}
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
@@ -713,7 +656,7 @@ export const CreateCompanyWithUser: React.FC = () => {
                         helperText={formErrors.password}
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
@@ -728,32 +671,28 @@ export const CreateCompanyWithUser: React.FC = () => {
                         disabled={isSubmitting}
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12}>
                       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-                        <Button 
-                          onClick={() => setActiveStep(activeStep - 1)} 
-                          sx={{ mr: 1 }}
-                          disabled={isLoading}
-                        >
+                        <Button onClick={() => setActiveStep(activeStep - 1)} sx={{ mr: 1 }} disabled={isLoading}>
                           {t('common.back')}
                         </Button>
-                        <Button 
-                          variant="contained" 
+                        <Button
+                          variant="contained"
                           type="submit"
                           onClick={(e) => handleSubmit(e as any)}
                           disabled={isLoading}
                         >
-                          {isSubmitting ? t('companies.creating_company', { ns: 'superAdmin' }) : t('companies.complete_setup', { ns: 'superAdmin' })}
+                          {isSubmitting
+                            ? t('companies.creating_company', { ns: 'superAdmin' })
+                            : t('companies.complete_setup', { ns: 'superAdmin' })}
                         </Button>
                       </Box>
                     </Grid>
-                    
+
                     {createUserMutation.isSuccess && (
                       <Grid item xs={12}>
-                        <Alert severity="success">
-                          {t('companies.creation_success')}
-                        </Alert>
+                        <Alert severity="success">{t('companies.creation_success')}</Alert>
                       </Grid>
                     )}
                   </Grid>
@@ -761,14 +700,14 @@ export const CreateCompanyWithUser: React.FC = () => {
               </Card>
             </form>
           )}
-          
+
           <Snackbar
             open={snackbarOpen}
             autoHideDuration={6000}
             onClose={() => setSnackbarOpen(false)}
             message={snackbarMessage}
           />
-          
+
           <Snackbar
             open={createCompanyMutation.isSuccess && createStoreMutation.isSuccess && createUserMutation.isSuccess}
             autoHideDuration={6000}
@@ -778,4 +717,4 @@ export const CreateCompanyWithUser: React.FC = () => {
       </Container>
     </Box>
   );
-}; 
+};

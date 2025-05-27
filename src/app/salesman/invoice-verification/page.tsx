@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   CardHeader,
+  CircularProgress,
   Container,
-  Grid,
-  Typography,
-  TextField,
   Divider,
+  Grid,
+  IconButton,
   Paper,
   Table,
   TableBody,
@@ -19,17 +21,16 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Alert,
-  CircularProgress,
-  IconButton,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { useSnackbar } from 'notistack';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { QrCode as QrCodeIcon } from '@phosphor-icons/react/dist/ssr/QrCode';
-import { useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
-import { SalesmanGuard } from '@/components/auth/salesman-guard';
 import jsQR from 'jsqr';
+import { useSnackbar } from 'notistack';
+import { useTranslation } from 'react-i18next';
+
+import { SalesmanGuard } from '@/components/auth/salesman-guard';
 
 export default function SalesInvoiceVerificationPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -58,7 +59,7 @@ export default function SalesInvoiceVerificationPage() {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       setSelectedFile(file);
-      
+
       // If it's an image file, try to scan for QR code
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
@@ -93,62 +94,28 @@ export default function SalesInvoiceVerificationPage() {
     setIsLoading(true);
     setResult(null);
 
-    // Use the external OCR service
-    const OCR_SERVICE_URL = 'https://ocr-uwkr.onrender.com/';
-    
+    const formData = new FormData();
+    if (url) {
+      formData.append('url', url);
+    }
+    if (selectedFile) {
+      formData.append('pdf_file', selectedFile);
+    }
+
     try {
-      let ocrFormData;
-      
-      if (url) {
-        // If we have a URL, we need to send it to the OCR service
-        // The OCR service expects a PDF URL
-        console.log("Sending URL to OCR service:", url);
-        
-        // The pdfUrl key is the one expected by the OCR service
-        ocrFormData = new FormData();
-        ocrFormData.append('pdfUrl', url.trim());
-        
-        // Log the form data
-        console.log(`Form data: pdfUrl=${url.trim()}`);
-        
-        const response = await fetch(OCR_SERVICE_URL, {
-          method: 'POST',
-          body: ocrFormData,
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('OCR service error response:', errorText);
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        setResult(data);
-        enqueueSnackbar(t('invoice_verification.success'), { variant: 'success' });
-      } else if (selectedFile) {
-        // If we have a file, we need to send it to the OCR service
-        console.log("Sending file to OCR service:", selectedFile.name);
-        
-        ocrFormData = new FormData();
-        ocrFormData.append('file', selectedFile);
-        
-        const response = await fetch(OCR_SERVICE_URL, {
-          method: 'POST',
-          body: ocrFormData,
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('OCR service error response:', errorText);
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        setResult(data);
-        enqueueSnackbar(t('invoice_verification.success'), { variant: 'success' });
-      } else {
-        throw new Error('Please provide a URL or upload a file');
+      const response = await fetch('/api/invoices/process', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error: ${response.status} ${response.statusText}`);
       }
+
+      const data = await response.json();
+      setResult(data);
+      enqueueSnackbar(t('invoice_verification.success'), { variant: 'success' });
     } catch (error: any) {
       console.error('Error processing invoice:', error);
       enqueueSnackbar(error.message || t('invoice_verification.error'), { variant: 'error' });
@@ -160,14 +127,14 @@ export default function SalesInvoiceVerificationPage() {
   const startQrScanner = async () => {
     try {
       setScanningStatus(t('invoice_verification.starting_camera'));
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
           facingMode: 'environment',
           width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } 
+          height: { ideal: 720 },
+        },
       });
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setShowQrScanner(true);
@@ -184,7 +151,7 @@ export default function SalesInvoiceVerificationPage() {
   const stopQrScanner = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
     }
     setShowQrScanner(false);
@@ -222,16 +189,10 @@ export default function SalesInvoiceVerificationPage() {
       <Container>
         <Box sx={{ py: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <Button
-              startIcon={<ArrowLeftIcon />}
-              onClick={handleBack}
-              sx={{ mr: 2 }}
-            >
+            <Button startIcon={<ArrowLeftIcon />} onClick={handleBack} sx={{ mr: 2 }}>
               {t('common.back_to_dashboard')}
             </Button>
-            <Typography variant="h4">
-              {t('invoice_verification.title')}
-            </Typography>
+            <Typography variant="h4">{t('invoice_verification.title')}</Typography>
           </Box>
 
           <Card>
@@ -265,19 +226,9 @@ export default function SalesInvoiceVerificationPage() {
                   </Grid>
 
                   <Grid item xs={12}>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      fullWidth
-                    >
+                    <Button variant="outlined" component="label" fullWidth>
                       {t('invoice_verification.upload_pdf')}
-                      <input
-                        type="file"
-                        hidden
-                        accept=".pdf"
-                        onChange={handleFileChange}
-                        ref={fileInputRef}
-                      />
+                      <input type="file" hidden accept=".pdf" onChange={handleFileChange} ref={fileInputRef} />
                     </Button>
                     {selectedFile && (
                       <Typography variant="body2" sx={{ mt: 1 }}>
@@ -287,30 +238,14 @@ export default function SalesInvoiceVerificationPage() {
                   </Grid>
 
                   <Grid item xs={12}>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      fullWidth
-                      sx={{ mt: 2 }}
-                    >
+                    <Button variant="outlined" component="label" fullWidth sx={{ mt: 2 }}>
                       {t('invoice_verification.upload_image')}
-                      <input
-                        type="file"
-                        hidden
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        ref={imageInputRef}
-                      />
+                      <input type="file" hidden accept="image/*" onChange={handleFileChange} ref={imageInputRef} />
                     </Button>
                   </Grid>
 
                   <Grid item xs={12}>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      fullWidth
-                      disabled={isLoading || (!url && !selectedFile)}
-                    >
+                    <Button type="submit" variant="contained" fullWidth disabled={isLoading || (!url && !selectedFile)}>
                       {isLoading ? <CircularProgress size={24} /> : t('invoice_verification.process')}
                     </Button>
                   </Grid>
@@ -331,12 +266,7 @@ export default function SalesInvoiceVerificationPage() {
                       {scanningStatus}
                     </Typography>
                   )}
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={stopQrScanner}
-                    sx={{ mt: 2 }}
-                  >
+                  <Button variant="contained" color="error" onClick={stopQrScanner} sx={{ mt: 2 }}>
                     {t('invoice_verification.stop_scanner')}
                   </Button>
                 </Box>
@@ -356,16 +286,17 @@ export default function SalesInvoiceVerificationPage() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {Object.entries(result).map(([key, value]) => (
-                          value !== null && (
-                            <TableRow key={key}>
-                              <TableCell component="th" scope="row">
-                                {key.replace(/_/g, ' ').toUpperCase()}
-                              </TableCell>
-                              <TableCell>{value as string}</TableCell>
-                            </TableRow>
-                          )
-                        ))}
+                        {Object.entries(result).map(
+                          ([key, value]) =>
+                            value !== null && (
+                              <TableRow key={key}>
+                                <TableCell component="th" scope="row">
+                                  {key.replace(/_/g, ' ').toUpperCase()}
+                                </TableCell>
+                                <TableCell>{value as string}</TableCell>
+                              </TableRow>
+                            )
+                        )}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -377,4 +308,4 @@ export default function SalesInvoiceVerificationPage() {
       </Container>
     </SalesmanGuard>
   );
-} 
+}

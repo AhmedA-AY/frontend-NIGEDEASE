@@ -1,43 +1,44 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { inventoryApi, InventoryStore } from '@/services/api/inventory';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
-import CircularProgress from '@mui/material/CircularProgress';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import Typography from '@mui/material/Typography';
 import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
-import { useRouter } from 'next/navigation';
-import { useCurrentUser } from '@/hooks/use-auth';
-import { inventoryApi, InventoryStore } from '@/services/api/inventory';
+import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { useSnackbar } from 'notistack';
-import { paths } from '@/paths';
-import StoreEditModal from '@/components/admin/stores/StoreEditModal';
-import { useCheckCompanySubscription } from '@/hooks/use-companies';
 import { useTranslation } from 'react-i18next';
+
+import { paths } from '@/paths';
+import { useCurrentUser } from '@/hooks/use-auth';
+import { useCheckCompanySubscription } from '@/hooks/use-companies';
+import StoreEditModal from '@/components/admin/stores/StoreEditModal';
 
 export default function StoresPage(): React.JSX.Element {
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
   const { userInfo } = useCurrentUser();
   const { t } = useTranslation('admin');
-  
+
   const [isLoading, setIsLoading] = React.useState(true);
   const [stores, setStores] = React.useState<InventoryStore[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -46,24 +47,26 @@ export default function StoresPage(): React.JSX.Element {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [storeToDelete, setStoreToDelete] = React.useState<string | null>(null);
   const [anchorElMap, setAnchorElMap] = React.useState<{ [key: string]: HTMLElement | null }>({});
-  
+
   // Get subscription details
-  const { data: subscriptionData, isLoading: isLoadingSubscription } = useCheckCompanySubscription(userInfo?.company_id);
-  
+  const { data: subscriptionData, isLoading: isLoadingSubscription } = useCheckCompanySubscription(
+    userInfo?.company_id
+  );
+
   // Fetch stores data
   const fetchStores = React.useCallback(async () => {
     setIsLoading(true);
     try {
       // If user has a company_id, pass it to get only stores for that company
-      const storesData = userInfo?.company_id 
-        ? await inventoryApi.getStores(userInfo.company_id) 
+      const storesData = userInfo?.company_id
+        ? await inventoryApi.getStores(userInfo.company_id)
         : await inventoryApi.getStores();
-      
+
       // Filter stores by user's company
-      const filteredStores = userInfo?.company_id 
-        ? storesData 
-        : storesData.filter(store => store.company && userInfo?.role === 'superadmin');
-      
+      const filteredStores = userInfo?.company_id
+        ? storesData
+        : storesData.filter((store) => store.company && userInfo?.role === 'superadmin');
+
       setStores(filteredStores);
     } catch (error) {
       console.error('Error fetching stores:', error);
@@ -72,59 +75,61 @@ export default function StoresPage(): React.JSX.Element {
       setIsLoading(false);
     }
   }, [userInfo, enqueueSnackbar, t]);
-  
+
   // Load data on component mount
   React.useEffect(() => {
     fetchStores();
   }, [fetchStores]);
-  
+
   // Handle search
   const filteredStores = searchQuery
-    ? stores.filter(store => 
-        store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        store.location.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? stores.filter(
+        (store) =>
+          store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          store.location.toLowerCase().includes(searchQuery.toLowerCase())
+      )
     : stores;
-  
+
   // Menu handling
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
     setAnchorElMap({ ...anchorElMap, [id]: event.currentTarget });
   };
-  
+
   const handleMenuClose = (id: string) => {
     setAnchorElMap({ ...anchorElMap, [id]: null });
   };
-  
+
   // Add/Edit/Delete handlers
   const handleAddNewStore = () => {
     // Check subscription limits for stores
     if (subscriptionData && !isLoadingSubscription) {
       const { current_stores_count, max_stores } = subscriptionData;
-      
+
       if (current_stores_count >= max_stores) {
-        enqueueSnackbar(t('stores.subscription_limit', { max: max_stores }), { 
-          variant: 'error', 
-          autoHideDuration: 6000 
+        enqueueSnackbar(t('stores.subscription_limit', { max: max_stores }), {
+          variant: 'error',
+          autoHideDuration: 6000,
         });
         return;
       }
     }
-    
+
     setCurrentStore(null);
     setIsStoreModalOpen(true);
   };
-  
+
   const handleEditStore = (store: InventoryStore) => {
     setCurrentStore(store);
     setIsStoreModalOpen(true);
     handleMenuClose(store.id);
   };
-  
+
   const handleDeleteStore = (id: string) => {
     setStoreToDelete(id);
     setIsDeleteModalOpen(true);
     handleMenuClose(id);
   };
-  
+
   const handleConfirmDelete = async () => {
     if (storeToDelete) {
       setIsLoading(true);
@@ -142,7 +147,7 @@ export default function StoresPage(): React.JSX.Element {
       }
     }
   };
-  
+
   const handleSaveStore = async (storeData: any) => {
     setIsLoading(true);
     try {
@@ -154,8 +159,6 @@ export default function StoresPage(): React.JSX.Element {
           company_id: userInfo?.company_id || storeData.company_id,
           is_active: storeData.is_active,
           address: storeData.address || '',
-          phone_number: storeData.phone_number || '',
-          email: storeData.email || ''
         });
         enqueueSnackbar(t('stores.store_updated'), { variant: 'success' });
       } else {
@@ -170,8 +173,6 @@ export default function StoresPage(): React.JSX.Element {
           company_id: userInfo.company_id,
           is_active: 'active',
           address: storeData.address || '',
-          phone_number: storeData.phone_number || '',
-          email: storeData.email || ''
         });
         enqueueSnackbar(t('stores.store_created'), { variant: 'success' });
       }
@@ -179,51 +180,54 @@ export default function StoresPage(): React.JSX.Element {
       setIsStoreModalOpen(false);
     } catch (error: any) {
       console.error('Error saving store:', error);
-      
+
       // Check for subscription limit error
       if (error.response?.status === 403 && error.response?.data?.error?.includes('Subscription')) {
         const { current_count, max_allowed } = error.response.data;
         enqueueSnackbar(
-          t('stores.subscription_limit_reached', { 
-            current: current_count, 
-            max: max_allowed 
-          }) || `Subscription store limit reached (${current_count}/${max_allowed})`, 
+          t('stores.subscription_limit_reached', {
+            current: current_count,
+            max: max_allowed,
+          }) || `Subscription store limit reached (${current_count}/${max_allowed})`,
           { variant: 'error' }
         );
       } else {
         // Extract error message if available
-        const errorMessage = 
-          error.response?.data?.message || 
-          error.response?.data?.error || 
-          error.message || 
-          t('stores.save_error');
-        
+        const errorMessage =
+          error.response?.data?.message || error.response?.data?.error || error.message || t('stores.save_error');
+
         enqueueSnackbar(errorMessage, { variant: 'error' });
       }
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   // Generate breadcrumb path links
   const breadcrumbItems = [
     { label: t('common.dashboard'), url: paths.admin.dashboard },
     { label: t('stores.title'), url: paths.admin.stores },
   ];
-  
+
   return (
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
       {/* Header and Breadcrumbs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>{t('stores.title')}</Typography>
+        <Typography variant="h4" sx={{ mb: 1 }}>
+          {t('stores.title')}
+        </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
           {breadcrumbItems.map((item, index) => (
             <React.Fragment key={index}>
-              {index > 0 && <Box component="span" sx={{ mx: 0.5 }}>-</Box>}
-              <Typography 
-                component="a" 
-                href={item.url} 
-                variant="body2" 
+              {index > 0 && (
+                <Box component="span" sx={{ mx: 0.5 }}>
+                  -
+                </Box>
+              )}
+              <Typography
+                component="a"
+                href={item.url}
+                variant="body2"
                 color={index === breadcrumbItems.length - 1 ? 'text.primary' : 'inherit'}
                 sx={{ textDecoration: 'none' }}
               >
@@ -233,12 +237,12 @@ export default function StoresPage(): React.JSX.Element {
           ))}
         </Box>
       </Box>
-      
+
       {/* Action Buttons and Search */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Box>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             startIcon={<PlusIcon weight="bold" />}
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleAddNewStore}
@@ -253,15 +257,13 @@ export default function StoresPage(): React.JSX.Element {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
-              startAdornment: (
-                <MagnifyingGlassIcon size={20} style={{ marginRight: 8 }} />
-              ),
+              startAdornment: <MagnifyingGlassIcon size={20} style={{ marginRight: 8 }} />,
             }}
             sx={{ width: 250 }}
           />
         </Box>
       </Box>
-      
+
       {/* Stores List */}
       <Card>
         <Box sx={{ overflowX: 'auto' }}>
@@ -299,17 +301,14 @@ export default function StoresPage(): React.JSX.Element {
                     <TableCell>{store.phone_number || '-'}</TableCell>
                     <TableCell>{store.email || '-'}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={store.is_active === 'active' ? t('common.active') : t('common.inactive')} 
+                      <Chip
+                        label={store.is_active === 'active' ? t('common.active') : t('common.inactive')}
                         color={store.is_active === 'active' ? 'success' : 'default'}
                         size="small"
                       />
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton
-                        onClick={(event) => handleMenuOpen(event, store.id)}
-                        size="small"
-                      >
+                      <IconButton onClick={(event) => handleMenuOpen(event, store.id)} size="small">
                         <DotsThreeIcon />
                       </IconButton>
                       <Menu
@@ -317,13 +316,8 @@ export default function StoresPage(): React.JSX.Element {
                         open={Boolean(anchorElMap[store.id])}
                         onClose={() => handleMenuClose(store.id)}
                       >
-                        <MenuItem onClick={() => handleEditStore(store)}>
-                          {t('common.edit')}
-                        </MenuItem>
-                        <MenuItem 
-                          onClick={() => handleDeleteStore(store.id)}
-                          sx={{ color: 'error.main' }}
-                        >
+                        <MenuItem onClick={() => handleEditStore(store)}>{t('common.edit')}</MenuItem>
+                        <MenuItem onClick={() => handleDeleteStore(store.id)} sx={{ color: 'error.main' }}>
                           {t('common.delete')}
                         </MenuItem>
                       </Menu>
@@ -335,7 +329,7 @@ export default function StoresPage(): React.JSX.Element {
           </Table>
         </Box>
       </Card>
-      
+
       {/* Store Edit Modal */}
       <StoreEditModal
         open={isStoreModalOpen}
@@ -343,7 +337,7 @@ export default function StoresPage(): React.JSX.Element {
         store={currentStore || undefined}
         onSave={handleSaveStore}
       />
-      
+
       {/* Delete Confirmation Modal */}
       <StoreDeleteModal
         open={isDeleteModalOpen}
@@ -355,18 +349,10 @@ export default function StoresPage(): React.JSX.Element {
 }
 
 // Delete confirmation modal component
-function StoreDeleteModal({ 
-  open, 
-  onClose, 
-  onConfirm 
-}: { 
-  open: boolean; 
-  onClose: () => void; 
-  onConfirm: () => void; 
-}) {
+function StoreDeleteModal({ open, onClose, onConfirm }: { open: boolean; onClose: () => void; onConfirm: () => void }) {
   const { t } = useTranslation('admin');
   const [isDeleting, setIsDeleting] = React.useState(false);
-  
+
   const handleConfirm = async () => {
     setIsDeleting(true);
     try {
@@ -376,7 +362,7 @@ function StoreDeleteModal({
       onClose();
     }
   };
-  
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{t('stores.delete_store')}</DialogTitle>
@@ -387,12 +373,7 @@ function StoreDeleteModal({
         <Button onClick={onClose} disabled={isDeleting}>
           {t('common.cancel')}
         </Button>
-        <Button 
-          onClick={handleConfirm} 
-          color="error" 
-          variant="contained"
-          disabled={isDeleting}
-        >
+        <Button onClick={handleConfirm} color="error" variant="contained" disabled={isDeleting}>
           {isDeleting ? t('common.deleting') : t('common.delete')}
         </Button>
       </DialogActions>

@@ -238,14 +238,18 @@ export default function SalesPage(): React.JSX.Element {
       const saleToEdit = await transactionsApi.getSale(currentStore.id, saleId);
       const saleItems = await transactionsApi.getSaleItems(currentStore.id, saleId);
 
+      // Print the original sale items data
+      console.log('Original sale items data:', saleItems);
+
       // Convert sale items to the format expected by the form
       const products = await Promise.all(
         saleItems.map(async (item) => ({
           id: item.product.id,
           name: item.product.name,
           quantity: parseInt(item.quantity, 10),
-          price: 0, // This needs to be fetched from somewhere
-          subtotal: 0, // This needs to be calculated
+          price: parseFloat(item.item_sale_price || '0'), // Include item_sale_price
+          unitPrice: parseFloat(item.item_sale_price || '0'), // Also set as unitPrice for compatibility
+          subtotal: parseInt(item.quantity, 10) * parseFloat(item.item_sale_price || '0'), // Calculate subtotal
         }))
       );
 
@@ -314,7 +318,7 @@ export default function SalesPage(): React.JSX.Element {
     setIsLoading(true);
     try {
       // Log the incoming data for debugging
-      console.log('Original sale data:', saleData);
+      console.log('Original sale data:', JSON.stringify(saleData, null, 2));
 
       // Safely convert values and handle undefined
       const safeToString = (value: any) => {
@@ -336,19 +340,28 @@ export default function SalesPage(): React.JSX.Element {
         items: [],
       };
 
+      console.log('Sale data products/items:', JSON.stringify(saleData.products || saleData.items, null, 2));
       // Check if we have items or products
       if (Array.isArray(saleData.items) && saleData.items.length > 0) {
         formattedData.items = saleData.items;
       } else if (Array.isArray(saleData.products) && saleData.products.length > 0) {
         formattedData.items = saleData.products.map((product: any) => {
+          // Log each product being processed
+          console.log('Processing product:', product);
+
+          // Use price, unitPrice, or default to 0
+          const itemSalePrice = product.price || product.unitPrice || 0;
+          console.log(`Using price: ${itemSalePrice} for product ${product.id}`);
+
           return {
             product_id: product.product_id || product.id,
             quantity: safeToString(product.quantity),
+            item_sale_price: safeToString(itemSalePrice),
           };
         });
       }
 
-      console.log('Formatted data for API:', formattedData);
+      console.log('Formatted data for API:', JSON.stringify(formattedData, null, 2));
 
       // Check if items array is empty before sending to API
       if (!formattedData.items || formattedData.items.length === 0) {
@@ -358,7 +371,7 @@ export default function SalesPage(): React.JSX.Element {
       }
 
       // Debug each item to ensure it has required fields
-      console.log('Items to be submitted:', JSON.stringify(formattedData.items));
+      console.log('Items to be submitted:', JSON.stringify(formattedData.items, null, 2));
 
       // Validate each item has product_id and quantity
       const invalidItems = formattedData.items.filter((item: any) => !item.product_id || !item.quantity);

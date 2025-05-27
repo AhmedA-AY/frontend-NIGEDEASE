@@ -4,16 +4,16 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
-import InputLabel from '@mui/material/InputLabel';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { X as XIcon } from '@phosphor-icons/react/dist/ssr/X';
 
 export interface CustomerFormData {
@@ -22,7 +22,6 @@ export interface CustomerFormData {
   email: string;
   phone: string;
   address?: string;
-  credit_limit?: string;
   store_id?: string;
 }
 
@@ -38,13 +37,12 @@ const initialFormState: CustomerFormData = {
   email: '',
   phone: '',
   address: '',
-  credit_limit: '',
 };
 
 const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, customer, onSave }) => {
   const [formState, setFormState] = React.useState<CustomerFormData>(initialFormState);
   const [errors, setErrors] = React.useState<Partial<Record<keyof CustomerFormData, string>>>({});
-  
+
   // Reset form when modal opens or customer changes
   React.useEffect(() => {
     if (open) {
@@ -63,7 +61,7 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
       }
     }
   };
-  
+
   const handleStatusChange = (event: SelectChangeEvent) => {
     const { name, value } = event.target;
     if (name) {
@@ -73,32 +71,28 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
       }
     }
   };
-  
+
   const validateForm = () => {
     const newErrors: Partial<Record<keyof CustomerFormData, string>> = {};
-    
+
     if (!formState.name.trim()) {
       newErrors.name = 'Name is required';
     }
-    
+
     if (!formState.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^\S+@\S+\.\S+$/.test(formState.email)) {
       newErrors.email = 'Valid email is required';
     }
-    
+
     if (!formState.phone.trim()) {
       newErrors.phone = 'Phone is required';
     }
-    
-    if (formState.credit_limit && isNaN(parseFloat(formState.credit_limit))) {
-      newErrors.credit_limit = 'Must be a valid number';
-    }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleSubmit = () => {
     if (validateForm()) {
       onSave(formState);
@@ -107,24 +101,22 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { borderRadius: 2 }
+        sx: { borderRadius: 2 },
       }}
     >
       <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">
-          {customer?.id ? 'Edit Customer' : 'Add New Customer'}
-        </Typography>
+        <Typography variant="h6">{customer?.id ? 'Edit Customer' : 'Add New Customer'}</Typography>
         <IconButton aria-label="close" onClick={onClose} size="small">
           <XIcon size={20} />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent dividers>
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -132,7 +124,7 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
               Basic Information
             </Typography>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <TextField
               name="name"
@@ -145,7 +137,7 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
               required
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <TextField
               name="email"
@@ -159,7 +151,7 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
               required
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <TextField
               name="phone"
@@ -172,28 +164,13 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
               required
             />
           </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="credit_limit"
-              label="Credit Limit"
-              fullWidth
-              value={formState.credit_limit || ''}
-              onChange={handleChange}
-              error={!!errors.credit_limit}
-              helperText={errors.credit_limit}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              }}
-            />
-          </Grid>
-          
+
           <Grid item xs={12}>
             <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
               Address
             </Typography>
           </Grid>
-          
+
           <Grid item xs={12}>
             <TextField
               name="address"
@@ -207,17 +184,13 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
           </Grid>
         </Grid>
       </DialogContent>
-      
+
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button 
-          onClick={onClose} 
-          variant="outlined"
-          sx={{ borderColor: 'rgba(0, 0, 0, 0.23)', color: 'text.primary' }}
-        >
+        <Button onClick={onClose} variant="outlined" sx={{ borderColor: 'rgba(0, 0, 0, 0.23)', color: 'text.primary' }}>
           Cancel
         </Button>
-        <Button 
-          onClick={handleSubmit} 
+        <Button
+          onClick={handleSubmit}
           variant="contained"
           sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
         >
@@ -228,4 +201,4 @@ const CustomerEditModal: React.FC<CustomerEditModalProps> = ({ open, onClose, cu
   );
 };
 
-export default CustomerEditModal; 
+export default CustomerEditModal;

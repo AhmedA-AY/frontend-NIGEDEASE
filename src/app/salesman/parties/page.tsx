@@ -1,41 +1,42 @@
 'use client';
 
 import * as React from 'react';
+import { useState } from 'react';
+import { useStore } from '@/providers/store-provider';
+import { Customer, CustomerCreateData, transactionsApi } from '@/services/api/transactions';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
-import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import MenuItem from '@mui/material/MenuItem';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Select from '@mui/material/Select';
+import Stack from '@mui/material/Stack';
+import Tab from '@mui/material/Tab';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import Stack from '@mui/material/Stack';
 import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
-import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import Typography from '@mui/material/Typography';
 import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
-import { UploadSimple as UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
-import { useState } from 'react';
-import CustomerEditModal, { CustomerFormData } from '@/components/admin/parties/CustomerEditModal';
+import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import { UploadSimple as UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 import { useSnackbar } from 'notistack';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogActions from '@mui/material/DialogActions';
-import { Customer, CustomerCreateData, transactionsApi } from '@/services/api/transactions';
-import { useStore } from '@/providers/store-provider';
-import CircularProgress from '@mui/material/CircularProgress';
+
+import CustomerEditModal, { CustomerFormData } from '@/components/admin/parties/CustomerEditModal';
 
 export default function CustomersPage(): React.JSX.Element {
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([]);
@@ -48,7 +49,7 @@ export default function CustomersPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const { currentStore } = useStore();
-  
+
   // Fetch customers
   const fetchCustomers = React.useCallback(async () => {
     if (!currentStore) {
@@ -56,7 +57,7 @@ export default function CustomersPage(): React.JSX.Element {
       setIsLoading(false);
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const data = await transactionsApi.getCustomers(currentStore.id);
@@ -75,15 +76,9 @@ export default function CustomersPage(): React.JSX.Element {
     }
   }, [fetchCustomers, currentStore]);
 
-  // Calculate total balance
-  const totalBalance = customers.reduce((sum, customer) => {
-    const amount = parseFloat(customer.credit_limit || '0');
-    return sum + amount;
-  }, 0);
-
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      setSelectedCustomers(customers.map(customer => customer.id));
+      setSelectedCustomers(customers.map((customer) => customer.id));
     } else {
       setSelectedCustomers([]);
     }
@@ -91,12 +86,12 @@ export default function CustomersPage(): React.JSX.Element {
 
   const handleSelectOne = (id: string) => {
     if (selectedCustomers.includes(id)) {
-      setSelectedCustomers(selectedCustomers.filter(customerId => customerId !== id));
+      setSelectedCustomers(selectedCustomers.filter((customerId) => customerId !== id));
     } else {
       setSelectedCustomers([...selectedCustomers, id]);
     }
   };
-  
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -105,7 +100,7 @@ export default function CustomersPage(): React.JSX.Element {
     setCurrentCustomer(undefined);
     setIsEditModalOpen(true);
   };
-  
+
   const handleOpenEditModal = (customer: Customer) => {
     setCurrentCustomer({
       id: customer.id,
@@ -113,21 +108,20 @@ export default function CustomersPage(): React.JSX.Element {
       email: customer.email,
       phone: customer.phone,
       address: customer.address,
-      credit_limit: customer.credit_limit || ''
     });
     setIsEditModalOpen(true);
   };
-  
+
   const handleCloseModal = () => {
     setIsEditModalOpen(false);
   };
-  
+
   const handleSaveCustomer = async (customerData: CustomerFormData) => {
     if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
-    
+
     try {
       const customerPayload: CustomerCreateData = {
         store_id: currentStore.id,
@@ -135,7 +129,6 @@ export default function CustomersPage(): React.JSX.Element {
         email: customerData.email,
         phone: customerData.phone,
         address: customerData.address || '',
-        credit_limit: customerData.credit_limit || ''
       };
 
       if (customerData.id) {
@@ -147,7 +140,7 @@ export default function CustomersPage(): React.JSX.Element {
         await transactionsApi.createCustomer(currentStore.id, customerPayload);
         enqueueSnackbar('Customer added successfully', { variant: 'success' });
       }
-      
+
       // Refresh the customer list
       fetchCustomers();
       handleCloseModal();
@@ -156,23 +149,23 @@ export default function CustomersPage(): React.JSX.Element {
       enqueueSnackbar('Failed to save customer', { variant: 'error' });
     }
   };
-  
+
   const handleOpenDeleteDialog = (customerId: string) => {
     setCustomerToDelete(customerId);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const handleCloseDeleteDialog = () => {
     setIsDeleteDialogOpen(false);
     setCustomerToDelete(null);
   };
-  
+
   const handleDeleteCustomer = async () => {
     if (!currentStore) {
       enqueueSnackbar('No store selected', { variant: 'error' });
       return;
     }
-    
+
     if (customerToDelete) {
       try {
         await transactionsApi.deleteCustomer(currentStore.id, customerToDelete);
@@ -180,9 +173,7 @@ export default function CustomersPage(): React.JSX.Element {
         // Refresh the customer list
         fetchCustomers();
         // Clear selection if the deleted customer was selected
-        setSelectedCustomers(prevSelected => 
-          prevSelected.filter(id => id !== customerToDelete)
-        );
+        setSelectedCustomers((prevSelected) => prevSelected.filter((id) => id !== customerToDelete));
       } catch (error) {
         console.error('Error deleting customer:', error);
         enqueueSnackbar('Failed to delete customer', { variant: 'error' });
@@ -201,15 +192,21 @@ export default function CustomersPage(): React.JSX.Element {
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
       {/* Header and Breadcrumbs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>Customers</Typography>
+        <Typography variant="h4" sx={{ mb: 1 }}>
+          Customers
+        </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
           {breadcrumbItems.map((item, index) => (
             <React.Fragment key={index}>
-              {index > 0 && <Box component="span" sx={{ mx: 0.5 }}>-</Box>}
-              <Typography 
-                component="a" 
-                href={item.url} 
-                variant="body2" 
+              {index > 0 && (
+                <Box component="span" sx={{ mx: 0.5 }}>
+                  -
+                </Box>
+              )}
+              <Typography
+                component="a"
+                href={item.url}
+                variant="body2"
                 color={index === breadcrumbItems.length - 1 ? 'text.primary' : 'inherit'}
                 sx={{ textDecoration: 'none' }}
               >
@@ -223,8 +220,8 @@ export default function CustomersPage(): React.JSX.Element {
       {/* Action Buttons and Filters */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             startIcon={<PlusIcon weight="bold" />}
             sx={{ bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             onClick={handleOpenAddModal}
@@ -233,16 +230,6 @@ export default function CustomersPage(): React.JSX.Element {
           </Button>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <OutlinedInput
-            placeholder="Search..."
-            size="small"
-            startAdornment={
-              <InputAdornment position="start">
-                <MagnifyingGlassIcon size={20} />
-              </InputAdornment>
-            }
-            sx={{ width: 200 }}
-          />
           <Select
             displayEmpty
             value=""
@@ -278,7 +265,6 @@ export default function CustomersPage(): React.JSX.Element {
                 <TableCell>Name</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Phone</TableCell>
-                <TableCell>Balance</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -295,10 +281,7 @@ export default function CustomersPage(): React.JSX.Element {
                   return (
                     <TableRow key={customer.id} hover selected={isSelected}>
                       <TableCell padding="checkbox">
-                        <Checkbox
-                          checked={isSelected}
-                          onChange={() => handleSelectOne(customer.id)}
-                        />
+                        <Checkbox checked={isSelected} onChange={() => handleSelectOne(customer.id)} />
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -322,24 +305,20 @@ export default function CustomersPage(): React.JSX.Element {
                       </TableCell>
                       <TableCell>{customer.email}</TableCell>
                       <TableCell>{customer.phone}</TableCell>
-                      <TableCell>${parseFloat(customer.credit_limit || '0').toLocaleString()}</TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={1}>
-                          <IconButton 
-                            size="small" 
+                          <IconButton
+                            size="small"
                             onClick={() => handleOpenEditModal(customer)}
                             sx={{ color: '#0ea5e9' }}
                           >
                             <PencilSimpleIcon size={18} />
                           </IconButton>
-                          <IconButton 
-                            size="small" 
-                            sx={{ color: '#0f766e' }}
-                          >
+                          <IconButton size="small" sx={{ color: '#0f766e' }}>
                             <EyeIcon size={18} />
                           </IconButton>
-                          <IconButton 
-                            size="small" 
+                          <IconButton
+                            size="small"
                             sx={{ color: '#ef4444' }}
                             onClick={() => handleOpenDeleteDialog(customer.id)}
                           >
@@ -353,7 +332,9 @@ export default function CustomersPage(): React.JSX.Element {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
-                    <Typography variant="body1" sx={{ py: 2 }}>No customers found</Typography>
+                    <Typography variant="body1" sx={{ py: 2 }}>
+                      No customers found
+                    </Typography>
                   </TableCell>
                 </TableRow>
               )}
@@ -361,7 +342,7 @@ export default function CustomersPage(): React.JSX.Element {
           </Table>
         </Box>
       </Card>
-      
+
       {/* Customer Edit Modal */}
       {isEditModalOpen && (
         <CustomerEditModal
@@ -373,10 +354,7 @@ export default function CustomersPage(): React.JSX.Element {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={isDeleteDialogOpen}
-        onClose={handleCloseDeleteDialog}
-      >
+      <Dialog open={isDeleteDialogOpen} onClose={handleCloseDeleteDialog}>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -392,4 +370,4 @@ export default function CustomersPage(): React.JSX.Element {
       </Dialog>
     </Box>
   );
-} 
+}

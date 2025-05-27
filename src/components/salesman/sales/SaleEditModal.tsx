@@ -57,7 +57,7 @@ interface SaleData {
   currency_id: string;
   payment_mode_id: string;
   products?: ProductItem[];
-  items?: Array<{ product_id: string; quantity: string; item_sale_price?: string }>;
+  items?: Array<{ product_id: string; quantity: string }>;
 }
 
 interface SaleEditModalProps {
@@ -476,14 +476,10 @@ export default function SaleEditModal({
         }
 
         // Transform products array into items array for API
-        const items = formData.products.map((product) => {
-          console.log(`Product ${product.id} - name: ${product.name}, unitPrice: ${product.unitPrice}`);
-          return {
-            product_id: product.id,
-            quantity: product.quantity.toString(),
-            item_sale_price: product.unitPrice.toString(),
-          };
-        });
+        const items = formData.products.map((product) => ({
+          product_id: product.id,
+          quantity: product.quantity.toString(),
+        }));
 
         // Create a new object that matches what the API expects
         const apiData: SaleData = {
@@ -498,7 +494,7 @@ export default function SaleEditModal({
           items: items,
         };
 
-        console.log('Submitting data to API:', JSON.stringify(apiData, null, 2));
+        console.log('Submitting data to API:', apiData);
         onSave(apiData);
       } catch (error) {
         console.error('Error preparing data for submission:', error);

@@ -1,6 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, IconButton, Paper, Typography, TextField, Button, Stack, Collapse, Select, MenuItem, FormControlLabel, Checkbox } from '@mui/material';
-import { ChatCircle, X, PaperPlaneTilt } from '@phosphor-icons/react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Box,
+  Button,
+  Checkbox,
+  Collapse,
+  FormControlLabel,
+  IconButton,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { ChatCircle, PaperPlaneTilt, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 
 interface Message {
@@ -34,11 +47,11 @@ const Chatbot: React.FC = () => {
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
+    setMessages((prev) => [...prev, { text: userMessage, isUser: true }]);
     setIsTyping(true);
 
     try {
-      const response = await fetch('https://flask-chatbot-5cou.onrender.com/api/chat', {
+      const response = await fetch('http://127.0.0.1:8000/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,31 +59,33 @@ const Chatbot: React.FC = () => {
         body: JSON.stringify({
           message: userMessage,
           language,
-          demo_mode: demoMode
+          demo_mode: demoMode,
         }),
       });
 
       const data = await response.json();
-      setMessages(prev => [...prev, {
-        text: data.response,
-        isUser: false,
-        relatedQuestions: data.related_questions
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: data.response,
+          isUser: false,
+          relatedQuestions: data.related_questions,
+        },
+      ]);
     } catch (error) {
-      setMessages(prev => [...prev, {
-        text: 'Sorry, I encountered an error. Please try again.',
-        isUser: false
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: 'Sorry, I encountered an error. Please try again.',
+          isUser: false,
+        },
+      ]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const quickQuestions = [
-    'What is NigedEase?',
-    'What are the key features?',
-    'How can it help my business?',
-  ];
+  const quickQuestions = ['What is NigedEase?', 'What are the key features?', 'How can it help my business?'];
 
   return (
     <Box
@@ -128,10 +143,7 @@ const Chatbot: React.FC = () => {
             <Typography variant="h6" fontWeight={600}>
               NigedEase Assistant
             </Typography>
-            <IconButton
-              onClick={() => setIsOpen(false)}
-              sx={{ color: 'white' }}
-            >
+            <IconButton onClick={() => setIsOpen(false)} sx={{ color: 'white' }}>
               <X size={24} weight="bold" />
             </IconButton>
           </Box>
@@ -149,13 +161,7 @@ const Chatbot: React.FC = () => {
                 <MenuItem value="am">አማርኛ</MenuItem>
               </Select>
               <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={demoMode}
-                    onChange={(e) => setDemoMode(e.target.checked)}
-                    size="small"
-                  />
-                }
+                control={<Checkbox checked={demoMode} onChange={(e) => setDemoMode(e.target.checked)} size="small" />}
                 label="Demo Mode"
               />
             </Stack>
@@ -345,4 +351,4 @@ const Chatbot: React.FC = () => {
   );
 };
 
-export default Chatbot; 
+export default Chatbot;

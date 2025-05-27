@@ -51,7 +51,10 @@
     "users": "ተጠቃሚዎች",
     "reports": "ሪፖርቶች",
     "invoice_verification": "የደረሰኝ ማረጋገጫ",
-    "inventory_search": "የእቃ ክምችት ፍለጋ"
+    "inventory_search": "የእቃ ክምችት ፍለጋ",
+    "activity_logs": "የእንቅስቃሴ ምዝግብ ማስታወሻዎች",
+    "predictions": "ትንበያዎች",
+    "stock_transfers": "የእቃ ክምችት ዝውውሮች"
   },
   "common": {
     "role": "ሚና",
@@ -501,7 +504,7 @@
     "all_expenses": "ሁሉም ወጪዎች",
     "add_expense": "ወጪ አክል",
     "edit_expense": "ወጪ አስተካክል",
-    "delete_expense": "ወጪ አጥፋ", 
+    "delete_expense": "ወጪ አጥፋ",
     "expense_details": "የወጪ ዝርዝሮች",
     "expense_amount": "መጠን",
     "expense_date": "ቀን",
@@ -649,4 +652,4 @@
     "camera_error": "ካሜራን ለመድረስ ስህተት",
     "or": "ወይም"
   }
-} 
+}

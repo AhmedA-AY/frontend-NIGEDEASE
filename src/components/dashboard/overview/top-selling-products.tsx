@@ -1,23 +1,23 @@
 'use client';
 
 import React from 'react';
+import { TopSellingProduct } from '@/services/api/dashboard';
 import {
   Box,
+  Button,
   Card,
   CardContent,
   CardHeader,
   Divider,
+  LinearProgress,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
   Typography,
-  LinearProgress,
-  Button
 } from '@mui/material';
 import { ArrowRight } from '@phosphor-icons/react/dist/ssr';
-import { TopSellingProduct } from '@/services/api/dashboard';
 import { TFunction } from 'i18next';
 
 interface TopSellingProductsProps {
@@ -28,22 +28,10 @@ interface TopSellingProductsProps {
 export function TopSellingProducts({ products, t }: TopSellingProductsProps) {
   // Ensure we have a valid array of products
   const validProducts = Array.isArray(products) ? products : [];
-  
+
   return (
     <Card>
-      <CardHeader 
-        title={t('overview.top_selling_products')} 
-        action={
-          <Button
-            color="inherit"
-            endIcon={<ArrowRight size={16} />}
-            size="small"
-            variant="text"
-          >
-            {t('overview.view_all')}
-          </Button>
-        }
-      />
+      <CardHeader title={t('overview.top_selling_products')} />
       <Divider />
       <CardContent sx={{ p: 0 }}>
         {validProducts.length > 0 ? (
@@ -61,18 +49,25 @@ export function TopSellingProducts({ products, t }: TopSellingProductsProps) {
                 // Extract data safely
                 const id = product.id || product.product_id || `product-${index}`;
                 const name = product.name || product.product_name || 'Unknown Product';
-                const quantity = typeof product.quantity === 'number' ? product.quantity : 
-                                (typeof product.total_quantity === 'number' ? product.total_quantity : 0);
-                const amount = typeof product.amount === 'number' ? product.amount : 
-                              (typeof product.total_sales === 'number' ? product.total_sales : 0);
-                const percentage = typeof product.percentage === 'number' ? product.percentage : 
-                                  (Math.min(Math.round((amount / 100) * 100), 100) || 0);
-                
+                const quantity =
+                  typeof product.quantity === 'number'
+                    ? product.quantity
+                    : typeof product.total_quantity === 'number'
+                      ? product.total_quantity
+                      : 0;
+                const amount =
+                  typeof product.amount === 'number'
+                    ? product.amount
+                    : typeof product.total_sales === 'number'
+                      ? product.total_sales
+                      : 0;
+                const percentage =
+                  typeof product.percentage === 'number'
+                    ? product.percentage
+                    : Math.min(Math.round((amount / 100) * 100), 100) || 0;
+
                 return (
-                  <TableRow
-                    key={id}
-                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                  >
+                  <TableRow key={id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell component="th" scope="row">
                       <Box>
                         <Typography variant="body2" fontWeight="medium">
@@ -121,4 +116,4 @@ export function TopSellingProducts({ products, t }: TopSellingProductsProps) {
       </CardContent>
     </Card>
   );
-} 
+}

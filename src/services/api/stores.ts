@@ -1,5 +1,6 @@
-import { coreApiClient } from './client';
 import tokenStorage from '@/utils/token-storage';
+
+import { coreApiClient } from './client';
 
 export interface Store {
   id: string;
@@ -16,8 +17,6 @@ export interface Store {
 export interface StoreCreateData {
   name: string;
   address: string;
-  phone_number: string;
-  email: string;
   company_id: string;
   is_active: boolean;
   location: string;
@@ -34,12 +33,12 @@ export const storesApi = {
       if (!companyId) {
         const userInfo = tokenStorage.getUserInfo();
         companyId = userInfo?.company_id;
-        
+
         if (!companyId) {
           throw new Error('Company ID is required to fetch stores');
         }
       }
-      
+
       const response = await coreApiClient.get<Store[]>(`/companies/companies/${companyId}/stores/`);
       return response.data;
     } catch (error) {
@@ -47,18 +46,18 @@ export const storesApi = {
       throw error;
     }
   },
-  
+
   // Get store by ID
   getStore: async (id: string): Promise<Store> => {
     try {
       // First try to get the store information to identify its company
       const userInfo = tokenStorage.getUserInfo();
       const companyId = userInfo?.company_id;
-      
+
       if (!companyId) {
         throw new Error('Company ID is required to fetch store');
       }
-      
+
       const response = await coreApiClient.get<Store>(`/companies/companies/${companyId}/stores/${id}/`);
       return response.data;
     } catch (error) {
@@ -66,7 +65,7 @@ export const storesApi = {
       throw error;
     }
   },
-  
+
   // Create a new store
   createStore: async (data: StoreCreateData): Promise<Store> => {
     try {
@@ -74,7 +73,7 @@ export const storesApi = {
       if (!companyId) {
         throw new Error('Company ID is required to create a store');
       }
-      
+
       const response = await coreApiClient.post<Store>(`/companies/companies/${companyId}/stores/`, data);
       return response.data;
     } catch (error) {
@@ -82,7 +81,7 @@ export const storesApi = {
       throw error;
     }
   },
-  
+
   // Update a store
   updateStore: async (id: string, data: StoreUpdateData): Promise<Store> => {
     try {
@@ -90,14 +89,14 @@ export const storesApi = {
       if (!companyId) {
         const userInfo = tokenStorage.getUserInfo();
         const userCompanyId = userInfo?.company_id;
-        
+
         if (!userCompanyId) {
           throw new Error('Company ID is required to update a store');
         }
-        
+
         data.company_id = userCompanyId;
       }
-      
+
       const response = await coreApiClient.put<Store>(`/companies/companies/${data.company_id}/stores/${id}/`, data);
       return response.data;
     } catch (error) {
@@ -105,42 +104,41 @@ export const storesApi = {
       throw error;
     }
   },
-  
+
   // Delete a store
   deleteStore: async (id: string): Promise<void> => {
     try {
       const userInfo = tokenStorage.getUserInfo();
       const companyId = userInfo?.company_id;
-      
+
       if (!companyId) {
         throw new Error('Company ID is required to delete a store');
       }
-      
+
       await coreApiClient.delete(`/companies/companies/${companyId}/stores/${id}/`);
     } catch (error) {
       console.error('Error deleting store:', error);
       throw error;
     }
   },
-  
+
   // Toggle store active status
   toggleStoreStatus: async (id: string, isActive: boolean): Promise<Store> => {
     try {
       const userInfo = tokenStorage.getUserInfo();
       const companyId = userInfo?.company_id;
-      
+
       if (!companyId) {
         throw new Error('Company ID is required to toggle store status');
       }
-      
-      const response = await coreApiClient.put<Store>(
-        `/companies/companies/${companyId}/stores/${id}/`, 
-        { is_active: isActive ? "active" : "inactive" }
-      );
+
+      const response = await coreApiClient.put<Store>(`/companies/companies/${companyId}/stores/${id}/`, {
+        is_active: isActive ? 'active' : 'inactive',
+      });
       return response.data;
     } catch (error) {
       console.error('Error toggling store status:', error);
       throw error;
     }
-  }
-}; 
+  },
+};

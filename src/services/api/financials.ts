@@ -133,47 +133,66 @@ export const financialsApi = {
     const response = await coreApiClient.get<ExpenseCategory[]>(`/financials/stores/${storeId}/expense-categories/`);
     return response.data;
   },
-  
+
   getExpenseCategory: async (storeId: string, id: string): Promise<ExpenseCategory> => {
-    const response = await coreApiClient.get<ExpenseCategory>(`/financials/stores/${storeId}/expense-categories/${id}/`);
+    const response = await coreApiClient.get<ExpenseCategory>(
+      `/financials/stores/${storeId}/expense-categories/${id}/`
+    );
     return response.data;
   },
-  
+
   createExpenseCategory: async (storeId: string, data: ExpenseCategoryCreateData): Promise<ExpenseCategory> => {
-    const response = await coreApiClient.post<ExpenseCategory>(`/financials/stores/${storeId}/expense-categories/`, data);
+    const response = await coreApiClient.post<ExpenseCategory>(
+      `/financials/stores/${storeId}/expense-categories/`,
+      data
+    );
     return response.data;
   },
-  
-  updateExpenseCategory: async (storeId: string, id: string, data: ExpenseCategoryUpdateData): Promise<ExpenseCategory> => {
-    const response = await coreApiClient.put<ExpenseCategory>(`/financials/stores/${storeId}/expense-categories/${id}/`, data);
+
+  updateExpenseCategory: async (
+    storeId: string,
+    id: string,
+    data: ExpenseCategoryUpdateData
+  ): Promise<ExpenseCategory> => {
+    const response = await coreApiClient.put<ExpenseCategory>(
+      `/financials/stores/${storeId}/expense-categories/${id}/`,
+      data
+    );
     return response.data;
   },
-  
+
   deleteExpenseCategory: async (storeId: string, id: string): Promise<void> => {
     await coreApiClient.delete(`/financials/stores/${storeId}/expense-categories/${id}/`);
   },
 
   // Expenses
-  getExpenses: async (storeId: string): Promise<Expense[]> => {
-    const response = await coreApiClient.get<Expense[]>(`/financials/stores/${storeId}/expenses/`);
+  getExpenses: async (storeId: string, startDate?: string, endDate?: string): Promise<Expense[]> => {
+    let url = `/financials/stores/${storeId}/expenses/`;
+
+    // Add date range if provided
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+
+    const response = await coreApiClient.get<Expense[]>(url);
     return response.data;
   },
-  
+
   getExpense: async (storeId: string, id: string): Promise<Expense> => {
     const response = await coreApiClient.get<Expense>(`/financials/stores/${storeId}/expenses/${id}/`);
     return response.data;
   },
-  
+
   createExpense: async (storeId: string, data: ExpenseCreateData): Promise<Expense> => {
     const response = await coreApiClient.post<Expense>(`/financials/stores/${storeId}/expenses/`, data);
     return response.data;
   },
-  
+
   updateExpense: async (storeId: string, id: string, data: ExpenseUpdateData): Promise<Expense> => {
     const response = await coreApiClient.put<Expense>(`/financials/stores/${storeId}/expenses/${id}/`, data);
     return response.data;
   },
-  
+
   deleteExpense: async (storeId: string, id: string): Promise<void> => {
     await coreApiClient.delete(`/financials/stores/${storeId}/expenses/${id}/`);
   },
@@ -183,22 +202,22 @@ export const financialsApi = {
     const response = await coreApiClient.get<Payable[]>(`/financials/stores/${storeId}/payables/`);
     return response.data;
   },
-  
+
   getPayable: async (storeId: string, id: string): Promise<Payable> => {
     const response = await coreApiClient.get<Payable>(`/financials/stores/${storeId}/payables/${id}/`);
     return response.data;
   },
-  
+
   createPayable: async (storeId: string, data: PayableCreateData): Promise<Payable> => {
     const response = await coreApiClient.post<Payable>(`/financials/stores/${storeId}/payables/`, data);
     return response.data;
   },
-  
+
   updatePayable: async (storeId: string, id: string, data: PayableUpdateData): Promise<Payable> => {
     const response = await coreApiClient.put<Payable>(`/financials/stores/${storeId}/payables/${id}/`, data);
     return response.data;
   },
-  
+
   deletePayable: async (storeId: string, id: string): Promise<void> => {
     await coreApiClient.delete(`/financials/stores/${storeId}/payables/${id}/`);
   },
@@ -208,22 +227,22 @@ export const financialsApi = {
     const response = await coreApiClient.get<PaymentIn[]>(`/financials/stores/${storeId}/payments-in/`);
     return response.data;
   },
-  
+
   getPaymentIn: async (storeId: string, id: string): Promise<PaymentIn> => {
     const response = await coreApiClient.get<PaymentIn>(`/financials/stores/${storeId}/payments-in/${id}/`);
     return response.data;
   },
-  
+
   createPaymentIn: async (storeId: string, data: PaymentInCreateData): Promise<PaymentIn> => {
     const response = await coreApiClient.post<PaymentIn>(`/financials/stores/${storeId}/payments-in/`, data);
     return response.data;
   },
-  
+
   updatePaymentIn: async (storeId: string, id: string, data: PaymentInUpdateData): Promise<PaymentIn> => {
     const response = await coreApiClient.put<PaymentIn>(`/financials/stores/${storeId}/payments-in/${id}/`, data);
     return response.data;
   },
-  
+
   deletePaymentIn: async (storeId: string, id: string): Promise<void> => {
     await coreApiClient.delete(`/financials/stores/${storeId}/payments-in/${id}/`);
   },
@@ -233,22 +252,22 @@ export const financialsApi = {
     const response = await coreApiClient.get<PaymentOut[]>(`/financials/stores/${storeId}/payments-out/`);
     return response.data;
   },
-  
+
   getPaymentOut: async (storeId: string, id: string): Promise<PaymentOut> => {
     const response = await coreApiClient.get<PaymentOut>(`/financials/stores/${storeId}/payments-out/${id}/`);
     return response.data;
   },
-  
+
   createPaymentOut: async (storeId: string, data: PaymentOutCreateData): Promise<PaymentOut> => {
     const response = await coreApiClient.post<PaymentOut>(`/financials/stores/${storeId}/payments-out/`, data);
     return response.data;
   },
-  
+
   updatePaymentOut: async (storeId: string, id: string, data: PaymentOutUpdateData): Promise<PaymentOut> => {
     const response = await coreApiClient.put<PaymentOut>(`/financials/stores/${storeId}/payments-out/${id}/`, data);
     return response.data;
   },
-  
+
   deletePaymentOut: async (storeId: string, id: string): Promise<void> => {
     await coreApiClient.delete(`/financials/stores/${storeId}/payments-out/${id}/`);
   },
@@ -258,23 +277,23 @@ export const financialsApi = {
     const response = await coreApiClient.get<Receivable[]>(`/financials/stores/${storeId}/receivables/`);
     return response.data;
   },
-  
+
   getReceivable: async (storeId: string, id: string): Promise<Receivable> => {
     const response = await coreApiClient.get<Receivable>(`/financials/stores/${storeId}/receivables/${id}/`);
     return response.data;
   },
-  
+
   createReceivable: async (storeId: string, data: ReceivableCreateData): Promise<Receivable> => {
     const response = await coreApiClient.post<Receivable>(`/financials/stores/${storeId}/receivables/`, data);
     return response.data;
   },
-  
+
   updateReceivable: async (storeId: string, id: string, data: ReceivableUpdateData): Promise<Receivable> => {
     const response = await coreApiClient.put<Receivable>(`/financials/stores/${storeId}/receivables/${id}/`, data);
     return response.data;
   },
-  
+
   deleteReceivable: async (storeId: string, id: string): Promise<void> => {
     await coreApiClient.delete(`/financials/stores/${storeId}/receivables/${id}/`);
   },
-}; 
+};

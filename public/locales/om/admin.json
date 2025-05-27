@@ -73,7 +73,10 @@
     "users": "Fayyadamtoota",
     "reports": "Gabaasawwan",
     "invoice_verification": "Mirkaneessa Invooysii",
-    "inventory_search": "Barbaacha Kuusaa"
+    "inventory_search": "Barbaacha Kuusaa",
+    "activity_logs": "Galmee Hojii",
+    "predictions": "Raagaawwan",
+    "stock_transfers": "Dabarsaa Kuusaa"
   },
   "common": {
     "role": "Gahee",
@@ -668,4 +671,4 @@
     "camera_error": "Kaameeraa argachuuf dogoggora",
     "or": "YOOKAAN"
   }
-} 
+}

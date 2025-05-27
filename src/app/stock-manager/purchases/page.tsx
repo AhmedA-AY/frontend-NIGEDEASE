@@ -78,7 +78,6 @@ export default function PurchasesPage(): React.JSX.Element {
     taxAmount: 0,
     tax: '0',
     amount_paid: 0,
-    amount: 0,
     is_credit: false,
     company_id: '',
     store_id: '',
@@ -405,6 +404,7 @@ export default function PurchasesPage(): React.JSX.Element {
         is_credit: purchaseData.is_credit || false,
         items: purchaseData.products.map((product: any) => ({
           product_id: product.id,
+          item_purchase_price: product.unitPrice.toString(),
           quantity: product.quantity.toString(),
         })),
       };
@@ -511,18 +511,6 @@ export default function PurchasesPage(): React.JSX.Element {
           </Button>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField
-            placeholder={t('purchases.search_invoice')}
-            size="small"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon size={20} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ width: 200 }}
-          />
           <Select
             displayEmpty
             value={selectedSupplier}

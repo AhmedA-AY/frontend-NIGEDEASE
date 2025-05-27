@@ -10,7 +10,6 @@ export interface Customer {
   email: string;
   phone: string;
   address: string;
-  credit_limit: string;
   created_at: string;
   updated_at: string;
 }
@@ -21,7 +20,6 @@ export interface CustomerCreateData {
   email: string;
   phone: string;
   address: string;
-  credit_limit?: string;
 }
 
 export interface CustomerUpdateData extends CustomerCreateData {}
@@ -52,7 +50,6 @@ export interface Supplier {
   email: string;
   phone: string;
   address: string;
-  credit_limit: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -64,7 +61,6 @@ export interface SupplierCreateData {
   email: string;
   phone: string;
   address: string;
-  credit_limit?: string;
   is_active?: boolean;
 }
 
@@ -119,6 +115,7 @@ export interface PurchaseItem {
   purchase: Purchase;
   product: Product;
   quantity: string;
+  item_purchase_price: string;
   created_at: string;
   updated_at: string;
 }
@@ -127,6 +124,7 @@ export interface PurchaseItemCreateData {
   purchase_id: string;
   product_id: string;
   quantity: string;
+  item_purchase_price: string;
 }
 
 export interface PurchaseItemUpdateData extends PurchaseItemCreateData {}
@@ -166,6 +164,7 @@ export interface SaleItem {
   id: string;
   product: Product;
   quantity: string;
+  item_sale_price: string;
   created_at: string;
   updated_at: string;
 }
@@ -174,6 +173,7 @@ export interface SaleItemCreateData {
   sale: string;
   product_id: string;
   quantity: string;
+  item_sale_price: string;
 }
 
 export interface SaleItemUpdateData extends SaleItemCreateData {}

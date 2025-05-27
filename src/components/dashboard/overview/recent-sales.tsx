@@ -1,25 +1,25 @@
 'use client';
 
 import React from 'react';
+import { RecentSale } from '@/services/api/dashboard';
 import {
+  Avatar,
   Box,
+  Button,
   Card,
   CardContent,
   CardHeader,
   Chip,
   Divider,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
   Typography,
-  Stack,
-  Avatar,
-  Button
 } from '@mui/material';
 import { ArrowRight } from '@phosphor-icons/react/dist/ssr';
-import { RecentSale } from '@/services/api/dashboard';
 import { TFunction } from 'i18next';
 
 interface RecentSalesProps {
@@ -31,10 +31,13 @@ export function RecentSales({ sales, t }: RecentSalesProps) {
   // Ensure we have a valid array of sales
   const validSales = Array.isArray(sales) ? sales : [];
 
+  // Log the sales data for debugging
+  console.log('Recent sales component data:', validSales);
+
   // Generate initials from customer name
   const getInitials = (name: string | undefined): string => {
     if (!name) return 'N/A';
-    
+
     return name
       .split(' ')
       .map((part) => part[0])
@@ -47,7 +50,7 @@ export function RecentSales({ sales, t }: RecentSalesProps) {
   const getStatusChipProps = (status: string) => {
     let color: 'success' | 'warning' | 'error' | 'info' | 'default' = 'default';
     let variant: 'filled' | 'outlined' = 'filled';
-    
+
     switch (status.toLowerCase()) {
       case 'confirmed':
         color = 'success';
@@ -65,25 +68,13 @@ export function RecentSales({ sales, t }: RecentSalesProps) {
       default:
         color = 'default';
     }
-    
+
     return { color, variant };
   };
 
   return (
     <Card>
-      <CardHeader 
-        title={t('overview.recent_sales')} 
-        action={
-          <Button
-            color="inherit"
-            endIcon={<ArrowRight size={16} />}
-            size="small"
-            variant="text"
-          >
-            {t('overview.view_all')}
-          </Button>
-        }
-      />
+      <CardHeader title={t('overview.recent_sales')} />
       <Divider />
       <CardContent sx={{ p: 0 }}>
         {validSales.length > 0 ? (
@@ -101,19 +92,26 @@ export function RecentSales({ sales, t }: RecentSalesProps) {
               {validSales.map((sale, index) => {
                 // Safely extract values
                 const saleId = sale.id || `sale-${index}`;
-                const customerName = sale.customer?.name || 'Unknown Customer';
-                const saleDate = sale.date || 'N/A';
-                const saleStatus = sale.status || 'Unknown';
-                const saleAmount = typeof sale.amount === 'number' ? sale.amount : 0;
-                const salePaid = typeof sale.paid === 'number' ? sale.paid : 0;
-                
+                const customerName = sale.customer?.name || sale.customer_name || 'Unknown Customer';
+                const saleDate = sale.date || sale.transaction_date || 'N/A';
+                const saleStatus = sale.status || sale.payment_status || 'Unknown';
+                const saleAmount =
+                  typeof sale.amount === 'number'
+                    ? sale.amount
+                    : typeof sale.total_amount === 'number'
+                      ? sale.total_amount
+                      : 0;
+                const salePaid =
+                  typeof sale.paid === 'number'
+                    ? sale.paid
+                    : typeof sale.amount_paid === 'number'
+                      ? sale.amount_paid
+                      : saleAmount;
+
                 const statusProps = getStatusChipProps(saleStatus);
-                
+
                 return (
-                  <TableRow
-                    key={saleId}
-                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                  >
+                  <TableRow key={saleId} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell component="th" scope="row">
                       <Typography variant="body2" fontWeight="medium">
                         {saleId}
@@ -129,12 +127,7 @@ export function RecentSales({ sales, t }: RecentSalesProps) {
                     </TableCell>
                     <TableCell>{saleDate}</TableCell>
                     <TableCell>
-                      <Chip
-                        label={saleStatus}
-                        size="small"
-                        color={statusProps.color}
-                        variant={statusProps.variant}
-                      />
+                      <Chip label={saleStatus} size="small" color={statusProps.color} variant={statusProps.variant} />
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" fontWeight="medium">
@@ -161,4 +154,4 @@ export function RecentSales({ sales, t }: RecentSalesProps) {
       </CardContent>
     </Card>
   );
-} 
+}

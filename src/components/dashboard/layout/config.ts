@@ -90,7 +90,7 @@ export const adminNavItems = [
     href: paths.admin.stockTransfers,
     icon: 'arrows-left-right',
   },
-  { key: 'admin-activity-logs', title: 'Activity Logs', href: paths.admin.activityLogs, icon: 'clock-clockwise' },
+  { key: 'admin-activity-logs', title: 'Activity Logs', href: paths.admin.activityLogs, icon: 'clock-history' },
 ] satisfies NavItemConfig[];
 
 export const stockManagerNavItems = [
@@ -138,16 +138,4 @@ export const salesNavItems = [
   { key: 'sales-purchases', title: 'Purchases', href: paths.salesman.purchases, icon: 'shopping-bag' },
   { key: 'sales-payments', title: 'Payment In', href: paths.salesman.paymentIn, icon: 'credit-card' },
   { key: 'sales-expenses', title: 'Expenses', href: paths.salesman.expenses, icon: 'bank' },
-  {
-    key: 'sales-invoice-verification',
-    title: 'Invoice Verification',
-    href: paths.salesman.invoiceVerification,
-    icon: 'file-text',
-  },
-  {
-    key: 'sales-inventory-search',
-    title: 'Inventory Search',
-    href: paths.salesman.inventorySearch,
-    icon: 'magnifying-glass',
-  },
 ] satisfies NavItemConfig[];

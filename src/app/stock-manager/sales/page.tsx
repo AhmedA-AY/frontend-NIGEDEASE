@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { paths } from '@/navigation/paths';
+import { useStore } from '@/providers/store-provider';
+import { financialsApi } from '@/services/api/financials';
+import { inventoryApi } from '@/services/api/inventory';
+import { Sale, transactionsApi } from '@/services/api/transactions';
+import { formatCurrency, formatDateTime } from '@/utils/formatters';
 import {
   Box,
   Button,
@@ -8,43 +14,38 @@ import {
   CardContent,
   CardHeader,
   Container,
-  Grid,
-  Typography,
-  IconButton,
-  TextField,
-  InputAdornment,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Paper,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Grid,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { useSnackbar } from 'notistack';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { MagnifyingGlass as SearchIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { FilePdf as FilePdfIcon } from '@phosphor-icons/react/dist/ssr/FilePdf';
+import { MagnifyingGlass as SearchIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { Pencil as PencilIcon } from '@phosphor-icons/react/dist/ssr/Pencil';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import { useSnackbar } from 'notistack';
 import { useTranslation } from 'react-i18next';
+
+import SaleEditModal from '@/components/admin/sales/SaleEditModal';
 import { StockManagerGuard } from '@/components/auth/stock-manager-guard';
 import { Breadcrumbs } from '@/components/breadcrumbs';
-import SaleEditModal from '@/components/admin/sales/SaleEditModal';
 import PageHeader from '@/components/page-header';
-import { transactionsApi, Sale } from '@/services/api/transactions';
-import { inventoryApi } from '@/services/api/inventory';
-import { formatDateTime, formatCurrency } from '@/utils/formatters';
-import { useStore } from '@/providers/store-provider';
-import { paths } from '@/navigation/paths';
-import { financialsApi } from '@/services/api/financials';
 
 export default function StockManagerSalesPage(): React.JSX.Element {
   const { t } = useTranslation('admin');
@@ -66,7 +67,7 @@ export default function StockManagerSalesPage(): React.JSX.Element {
       enqueueSnackbar(t('common.no_store_selected'), { variant: 'warning' });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const salesData = await transactionsApi.getSales(currentStore.id);
@@ -112,12 +113,12 @@ export default function StockManagerSalesPage(): React.JSX.Element {
       enqueueSnackbar(t('common.no_store_selected'), { variant: 'warning' });
       return;
     }
-    
+
     try {
       setEditModalLoading(true);
       const saleToEdit = await transactionsApi.getSale(currentStore.id, saleId);
       const saleItems = await transactionsApi.getSaleItems(currentStore.id, saleId);
-      
+
       // Convert sale items to the format expected by the form
       const products = await Promise.all(
         saleItems.map(async (item) => ({
@@ -125,10 +126,10 @@ export default function StockManagerSalesPage(): React.JSX.Element {
           name: item.product.name,
           quantity: parseInt(item.quantity, 10),
           unitPrice: 0, // Default value since unit_price is not in the type
-          subtotal: parseInt(item.quantity, 10) * 0 // Use 0 as a fallback
+          subtotal: parseInt(item.quantity, 10) * 0, // Use 0 as a fallback
         }))
       );
-      
+
       // Set the current sale for editing
       setCurrentSale({
         id: saleToEdit.id,
@@ -140,9 +141,9 @@ export default function StockManagerSalesPage(): React.JSX.Element {
         store_id: saleToEdit.store.id,
         currency_id: saleToEdit.currency.id,
         payment_mode_id: saleToEdit.payment_mode.id,
-        is_credit: saleToEdit.is_credit
+        is_credit: saleToEdit.is_credit,
       });
-      
+
       setIsSaleModalOpen(true);
     } catch (error) {
       console.error('Error fetching sale details:', error);
@@ -162,7 +163,7 @@ export default function StockManagerSalesPage(): React.JSX.Element {
       enqueueSnackbar(t('sales.no_sale_selected'), { variant: 'warning' });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await transactionsApi.deleteSale(currentStore.id, saleToDelete);
@@ -183,12 +184,17 @@ export default function StockManagerSalesPage(): React.JSX.Element {
       enqueueSnackbar(t('common.no_store_selected'), { variant: 'warning' });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       // Log the incoming data for debugging
-      console.log('Original sale data:', saleData);
-      
+      console.log(
+        'Original sale data:',
+        saleData,
+        'item_sale_price:',
+        saleData.products?.map((p: { unitPrice?: number; price?: number }) => p.unitPrice || p.price || 0)
+      );
+
       // Safely convert values and handle undefined
       const safeToString = (value: any) => {
         if (value === undefined || value === null) {
@@ -196,7 +202,7 @@ export default function StockManagerSalesPage(): React.JSX.Element {
         }
         return value.toString();
       };
-      
+
       const formattedData = {
         store_id: currentStore.id,
         customer_id: saleData.customer_id || saleData.customer,
@@ -206,13 +212,16 @@ export default function StockManagerSalesPage(): React.JSX.Element {
         currency_id: saleData.currency_id,
         payment_mode_id: saleData.payment_mode_id,
         is_credit: saleData.is_credit || false,
-        items: []
+        items: [],
       };
-      
+
       // Safely get products array
-      const productsArray = Array.isArray(saleData.items) ? saleData.items : 
-                           Array.isArray(saleData.products) ? saleData.products : [];
-      
+      const productsArray = Array.isArray(saleData.items)
+        ? saleData.items
+        : Array.isArray(saleData.products)
+          ? saleData.products
+          : [];
+
       // Only map if we have items
       if (productsArray.length > 0) {
         formattedData.items = productsArray.map((item: any) => {
@@ -220,22 +229,22 @@ export default function StockManagerSalesPage(): React.JSX.Element {
           return {
             product_id: product.product_id || product.id,
             quantity: safeToString(product.quantity),
-            unit_price: safeToString(product.price || product.unitPrice || 0)
+            item_sale_price: safeToString(product.price || product.unitPrice || 0),
           };
         });
       }
-      
+
       console.log('Formatted data for API:', formattedData);
-      
+
       // Check if items array is empty before sending to API
       if (!formattedData.items || formattedData.items.length === 0) {
         enqueueSnackbar(t('sales.error_no_items'), { variant: 'error' });
         setIsLoading(false);
         return;
       }
-      
+
       let savedSale;
-      
+
       if (saleData.id) {
         // Update existing sale
         savedSale = await transactionsApi.updateSale(currentStore.id, saleData.id, formattedData);
@@ -245,24 +254,24 @@ export default function StockManagerSalesPage(): React.JSX.Element {
         savedSale = await transactionsApi.createSale(currentStore.id, formattedData);
         enqueueSnackbar(t('sales.sale_created'), { variant: 'success' });
       }
-      
+
       // Check if there's a partial payment (amount_paid < total_amount)
       const totalAmount = parseFloat(formattedData.total_amount);
       const amountPaid = parseFloat(formattedData.amount_paid);
-      
+
       if (amountPaid < totalAmount && savedSale) {
         // Calculate the outstanding amount
         const outstandingAmount = (totalAmount - amountPaid).toString();
-        
+
         // Create a receivable record for the outstanding amount
         try {
           const receivableData = {
             store_id: currentStore.id,
             sale: savedSale.id,
             amount: outstandingAmount,
-            currency: formattedData.currency_id
+            currency: formattedData.currency_id,
           };
-          
+
           await financialsApi.createReceivable(currentStore.id, receivableData);
           console.log('Receivable created for outstanding amount:', outstandingAmount);
         } catch (error) {
@@ -270,7 +279,7 @@ export default function StockManagerSalesPage(): React.JSX.Element {
           enqueueSnackbar('Sale saved but failed to record receivable', { variant: 'warning' });
         }
       }
-      
+
       setIsSaleModalOpen(false);
       fetchData();
     } catch (error) {
@@ -305,21 +314,16 @@ export default function StockManagerSalesPage(): React.JSX.Element {
       <Container>
         <Box sx={{ py: 3 }}>
           <Breadcrumbs items={breadcrumbItems} />
-          
+
           <PageHeader
             title={t('sales.title')}
             actions={
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<PlusIcon />}
-                onClick={handleOpenCreateModal}
-              >
+              <Button variant="contained" color="primary" startIcon={<PlusIcon />} onClick={handleOpenCreateModal}>
                 {t('sales.add_sale')}
               </Button>
             }
           />
-          
+
           <Card>
             <CardHeader
               title={t('sales.all_sales')}
@@ -365,18 +369,14 @@ export default function StockManagerSalesPage(): React.JSX.Element {
                     ) : paginatedSales.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} align="center">
-                          {searchQuery
-                            ? t('common.no_results')
-                            : t('sales.no_sales')}
+                          {searchQuery ? t('common.no_results') : t('sales.no_sales')}
                         </TableCell>
                       </TableRow>
                     ) : (
                       paginatedSales.map((sale) => (
                         <TableRow key={sale.id}>
                           <TableCell>{sale.id.slice(0, 8)}...</TableCell>
-                          <TableCell>
-                            {sale.customer ? sale.customer.name : 'N/A'}
-                          </TableCell>
+                          <TableCell>{sale.customer ? sale.customer.name : 'N/A'}</TableCell>
                           <TableCell>{formatDateTime(sale.created_at)}</TableCell>
                           <TableCell>
                             {formatCurrency(parseFloat(sale.total_amount))} {sale.currency?.code}
@@ -385,11 +385,10 @@ export default function StockManagerSalesPage(): React.JSX.Element {
                             {formatCurrency(parseFloat(sale.amount_paid || '0'))} {sale.currency?.code}
                           </TableCell>
                           <TableCell>
-                            {formatCurrency(parseFloat(sale.total_amount) - parseFloat(sale.amount_paid || '0'))} {sale.currency?.code}
+                            {formatCurrency(parseFloat(sale.total_amount) - parseFloat(sale.amount_paid || '0'))}{' '}
+                            {sale.currency?.code}
                           </TableCell>
-                          <TableCell>
-                            {sale.is_credit ? t('sales.credit') : t('sales.confirmed')}
-                          </TableCell>
+                          <TableCell>{sale.is_credit ? t('sales.credit') : t('sales.confirmed')}</TableCell>
                           <TableCell align="right">
                             <IconButton
                               size="small"
@@ -398,11 +397,7 @@ export default function StockManagerSalesPage(): React.JSX.Element {
                             >
                               <PencilIcon />
                             </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteSale(sale.id)}
-                            >
+                            <IconButton size="small" color="error" onClick={() => handleDeleteSale(sale.id)}>
                               <TrashIcon />
                             </IconButton>
                             <IconButton size="small">
@@ -415,7 +410,7 @@ export default function StockManagerSalesPage(): React.JSX.Element {
                   </TableBody>
                 </Table>
               </TableContainer>
-              
+
               <TablePagination
                 component="div"
                 count={filteredSales.length}
@@ -442,20 +437,11 @@ export default function StockManagerSalesPage(): React.JSX.Element {
         <Dialog open={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
           <DialogTitle>{t('sales.delete_sale')}</DialogTitle>
           <DialogContent>
-            <DialogContentText>
-              {t('sales.confirm_delete')}
-            </DialogContentText>
+            <DialogContentText>{t('sales.confirm_delete')}</DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setIsDeleteModalOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button 
-              onClick={handleDeleteConfirm} 
-              color="error" 
-              variant="contained"
-              disabled={isLoading}
-            >
+            <Button onClick={() => setIsDeleteModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleDeleteConfirm} color="error" variant="contained" disabled={isLoading}>
               {t('common.delete')}
             </Button>
           </DialogActions>
@@ -463,4 +449,4 @@ export default function StockManagerSalesPage(): React.JSX.Element {
       </Container>
     </StockManagerGuard>
   );
-} 
+}

@@ -1,45 +1,52 @@
 'use client';
 
 import * as React from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { STORE_CHANGED_EVENT, useStore } from '@/providers/store-provider';
+import { companiesApi, Currency } from '@/services/api/companies';
+import { financialsApi } from '@/services/api/financials';
+import { inventoryApi, Product } from '@/services/api/inventory';
+import {
+  Customer,
+  PaymentMode,
+  Sale,
+  SaleCreateData,
+  SaleUpdateData,
+  transactionsApi,
+} from '@/services/api/transactions';
+import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
-import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Stack from '@mui/material/Stack';
+import Tab from '@mui/material/Tab';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import TextField from '@mui/material/TextField';
 import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
-import IconButton from '@mui/material/IconButton';
-import Chip from '@mui/material/Chip';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import InputAdornment from '@mui/material/InputAdornment';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import Stack from '@mui/material/Stack';
-import Avatar from '@mui/material/Avatar';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
-import { paths } from '@/paths';
-import SaleEditModal from '@/components/admin/sales/SaleEditModal';
-import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
-import { useState, useEffect, useCallback } from 'react';
-import { Sale, Customer, SaleCreateData, SaleUpdateData, transactionsApi, PaymentMode } from '@/services/api/transactions';
-import { inventoryApi, InventoryStore } from '@/services/api/inventory';
-import { companiesApi, Currency } from '@/services/api/companies';
-import CircularProgress from '@mui/material/CircularProgress';
-import Grid from '@mui/material/Grid';
-import { SelectChangeEvent } from '@mui/material/Select';
-import { useCurrentUser } from '@/hooks/use-auth';
-import { financialsApi } from '@/services/api/financials';
+import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { useSnackbar } from 'notistack';
-import { useStore, STORE_CHANGED_EVENT } from '@/providers/store-provider';
+
+import { paths } from '@/paths';
+import { useCurrentUser } from '@/hooks/use-auth';
+import DeleteConfirmationModal from '@/components/admin/product-manager/DeleteConfirmationModal';
+import SaleEditModal from '@/components/salesman/sales/SaleEditModal';
 
 export default function SalesPage(): React.JSX.Element {
   const { currentStore } = useStore();
@@ -59,40 +66,54 @@ export default function SalesPage(): React.JSX.Element {
   const [paymentModes, setPaymentModes] = useState<PaymentMode[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
   const [selectedSaleDetails, setSelectedSaleDetails] = useState<Sale | null>(null);
-  
+  const [products, setProducts] = React.useState<Product[]>([]);
+
   // Get current user's company
   const { userInfo } = useCurrentUser();
-  
-  // Fetch sales and customers
+
+  // Fetch products data
+  const fetchProducts = React.useCallback(async () => {
+    if (!currentStore) return;
+
+    setIsLoading(true);
+    try {
+      const data = await inventoryApi.getProducts(currentStore.id);
+      setProducts(data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      enqueueSnackbar('Error loading products', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentStore, enqueueSnackbar]);
+
+  // Modify fetchData to include products
   const fetchData = useCallback(async () => {
     if (!currentStore) {
-      enqueueSnackbar('No store selected. Please select a store first.', { variant: 'warning' });
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
       setIsLoading(false);
       return;
     }
-    
+
     setIsLoading(true);
     try {
       console.log(`Fetching data for store: ${currentStore.name} (${currentStore.id})`);
-      const [
-        salesData, 
-        customersData, 
-        currenciesData, 
-        paymentModesData
-      ] = await Promise.all([
+      const [salesData, customersData, currenciesData, paymentModesData, productsData] = await Promise.all([
         transactionsApi.getSales(currentStore.id),
         transactionsApi.getCustomers(currentStore.id),
         companiesApi.getCurrencies(),
-        transactionsApi.getPaymentModes(currentStore.id)
+        transactionsApi.getPaymentModes(currentStore.id),
+        inventoryApi.getProducts(currentStore.id),
       ]);
-      
+
       setSales(salesData);
       setCustomers(customersData);
       setCurrencies(currenciesData);
       setPaymentModes(paymentModesData);
+      setProducts(productsData);
     } catch (error) {
       console.error('Error fetching data:', error);
-      enqueueSnackbar('Failed to load data', { variant: 'error' });
+      enqueueSnackbar('Error loading data', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -117,16 +138,14 @@ export default function SalesPage(): React.JSX.Element {
     };
 
     window.addEventListener(STORE_CHANGED_EVENT, handleStoreChange);
-    
+
     return () => {
       window.removeEventListener(STORE_CHANGED_EVENT, handleStoreChange);
     };
   }, [fetchData, currentStore]);
 
   // Filter sales by selected customer
-  const filteredSales = selectedCustomer
-    ? sales.filter(sale => sale.customer.id === selectedCustomer)
-    : sales;
+  const filteredSales = selectedCustomer ? sales.filter((sale) => sale.customer.id === selectedCustomer) : sales;
 
   // Calculate total amounts
   const totalAmount = filteredSales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
@@ -140,7 +159,7 @@ export default function SalesPage(): React.JSX.Element {
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      setSelectedSales(filteredSales.map(sale => sale.id));
+      setSelectedSales(filteredSales.map((sale) => sale.id));
     } else {
       setSelectedSales([]);
     }
@@ -148,7 +167,7 @@ export default function SalesPage(): React.JSX.Element {
 
   const handleSelectOne = (id: string) => {
     if (selectedSales.includes(id)) {
-      setSelectedSales(selectedSales.filter(saleId => saleId !== id));
+      setSelectedSales(selectedSales.filter((saleId) => saleId !== id));
     } else {
       setSelectedSales([...selectedSales, id]);
     }
@@ -172,68 +191,96 @@ export default function SalesPage(): React.JSX.Element {
   };
 
   const handleAddNewSale = () => {
+    if (!currentStore) {
+      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      return;
+    }
+
+    const defaultPaymentModeId = paymentModes.length > 0 ? paymentModes[0].id : '';
+    const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
+
     setCurrentSale({
       date: new Date().toISOString().split('T')[0],
-      customer: '',
+      customer_id: '',
       status: 'Ordered',
       products: [],
-      totalAmount: 0,
+      total_amount: 0,
+      subtotal: 0,
+      taxAmount: 0,
       tax: '0',
-      paidAmount: 0,
-      dueAmount: 0,
-      paymentStatus: 'Unpaid',
-      store_id: currentStore?.id || '',
-      currency_id: currencies.length > 0 ? currencies[0].id : '',
-      payment_mode_id: paymentModes.length > 0 ? paymentModes[0].id : '',
-      is_credit: false
+      amount_paid: 0,
+      is_credit: false,
+      company_id: userInfo?.company_id || '',
+      store_id: currentStore.id,
+      currency_id: defaultCurrencyId,
+      payment_mode_id: defaultPaymentModeId,
     });
     setIsSaleModalOpen(true);
   };
 
   const handleEditSale = async (saleId: string) => {
     if (!currentStore) {
-      enqueueSnackbar('Please select a store first', { variant: 'warning' });
+      enqueueSnackbar('Please select a store first', { variant: 'error' });
       return;
     }
-    
+
+    setEditModalLoading(true);
     try {
-      setEditModalLoading(true);
-      const saleToEdit = await transactionsApi.getSale(currentStore.id, saleId);
-      const saleItems = await transactionsApi.getSaleItems(currentStore.id, saleId);
-      
-      // Map items to products format expected by the form
-      const products = saleItems.map(item => ({
-        id: item.product.id,
-        name: item.product.name,
-        quantity: parseInt(item.quantity, 10),
-        unitPrice: item.product.sale_price ? parseFloat(item.product.sale_price) : 0,
-        discount: 0,
-        tax: 0,
-        subtotal: (parseInt(item.quantity, 10) * (item.product.sale_price ? parseFloat(item.product.sale_price) : 0))
-      }));
-      
-      setCurrentSale({
-        id: saleToEdit.id,
-        date: new Date(saleToEdit.created_at).toISOString().split('T')[0],
-        customer: saleToEdit.customer.id,
-        status: saleToEdit.status || (saleToEdit.is_credit ? 'Credit' : 'Confirmed'),
-        products: products,
-        totalAmount: parseFloat(saleToEdit.total_amount),
-        tax: saleToEdit.tax || '0',
-        paidAmount: 0,
-        dueAmount: parseFloat(saleToEdit.total_amount),
-        paymentStatus: 'Unpaid',
-        store_id: saleToEdit.store.id,
-        currency_id: saleToEdit.currency.id,
-        payment_mode_id: saleToEdit.payment_mode.id,
-        is_credit: saleToEdit.is_credit
+      // Get sale details
+      const sale = sales.find((s) => s.id === saleId);
+      if (!sale) {
+        enqueueSnackbar('Sale not found', { variant: 'error' });
+        return;
+      }
+
+      // Get sale items
+      const items = await transactionsApi.getSaleItems(currentStore.id, saleId);
+
+      // Map items to products format expected by the modal
+      const saleProducts = items.map((item) => {
+        return {
+          id: item.product.id,
+          name: item.product.name,
+          quantity: parseFloat(item.quantity),
+          unitPrice: parseFloat(item.product.sale_price || '0'),
+          subtotal: parseFloat(item.quantity) * parseFloat(item.product.sale_price || '0'),
+          tax: 0,
+        };
       });
-      
+
+      // Calculate subtotal
+      const subtotal = saleProducts.reduce((sum, product) => {
+        return sum + product.quantity * product.unitPrice;
+      }, 0);
+
+      // Calculate tax amount
+      const taxPercentage = sale.tax ? parseFloat(sale.tax) : 0;
+      const taxAmount = (subtotal * taxPercentage) / 100;
+
+      // Use the amount_paid value
+      const amountPaid = parseFloat(sale.amount_paid || '0');
+
+      // Set current sale for editing
+      setCurrentSale({
+        id: sale.id,
+        customer_id: sale.customer.id,
+        date: new Date(sale.created_at).toISOString().split('T')[0],
+        products: saleProducts,
+        total_amount: parseFloat(sale.total_amount),
+        subtotal: subtotal,
+        taxAmount: taxAmount,
+        tax: sale.tax || '0',
+        currency_id: sale.currency.id,
+        payment_mode_id: sale.payment_mode.id,
+        is_credit: sale.is_credit,
+        amount_paid: amountPaid,
+        status: sale.status || 'Ordered',
+      });
+
       setIsSaleModalOpen(true);
-      
     } catch (error) {
       console.error('Error loading sale details:', error);
-      enqueueSnackbar('Failed to load sale details', { variant: 'error' });
+      enqueueSnackbar('Error loading sale details', { variant: 'error' });
     } finally {
       setEditModalLoading(false);
     }
@@ -244,20 +291,20 @@ export default function SalesPage(): React.JSX.Element {
     setIsDeleteModalOpen(true);
     handleMenuClose(id);
   };
-  
+
   const handleConfirmDelete = async () => {
     if (!currentStore || !saleToDelete) {
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await transactionsApi.deleteSale(currentStore.id, saleToDelete);
       enqueueSnackbar('Sale deleted successfully', { variant: 'success' });
-      
+
       // Remove from selected items if it was selected
-      setSelectedSales(prev => prev.filter(id => id !== saleToDelete));
-      
+      setSelectedSales((prev) => prev.filter((id) => id !== saleToDelete));
+
       // Refresh sales list
       fetchData();
     } catch (error) {
@@ -275,34 +322,33 @@ export default function SalesPage(): React.JSX.Element {
       enqueueSnackbar('Please select a store', { variant: 'warning' });
       return;
     }
-    
+
     setIsLoading(true);
     try {
-      // Log the incoming data for debugging
-      console.log('Original sale data:', saleData);
-      
-      // Safely convert values and handle undefined
+      // Log the sale data to ensure amount_paid is present
+      console.log('Sale data to be saved:', saleData);
+
+      // Helper function to safely convert values to strings
       const safeToString = (value: any) => {
-        if (value === undefined || value === null) {
-          return '0';
-        }
+        if (value === null || value === undefined) return '0';
+        if (typeof value === 'string') return value;
         return value.toString();
       };
 
-      // Create a formatted data object with default empty arrays for items if missing
+      // Prepare data for API
       const formattedData = {
         store_id: currentStore.id,
-        customer_id: saleData.customer_id || saleData.customer,
-        total_amount: safeToString(saleData.total_amount || saleData.totalAmount),
+        customer_id: saleData.customer_id,
+        total_amount: safeToString(saleData.total_amount),
         tax: safeToString(saleData.tax || '0'),
-        amount_paid: safeToString(saleData.amount_paid || 0),
+        amount_paid: safeToString(saleData.amount_paid || '0'),
         currency_id: saleData.currency_id,
         payment_mode_id: saleData.payment_mode_id,
         is_credit: saleData.is_credit || false,
         status: saleData.status,
-        items: []
+        items: [],
       };
-      
+
       // Only add items if products exist and are in an array
       if (Array.isArray(saleData.products) && saleData.products.length > 0) {
         formattedData.items = saleData.products.map((item: any) => {
@@ -310,30 +356,60 @@ export default function SalesPage(): React.JSX.Element {
           return {
             product_id: product.product_id || product.id,
             quantity: safeToString(product.quantity),
-            unit_price: safeToString(product.price || product.unitPrice || 0)
+            item_sale_price: safeToString(product.price || product.unitPrice || 0),
           };
         });
       }
-      
+
       console.log('Formatted data for API:', formattedData);
-      
+
       // Check if items array is empty before sending to API
       if (!formattedData.items || formattedData.items.length === 0) {
         enqueueSnackbar('Sale must include at least one product', { variant: 'error' });
         setIsLoading(false);
         return;
       }
-      
+
+      let saleId;
+
       if (saleData.id) {
         // Update existing sale
         await transactionsApi.updateSale(currentStore.id, saleData.id, formattedData);
+        saleId = saleData.id;
         enqueueSnackbar('Sale updated successfully', { variant: 'success' });
       } else {
         // Create new sale
-        await transactionsApi.createSale(currentStore.id, formattedData);
+        const newSale = await transactionsApi.createSale(currentStore.id, formattedData);
+        saleId = newSale.id;
         enqueueSnackbar('Sale created successfully', { variant: 'success' });
       }
-      
+
+      // Create a receivable if either:
+      // 1. It's a credit sale OR
+      // 2. The amount paid is less than the total amount
+      const totalAmount = parseFloat(formattedData.total_amount);
+      const amountPaid = parseFloat(formattedData.amount_paid);
+      const amountDue = totalAmount - amountPaid;
+
+      if ((formattedData.is_credit || amountDue > 0) && saleId) {
+        try {
+          // Create receivable record
+          const receivableData = {
+            store_id: currentStore.id,
+            sale: saleId,
+            amount: amountDue.toString(),
+            currency: formattedData.currency_id,
+          };
+
+          await financialsApi.createReceivable(currentStore.id, receivableData);
+          console.log('Receivable created successfully:', saleId, 'Amount:', amountDue);
+          enqueueSnackbar('Receivable created successfully', { variant: 'info' });
+        } catch (receivableError) {
+          console.error('Error creating receivable:', receivableError);
+          enqueueSnackbar('Failed to create receivable', { variant: 'warning' });
+        }
+      }
+
       setIsSaleModalOpen(false);
       fetchData();
     } catch (error) {
@@ -354,15 +430,21 @@ export default function SalesPage(): React.JSX.Element {
     <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
       {/* Header and Breadcrumbs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1 }}>Sales</Typography>
+        <Typography variant="h4" sx={{ mb: 1 }}>
+          Sales
+        </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
           {breadcrumbItems.map((item, index) => (
             <React.Fragment key={index}>
-              {index > 0 && <Box component="span" sx={{ mx: 0.5 }}>-</Box>}
-              <Typography 
-                component="a" 
-                href={item.url} 
-                variant="body2" 
+              {index > 0 && (
+                <Box component="span" sx={{ mx: 0.5 }}>
+                  -
+                </Box>
+              )}
+              <Typography
+                component="a"
+                href={item.url}
+                variant="body2"
                 color={index === breadcrumbItems.length - 1 ? 'text.primary' : 'inherit'}
                 sx={{ textDecoration: 'none' }}
               >
@@ -375,25 +457,10 @@ export default function SalesPage(): React.JSX.Element {
 
       {/* Action Buttons and Filters */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<PlusIcon />}
-          onClick={handleAddNewSale}
-        >
+        <Button variant="contained" color="primary" startIcon={<PlusIcon />} onClick={handleAddNewSale}>
           Add New Sale
         </Button>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <OutlinedInput
-            placeholder="Search..."
-            size="small"
-            startAdornment={
-              <InputAdornment position="start">
-                <MagnifyingGlassIcon size={20} />
-              </InputAdornment>
-            }
-            sx={{ width: 200 }}
-          />
           <Select
             value={selectedCustomer}
             onChange={handleCustomerChange}
@@ -403,14 +470,14 @@ export default function SalesPage(): React.JSX.Element {
               if (!selected) {
                 return <Typography sx={{ color: 'text.secondary' }}>All Customers</Typography>;
               }
-              
-              const customer = customers.find(c => c.id === selected);
+
+              const customer = customers.find((c) => c.id === selected);
               return customer ? customer.name : 'All Customers';
             }}
             sx={{ minWidth: 180 }}
           >
             <MenuItem value="">All Customers</MenuItem>
-            {customers.map(customer => (
+            {customers.map((customer) => (
               <MenuItem key={customer.id} value={customer.id}>
                 {customer.name}
               </MenuItem>
@@ -424,7 +491,9 @@ export default function SalesPage(): React.JSX.Element {
         <Grid item xs={12} sm={4}>
           <Card>
             <Box sx={{ p: 2 }}>
-              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>Total Amount</Typography>
+              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                Total Amount
+              </Typography>
               <Typography variant="h5">${totalAmount.toFixed(2)}</Typography>
             </Box>
           </Card>
@@ -432,7 +501,9 @@ export default function SalesPage(): React.JSX.Element {
         <Grid item xs={12} sm={4}>
           <Card>
             <Box sx={{ p: 2 }}>
-              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>Total Paid</Typography>
+              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                Total Paid
+              </Typography>
               <Typography variant="h5">${totalPaid.toFixed(2)}</Typography>
             </Box>
           </Card>
@@ -440,7 +511,9 @@ export default function SalesPage(): React.JSX.Element {
         <Grid item xs={12} sm={4}>
           <Card>
             <Box sx={{ p: 2 }}>
-              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>Total Due</Typography>
+              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                Total Due
+              </Typography>
               <Typography variant="h5">${totalDue.toFixed(2)}</Typography>
             </Box>
           </Card>
@@ -482,23 +555,20 @@ export default function SalesPage(): React.JSX.Element {
             </TableHead>
             <TableBody>
               {filteredSales.length > 0 ? (
-                filteredSales.map(sale => {
+                filteredSales.map((sale) => {
                   const isSelected = selectedSales.includes(sale.id);
                   const formattedDate = new Date(sale.created_at).toLocaleDateString();
-                  
+
                   return (
-                    <TableRow 
-                      hover 
+                    <TableRow
+                      hover
                       key={sale.id}
                       selected={isSelected}
                       onClick={() => handleRowClick(sale)}
                       sx={{ cursor: 'pointer' }}
                     >
                       <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox 
-                          checked={isSelected}
-                          onChange={() => handleSelectOne(sale.id)}
-                        />
+                        <Checkbox checked={isSelected} onChange={() => handleSelectOne(sale.id)} />
                       </TableCell>
                       <TableCell>
                         <Typography variant="subtitle2">{sale.id.substring(0, 8)}</Typography>
@@ -506,22 +576,24 @@ export default function SalesPage(): React.JSX.Element {
                       <TableCell>{formattedDate}</TableCell>
                       <TableCell>{sale.customer.name}</TableCell>
                       <TableCell>
-                        <Chip 
-                          label={sale.status} 
+                        <Chip
+                          label={sale.status}
                           size="small"
-                          sx={{ 
+                          sx={{
                             bgcolor: sale.is_credit ? 'warning.100' : 'success.100',
                             color: sale.is_credit ? 'warning.main' : 'success.main',
-                            fontWeight: 500
+                            fontWeight: 500,
                           }}
                         />
                       </TableCell>
                       <TableCell>${parseFloat(sale.total_amount).toFixed(2)}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        <IconButton onClick={(e) => {
-                          e.stopPropagation();
-                          handleMenuOpen(e, sale.id);
-                        }}>
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMenuOpen(e, sale.id);
+                          }}
+                        >
                           <DotsThreeIcon />
                         </IconButton>
                         <Menu
@@ -539,7 +611,9 @@ export default function SalesPage(): React.JSX.Element {
               ) : (
                 <TableRow>
                   <TableCell colSpan={7} align="center">
-                    <Typography variant="body1" sx={{ py: 2 }}>No sales found</Typography>
+                    <Typography variant="body1" sx={{ py: 2 }}>
+                      No sales found
+                    </Typography>
                   </TableCell>
                 </TableRow>
               )}
@@ -569,4 +643,4 @@ export default function SalesPage(): React.JSX.Element {
       />
     </Box>
   );
-} 
+}

@@ -52,7 +52,9 @@
     "reports": "Reports",
     "invoice_verification": "Invoice Verification",
     "inventory_search": "Inventory Search",
-    "activity_logs": "Activity Logs"
+    "activity_logs": "Activity Logs",
+    "predictions": "Predictions",
+    "stock_transfers": "Stock Transfers"
   },
   "common": {
     "role": "Role",

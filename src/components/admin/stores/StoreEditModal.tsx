@@ -1,15 +1,15 @@
 import * as React from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
+import { InventoryStore } from '@/services/api/inventory';
 import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
 import Stack from '@mui/material/Stack';
-import { InventoryStore } from '@/services/api/inventory';
+import Switch from '@mui/material/Switch';
+import TextField from '@mui/material/TextField';
 
 interface StoreEditModalProps {
   open: boolean;
@@ -24,13 +24,11 @@ export default function StoreEditModal({ open, onClose, onSave, store }: StoreEd
     name: store?.name || '',
     location: store?.location || '',
     address: store?.address || '',
-    phone_number: store?.phone_number || '',
-    email: store?.email || '',
-    is_active: store?.is_active === 'active'
+    is_active: store?.is_active === 'active',
   });
-  
+
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  
+
   // Reset form when modal opens or store changes
   React.useEffect(() => {
     if (open) {
@@ -39,30 +37,28 @@ export default function StoreEditModal({ open, onClose, onSave, store }: StoreEd
         name: store?.name || '',
         location: store?.location || '',
         address: store?.address || '',
-        phone_number: store?.phone_number || '',
-        email: store?.email || '',
-        is_active: store?.is_active === 'active'
+        is_active: store?.is_active === 'active',
       });
     }
   }, [open, store]);
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  
+
   const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, is_active: e.target.checked }));
+    setFormData((prev) => ({ ...prev, is_active: e.target.checked }));
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       await onSave({
         ...formData,
-        is_active: formData.is_active ? 'active' : 'inactive'
+        is_active: formData.is_active ? 'active' : 'inactive',
       });
       onClose();
     } catch (error) {
@@ -71,7 +67,7 @@ export default function StoreEditModal({ open, onClose, onSave, store }: StoreEd
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <form onSubmit={handleSubmit}>
@@ -104,47 +100,23 @@ export default function StoreEditModal({ open, onClose, onSave, store }: StoreEd
               fullWidth
               placeholder="Full street address"
             />
-            <TextField
-              label="Phone Number"
-              name="phone_number"
-              value={formData.phone_number}
-              onChange={handleChange}
-              fullWidth
-              placeholder="e.g. +123456789"
-            />
-            <TextField
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              fullWidth
-              placeholder="store@example.com"
-            />
             <FormControlLabel
               control={
-                <Switch
-                  checked={formData.is_active}
-                  onChange={handleSwitchChange}
-                  name="is_active"
-                  color="primary"
-                />
+                <Switch checked={formData.is_active} onChange={handleSwitchChange} name="is_active" color="primary" />
               }
               label={formData.is_active ? 'Active' : 'Inactive'}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose} disabled={isSubmitting}>Cancel</Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={!formData.name || !formData.location || isSubmitting}
-          >
+          <Button onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="contained" disabled={!formData.name || !formData.location || isSubmitting}>
             {isSubmitting ? 'Saving...' : store ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
       </form>
     </Dialog>
   );
-} 
+}

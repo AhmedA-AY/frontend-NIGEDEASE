@@ -1,24 +1,24 @@
 'use client';
 
 import React from 'react';
+import { TopCustomer } from '@/services/api/dashboard';
 import {
   Avatar,
   Box,
+  Button,
   Card,
   CardContent,
   CardHeader,
   Divider,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
   Typography,
-  Stack,
-  Button
 } from '@mui/material';
 import { ArrowRight } from '@phosphor-icons/react/dist/ssr';
-import { TopCustomer } from '@/services/api/dashboard';
 import { TFunction } from 'i18next';
 
 interface TopCustomersProps {
@@ -29,11 +29,11 @@ interface TopCustomersProps {
 export function TopCustomers({ customers, t }: TopCustomersProps) {
   // Ensure customers is a valid array
   const validCustomers = Array.isArray(customers) ? customers : [];
-  
+
   // Generate initials from customer name
   const getInitials = (name: string | undefined): string => {
     if (!name) return 'N/A';
-    
+
     return name
       .split(' ')
       .map((part) => part[0])
@@ -44,14 +44,7 @@ export function TopCustomers({ customers, t }: TopCustomersProps) {
 
   // Generate random color based on customer id
   const getAvatarColor = (id: string | undefined) => {
-    const colors = [
-      'primary.light',
-      'secondary.light',
-      'error.light',
-      'warning.light',
-      'info.light',
-      'success.light',
-    ];
+    const colors = ['primary.light', 'secondary.light', 'error.light', 'warning.light', 'info.light', 'success.light'];
     // Use the customer ID to pick a color (just for consistent coloring)
     // Safe check for null/undefined id
     if (!id) {
@@ -63,19 +56,7 @@ export function TopCustomers({ customers, t }: TopCustomersProps) {
 
   return (
     <Card>
-      <CardHeader 
-        title={t('overview.top_customers')} 
-        action={
-          <Button
-            color="inherit"
-            endIcon={<ArrowRight size={16} />}
-            size="small"
-            variant="text"
-          >
-            {t('overview.view_all')}
-          </Button>
-        }
-      />
+      <CardHeader title={t('overview.top_customers')} />
       <Divider />
       <CardContent sx={{ p: 0 }}>
         {validCustomers.length > 0 ? (
@@ -95,12 +76,12 @@ export function TopCustomers({ customers, t }: TopCustomersProps) {
                 >
                   <TableCell>
                     <Stack direction="row" spacing={2} alignItems="center">
-                      <Avatar 
-                        sx={{ 
-                          width: 32, 
-                          height: 32, 
+                      <Avatar
+                        sx={{
+                          width: 32,
+                          height: 32,
                           bgcolor: getAvatarColor(customer.id),
-                          fontSize: '0.875rem'
+                          fontSize: '0.875rem',
                         }}
                       >
                         {getInitials(customer.name)}
@@ -134,4 +115,4 @@ export function TopCustomers({ customers, t }: TopCustomersProps) {
       </CardContent>
     </Card>
   );
-} 
+}
