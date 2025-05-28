@@ -318,7 +318,7 @@ export default function PurchasesPage(): React.JSX.Element {
         supplier: purchase.supplier.id,
         date: new Date(purchase.created_at).toISOString().split('T')[0],
         products: purchaseProducts,
-        totalAmount: parseFloat(purchase.total_amount),
+        totalAmount: amountPaid,
         subtotal: subtotal,
         taxAmount: taxAmount,
         tax: purchase.tax || '0',
@@ -396,7 +396,7 @@ export default function PurchasesPage(): React.JSX.Element {
       const createOrUpdateData = {
         store_id: currentStore.id,
         supplier_id: purchaseData.supplier,
-        total_amount: purchaseData.totalAmount.toString(),
+        total_amount: purchaseData.amount_paid.toString(),
         tax: purchaseData.tax || '0',
         amount_paid: (purchaseData.amount_paid || '0').toString(), // Ensure we use amount_paid from the form
         amount: (purchaseData.amount_paid || '0').toString(), // Set amount equal to amount_paid
@@ -577,7 +577,7 @@ export default function PurchasesPage(): React.JSX.Element {
                         const isSelected = selectedPurchases.includes(purchase.id);
                         const isMenuOpen = Boolean(anchorElMap[purchase.id]);
                         const isDetailSelected = selectedPurchaseDetails?.id === purchase.id;
-
+                        console.log('Purchase:', purchase);
                         return (
                           <TableRow
                             hover
@@ -598,10 +598,27 @@ export default function PurchasesPage(): React.JSX.Element {
                             <TableCell>{formatCurrency(purchase.total_amount)}</TableCell>
                             <TableCell>
                               <Chip
-                                label={purchase.is_credit ? t('purchases.credit') : t('purchases.paid')}
+                                label={purchase.status}
                                 size="small"
-                                color={purchase.is_credit ? 'warning' : 'success'}
-                                sx={{ fontSize: '0.75rem' }}
+                                sx={{
+                                  fontSize: '0.75rem',
+                                  bgcolor:
+                                    purchase.status === 'PARTIALLY_PAID'
+                                      ? 'warning.100'
+                                      : purchase.status === 'PAID'
+                                        ? 'success.100'
+                                        : purchase.status === 'UNPAID'
+                                          ? 'error.100'
+                                          : 'primary.100',
+                                  color:
+                                    purchase.status === 'PARTIALLY_PAID'
+                                      ? 'warning.main'
+                                      : purchase.status === 'PAID'
+                                        ? 'success.main'
+                                        : purchase.status === 'UNPAID'
+                                          ? 'error.main'
+                                          : 'primary.main',
+                                }}
                               />
                             </TableCell>
                             <TableCell align="center">
@@ -700,9 +717,26 @@ export default function PurchasesPage(): React.JSX.Element {
                     {t('purchases.payment_status')}
                   </Typography>
                   <Chip
-                    label={selectedPurchaseDetails.is_credit ? t('purchases.credit') : t('purchases.paid')}
+                    label={selectedPurchaseDetails.status}
                     size="small"
-                    color={selectedPurchaseDetails.is_credit ? 'warning' : 'success'}
+                    sx={{
+                      bgcolor:
+                        selectedPurchaseDetails.status === 'PARTIALLY_PAID'
+                          ? 'warning.100'
+                          : selectedPurchaseDetails.status === 'PAID'
+                            ? 'success.100'
+                            : selectedPurchaseDetails.status === 'UNPAID'
+                              ? 'error.100'
+                              : 'primary.100',
+                      color:
+                        selectedPurchaseDetails.status === 'PARTIALLY_PAID'
+                          ? 'warning.main'
+                          : selectedPurchaseDetails.status === 'PAID'
+                            ? 'success.main'
+                            : selectedPurchaseDetails.status === 'UNPAID'
+                              ? 'error.main'
+                              : 'primary.main',
+                    }}
                   />
                 </Grid>
                 <Grid item xs={6}>

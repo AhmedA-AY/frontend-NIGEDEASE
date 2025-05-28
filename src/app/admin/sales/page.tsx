@@ -264,7 +264,7 @@ export default function SalesPage(): React.JSX.Element {
         tax: saleToEdit.tax || '0', // Load tax value from sale data
         paidAmount: 0, // This needs to be fetched from somewhere
         dueAmount: parseFloat(saleToEdit.total_amount), // This needs to be calculated
-        paymentStatus: saleToEdit.is_credit ? 'Credit' : 'Paid',
+        paymentStatus: saleToEdit.status,
         store_id: saleToEdit.store.id,
         currency_id: saleToEdit.currency.id,
         payment_mode_id: saleToEdit.payment_mode.id,
@@ -331,7 +331,7 @@ export default function SalesPage(): React.JSX.Element {
       const formattedData = {
         store_id: currentStore.id,
         customer_id: saleData.customer_id || saleData.customer,
-        total_amount: safeToString(saleData.total_amount || saleData.totalAmount),
+        total_amount: safeToString(saleData.amount_paid || saleData.amount_paid),
         tax: safeToString(saleData.tax || '0'),
         amount_paid: safeToString(saleData.amount_paid || 0),
         currency_id: saleData.currency_id,
@@ -595,11 +595,25 @@ export default function SalesPage(): React.JSX.Element {
                   {t('sales.sale_status')}
                 </Typography>
                 <Chip
-                  label={selectedSaleDetails.is_credit ? t('sales.credit') : t('sales.confirmed')}
+                  label={selectedSaleDetails.status}
                   size="small"
                   sx={{
-                    bgcolor: selectedSaleDetails.is_credit ? 'warning.100' : 'success.100',
-                    color: selectedSaleDetails.is_credit ? 'warning.main' : 'success.main',
+                    bgcolor:
+                      selectedSaleDetails.status === 'PARTIALLY_PAID'
+                        ? 'warning.100'
+                        : selectedSaleDetails.status === 'PAID'
+                          ? 'success.100'
+                          : selectedSaleDetails.status === 'UNPAID'
+                            ? 'error.100'
+                            : 'primary.100',
+                    color:
+                      selectedSaleDetails.status === 'PARTIALLY_PAID'
+                        ? 'warning.main'
+                        : selectedSaleDetails.status === 'PAID'
+                          ? 'success.main'
+                          : selectedSaleDetails.status === 'UNPAID'
+                            ? 'error.main'
+                            : 'primary.main',
                     fontWeight: 500,
                   }}
                 />
@@ -688,7 +702,7 @@ export default function SalesPage(): React.JSX.Element {
 
                   // Determine display status based on Sale properties
                   const displayStatus = sale.is_credit ? 'Credit' : 'Confirmed';
-                  const displayPaymentStatus = sale.is_credit ? 'Unpaid' : 'Paid';
+                  const displayPaymentStatus = sale.status;
 
                   return (
                     <TableRow
@@ -725,8 +739,22 @@ export default function SalesPage(): React.JSX.Element {
                           label={displayPaymentStatus}
                           size="small"
                           sx={{
-                            bgcolor: displayPaymentStatus === 'Unpaid' ? 'error.100' : 'success.100',
-                            color: displayPaymentStatus === 'Unpaid' ? 'error.main' : 'success.main',
+                            bgcolor:
+                              displayPaymentStatus === 'PARTIALLY_PAID'
+                                ? 'warning.100'
+                                : displayPaymentStatus === 'PAID'
+                                  ? 'success.100'
+                                  : displayPaymentStatus === 'UNPAID'
+                                    ? 'error.100'
+                                    : 'primary.100',
+                            color:
+                              displayPaymentStatus === 'PARTIALLY_PAID'
+                                ? 'warning.main'
+                                : displayPaymentStatus === 'PAID'
+                                  ? 'success.main'
+                                  : displayPaymentStatus === 'UNPAID'
+                                    ? 'error.main'
+                                    : 'primary.main',
                             fontWeight: 500,
                           }}
                         />

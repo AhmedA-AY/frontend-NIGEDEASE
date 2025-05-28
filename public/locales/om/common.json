@@ -6,6 +6,7 @@
   "app_name": "NIGED-EASE",
   "hero_title": "Furmaata Ammayyaa Daldaloota Itoophiyaatiif",
   "hero_subtitle": "Imaammatni keenya daldaloota Itoophiyaa hojii isaanii akka laafatan, bu'a-qabeessummaa isaanii akka fooyyessan, fi guddinaaf waan barbaachisu hunda ni kennaa.",
+  "hero_description": "NIGED-EASE sirna bulchiinsa kuusaa fi POS cimaa kan daldaloota Itoophiyaatiif addatti qophaa'e yoo ta'u, Afaan Amaaraa dabalatee afaanota hedduu ni deggera.",
   "get_started": "Amma Jalqabi",
   "stats_title": "Bara kana waan galmeessine",
   "stats_subtitle": "Humna keenya waliin kana arganne",
@@ -54,4 +55,4 @@
   "benefits_title": "Bu'aawwan",
   "pricing_title": "Gatii Salphaa",
   "footer_rights": "Mirgi Hunda Seeraan Kan Eegame"
-} 
+}

@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Button,
   Card,
   CardContent,
   CardHeader,
+  CircularProgress,
   Container,
-  Grid,
-  Typography,
-  TextField,
   Divider,
+  Grid,
+  IconButton,
   Paper,
   Table,
   TableBody,
@@ -19,16 +20,16 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  CircularProgress,
-  IconButton,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { useSnackbar } from 'notistack';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { QrCode as QrCodeIcon } from '@phosphor-icons/react/dist/ssr/QrCode';
-import { useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
-import { AdminGuard } from '@/components/auth/admin-guard';
 import jsQR from 'jsqr';
+import { useSnackbar } from 'notistack';
+import { useTranslation } from 'react-i18next';
+
+import { AdminGuard } from '@/components/auth/admin-guard';
 
 export default function AdminInvoiceVerificationPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -43,7 +44,6 @@ export default function AdminInvoiceVerificationPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const handleBack = () => {
     router.push('/admin/dashboard');
@@ -57,7 +57,7 @@ export default function AdminInvoiceVerificationPage() {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       setSelectedFile(file);
-      
+
       // If it's an image file, try to scan for QR code
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
@@ -125,14 +125,14 @@ export default function AdminInvoiceVerificationPage() {
   const startQrScanner = async () => {
     try {
       setScanningStatus(t('invoice_verification.starting_camera'));
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
           facingMode: 'environment',
           width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } 
+          height: { ideal: 720 },
+        },
       });
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setShowQrScanner(true);
@@ -149,7 +149,7 @@ export default function AdminInvoiceVerificationPage() {
   const stopQrScanner = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
     }
     setShowQrScanner(false);
@@ -187,16 +187,10 @@ export default function AdminInvoiceVerificationPage() {
       <Container>
         <Box sx={{ py: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <Button
-              startIcon={<ArrowLeftIcon />}
-              onClick={handleBack}
-              sx={{ mr: 2 }}
-            >
+            <Button startIcon={<ArrowLeftIcon />} onClick={handleBack} sx={{ mr: 2 }}>
               {t('common.back_to_dashboard')}
             </Button>
-            <Typography variant="h4">
-              {t('invoice_verification.title')}
-            </Typography>
+            <Typography variant="h4">{t('invoice_verification.title')}</Typography>
           </Box>
 
           <Card>
@@ -230,19 +224,9 @@ export default function AdminInvoiceVerificationPage() {
                   </Grid>
 
                   <Grid item xs={12}>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      fullWidth
-                    >
+                    <Button variant="outlined" component="label" fullWidth>
                       {t('invoice_verification.upload_pdf')}
-                      <input
-                        type="file"
-                        hidden
-                        accept=".pdf"
-                        onChange={handleFileChange}
-                        ref={fileInputRef}
-                      />
+                      <input type="file" hidden accept=".pdf" onChange={handleFileChange} ref={fileInputRef} />
                     </Button>
                     {selectedFile && (
                       <Typography variant="body2" sx={{ mt: 1 }}>
@@ -252,30 +236,7 @@ export default function AdminInvoiceVerificationPage() {
                   </Grid>
 
                   <Grid item xs={12}>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      fullWidth
-                      sx={{ mt: 2 }}
-                    >
-                      {t('invoice_verification.upload_image')}
-                      <input
-                        type="file"
-                        hidden
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        ref={imageInputRef}
-                      />
-                    </Button>
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      fullWidth
-                      disabled={isLoading || (!url && !selectedFile)}
-                    >
+                    <Button type="submit" variant="contained" fullWidth disabled={isLoading || (!url && !selectedFile)}>
                       {isLoading ? <CircularProgress size={24} /> : t('invoice_verification.process')}
                     </Button>
                   </Grid>
@@ -296,12 +257,7 @@ export default function AdminInvoiceVerificationPage() {
                       {scanningStatus}
                     </Typography>
                   )}
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={stopQrScanner}
-                    sx={{ mt: 2 }}
-                  >
+                  <Button variant="contained" color="error" onClick={stopQrScanner} sx={{ mt: 2 }}>
                     {t('invoice_verification.stop_scanner')}
                   </Button>
                 </Box>
@@ -321,16 +277,17 @@ export default function AdminInvoiceVerificationPage() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {Object.entries(result).map(([key, value]) => (
-                          value !== null && (
-                            <TableRow key={key}>
-                              <TableCell component="th" scope="row">
-                                {key.replace(/_/g, ' ').toUpperCase()}
-                              </TableCell>
-                              <TableCell>{value as string}</TableCell>
-                            </TableRow>
-                          )
-                        ))}
+                        {Object.entries(result).map(
+                          ([key, value]) =>
+                            value !== null && (
+                              <TableRow key={key}>
+                                <TableCell component="th" scope="row">
+                                  {key.replace(/_/g, ' ').toUpperCase()}
+                                </TableCell>
+                                <TableCell>{value as string}</TableCell>
+                              </TableRow>
+                            )
+                        )}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -342,4 +299,4 @@ export default function AdminInvoiceVerificationPage() {
       </Container>
     </AdminGuard>
   );
-} 
+}

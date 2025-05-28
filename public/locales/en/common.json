@@ -6,6 +6,7 @@
   "app_name": "NIGED-EASE",
   "hero_title": "Revolutionize Your Retail Business with NIGED-EASE",
   "hero_subtitle": "The all-in-one inventory management system designed for Ethiopian businesses.",
+  "hero_description": "NIGED-EASE is a powerful inventory management and POS system designed specifically for Ethiopian businesses, supporting multiple languages including Amharic.",
   "get_started": "Get Started",
   "stats_title": "This past year achievement",
   "stats_subtitle": "With our super powers we have reached this",
@@ -54,4 +55,4 @@
   "benefits_title": "Benefits",
   "pricing_title": "Simple Pricing",
   "footer_rights": "All Rights Reserved"
-} 
+}
